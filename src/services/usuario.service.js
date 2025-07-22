@@ -3,9 +3,9 @@ import { Api } from "./Api.services";
 export default {
 
      // Paginación
-     index(page = 1, limit = 10, q = "") {
-        return Api().get(`/usuario?page=${page}&limit=${limit}&q=${q}`);
-    },
+      index(page = 1, limit = 10, q = "") {
+             return Api().get(`/usuario?page=${page}&limit=${limit}&q=${q}`);
+         },
     
 
     guardarUsuario(datos) {  // Añade datos como parámetro aquí

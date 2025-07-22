@@ -32,7 +32,7 @@
         <Column field="telefono" header="TELEFONO" sortable style="min-width:8rem"></Column>
         <Column field="email" header="EMAIL" sortable style="min-width:16rem"></Column>
         <Column field="direccion" header="DIRECCION" sortable style="min-width:16rem"></Column>
-        <Column field="ruc" header="NII" sortable style="min-width:12rem"></Column>
+        <Column field="ci_nit" header="NIT" sortable style="min-width:12rem"></Column>
         <Column field="website" header="WEBSITE" sortable style="min-width:12rem"></Column>
 
   
@@ -88,17 +88,11 @@
 
         <div class="field">
           <label for="name">NIT</label>
-          <InputText id="name" v-model.trim="proveedor.ruc" required="true" autofocus
-            :invalid="submitted && !proveedor.ruc" />
-          <small class="p-error" v-if="submitted && !proveedor.ruc">Nombre es obligatorio.</small>
+          <InputText id="name" v-model.trim="proveedor.ci_nit" required="true" autofocus
+            :invalid="submitted && !proveedor.ci_nit" />
+          <small class="p-error" v-if="submitted && !proveedor.ci_nit">Nombre es obligatorio.</small>
         </div>
 
-        <div class="field">
-          <label for="name">Website</label>
-          <InputText id="name" v-model.trim="proveedor.website" required="true" autofocus
-            :invalid="submitted && !proveedor.website" />
-          <small class="p-error" v-if="submitted && !proveedor.website">Nombre es obligatorio.</small>
-        </div>
   
         
   
@@ -134,8 +128,7 @@
     telefono:"",
     email:"",
     direccion:"",
-    ruc:"",
-    website:"",
+    ci_nit:"",
     estado: true,
   });
   
@@ -205,7 +198,7 @@ async function guardarProveedor() {
     ProveedorDialog.value = false;
 
     // Resetear el formulario
-    proveedor.value = { nombre: "", detalle: "", contacto: "", telefono:"", email:"", direccion:"", ruc:"", website:"" };
+    proveedor.value = { nombre: "", detalle: "", contacto: "", telefono:"", email:"", direccion:"", ci_nit:"", website:"" };
 
   } catch (error) {
     // Manejar error según el tipo de acción
@@ -304,4 +297,10 @@ const deleteProduct = async () => {
 
   
   </script>
-  
+  <style scoped>
+  ::v-deep(.p-datatable-thead > tr > th) {
+      background-color: #65a8d4; /* Cambia a tu color deseado */
+      color: white;              /* Color del texto */
+      font-weight: bold;
+  }
+  </style>

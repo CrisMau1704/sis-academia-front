@@ -1,324 +1,858 @@
 <template>
-    <h1>Nuevo pedido</h1>
-    <div class="grid">
-        <div class="md:col-7 col-12">
-            <div class="card">
-                <h5>Lista de Productos</h5>
-                <DataTable ref="dt" :value="productos" dataKey="id" lazy :totalRecords="totalRecords" :loading="loading"
-                    :paginator="true" :rows="rows" @page="onPage"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    :rowsPerPageOptions="[3, 10, 20]"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos">
-
-                    <template #header>
-                        <div class="flex align-items-center justify-content-between">
-                            <h4 class="m-0">Productos</h4>
-                            <span class="p-input-icon-left">
-                                <i class="pi pi-search"></i>
-                                <InputText placeholder="Buscar..." v-model="buscar" @keypress.enter="getProductos" />
-                            </span>
-                        </div>
-                    </template>
-
-                    <Column field="nombre" header="NOMBRE" sortable style="min-width:16rem"></Column>
-                    <Column field="stock" header="STOCK" sortable style="min-width:12rem"></Column>
-                    <Column header="Imagen">
-                        <template #body="slotProps">
-                            <img :src="`http://127.0.0.1:8000/storage/${slotProps.data.imagen}`" alt="Imagen"
-                                style="width: 50px; height: 50px;" />
-                        </template>
-                    </Column>
-                    <Column field="precio" header="Precio" sortable style="min-width:8rem">
-                        <template #body="slotProps">
-                            {{ formatCurrency(slotProps.data.precio) }}
-                        </template>
-                    </Column>
-                    <Column field="categoria.nombre" header="Categoría" sortable style="min-width:8rem"></Column>
-                    <Column :exportable="false" style="min-width:8rem">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-plus" rounded severity="warning" class="mr-2"
-                                @click="addCarrito(slotProps.data)" />
-                        </template>
-                    </Column>
-                </DataTable>
+    <div class="pedido-container">
+        <!-- Mostrar Categorías -->
+        <div v-if="!categoriaSeleccionada">
+            <h2>Selecciona una Categoría</h2>
+            <div class="categorias-grid">
+                <div v-for="cat in categorias" :key="cat.id" class="categoria-card" @click="seleccionarCategoria(cat)">
+                    <i class="pi pi-folder"></i>
+                    <p>{{ cat.nombre }}</p>
+                </div>
             </div>
         </div>
 
-        <Toast ref="toast" />
-
-
-        <div class="md:col-5 col-12">
-            <div class="grid">
-                <div class="col-12">
-                    <div class="card">
-                        <DataTable :value="carrito">
-                            <Column field="nombre" header="Producto"></Column>
-                            <Column field="precio" header="Precio"></Column>
-                            <Column field="cantidad" header="Cantidad"></Column>
-                            <Column :exportable="false">
-                                <template #body="slotProps">
-                                    <Button icon="pi pi-plus" rounded severity="info" class="mr-2"
-                                        @click="aumentarCantidad(slotProps.data)" />
-                                    <Button icon="pi pi-minus" rounded severity="warning" class="mr-2"
-                                        @click="reducirCantidad(slotProps.data)" />
-                                    <Button icon="pi pi-trash" rounded severity="danger" class="mr-2"
-                                        @click="quitarCarrito(slotProps.data)" />
-                                </template>
-                            </Column>
-                        </DataTable>
+        <!-- Mostrar Platos y Carrito -->
+        <div class="contenido-pedido" v-if="categoriaSeleccionada">
+            <!-- Platos -->
+            <div class="platos-section">
+                <Button icon="pi pi-arrow-left" label="Volver" @click="volverACategorias" class="mb-3" />
+                <h2>Platos en {{ categoriaSeleccionada?.nombre || '' }}</h2>
+                <div class="platos-grid">
+                    <div v-for="plato in platos" :key="plato.id" class="plato-card" @click="addCarrito(plato)">
+                        <img :src="`http://127.0.0.1:8000/storage/${plato.imagen}`" :alt="plato.nombre" />
+                        <h4>{{ plato.nombre }}</h4>
+                        <p>{{ formatCurrency(plato.precio_venta) }}</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-12">
-                    <div class="card">
-                        <div class="flex flex-wrap gap-2 align-items-center justify-content-between">
-                            <h4 class="m-0">Cliente</h4>
-                            <Button icon="pi pi-plus" rounded severity="danger" class="mr-2" @click="visible = true" />
-
-                            <span class="p-input-icon-left">
-                                <i class="pi pi-search" />
-                                <InputText placeholder="Buscar por CI/NIT..." v-model="buscar_cliente"
-                                    @keypress.enter="busquedaCliente" />
-                            </span>
+            <!-- Carrito -->
+            <div class="carrito-section" v-if="carrito.length > 0">
+                <h3>Carrito ({{ carrito.length }} platos)</h3>
+                <div class="carrito-items">
+                    <div v-for="item in carrito" :key="item.plato_id" class="carrito-item">
+                        <img class="carrito-img" :src="`http://127.0.0.1:8000/storage/${getImagenPlato(item.plato_id)}`"
+                            alt="Imagen Plato" />
+                        <div class="carrito-info">
+                            <h4>{{ item.nombre }}</h4>
+                            <div class="cantidad-control">
+                                <button @click="disminuirCantidad(item)">-</button>
+                                <span>{{ item.cantidad }}</span>
+                                <button @click="aumentarCantidad(item)">+</button>
+                            </div>
+                            <p>Subtotal: {{ formatCurrency(item.precio_venta * item.cantidad) }}</p>
                         </div>
-                        <br>
-                        <div v-if="cliente_seleccionado && cliente_seleccionado.id">
-                            <h4>Datos de cliente</h4>
-                            <h5>Nombre: {{ cliente_seleccionado.nombre_completo }}</h5>
-                            <h5>CI/NIT: {{ cliente_seleccionado.ci_nit }}</h5>
-                            <h5>Telefono: {{ cliente_seleccionado.telefono }}</h5>
-                        </div>
+                        <button class="btn-eliminar" @click="eliminarItem(item)">✕</button>
                     </div>
                 </div>
-
-                <div class="col-12">
-                    <div class="p-2 border-round-sm bg-primary font-bold">Carrito</div>
-                    <div class="card">
-                        <InputText class="mr-2" placeholder="Observaciones..." v-model="observaciones" />
-                        <Button label="Registrar pedido" icon="pi pi-check" @click="guardarPedido" />
-                    </div>
+                <div class="total">Total: {{ formatCurrency(montoTotal) }}</div>
+                <div class="pagar-container">
+                    <Button label="Pagar" icon="pi pi-credit-card" class="p-button-success"
+                        @click="mostrarModalPago = true" />
                 </div>
-
             </div>
         </div>
+
+        <!-- Modal Pago -->
+        <Dialog header="Procesar Pago" :visible="mostrarModalPago" style="width: 450px" modal closable
+            @hide="resetModal">
+            <div class="modal-content">
+                <h3>Total a Pagar: {{ formatCurrency(montoTotal) }}</h3>
+
+                <!-- Buscar cliente -->
+                <label for="buscarCliente">Buscar Cliente:</label>
+                <InputText id="buscarCliente" v-model="busquedaCliente" @input="buscarCliente"
+                    placeholder="Escribe nombre o CI..." autocomplete="off" />
+
+                <!-- Mostrar datos cliente si existe -->
+                <div class="customer-details" v-if="clienteSeleccionado && clienteSeleccionado.id">
+                    <div class="customer-info">
+                        <div class="info-item">
+                            <span class="info-label">Nombre:</span>
+                            <span class="info-value">{{ clienteSeleccionado.nombre_completo }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">CI/NIT:</span>
+                            <span class="info-value">{{ clienteSeleccionado.ci_nit }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value">{{ clienteSeleccionado.telefono }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="busquedaCliente.length > 2 && !clienteSeleccionado">
+                    <small>No se encontró cliente.</small>
+                </div>
+
+                <!-- Selección método de pago -->
+                <label for="metodoPago">Método de Pago:</label>
+                <Dropdown id="metodoPago" :options="metodosPago" optionLabel="label" v-model="metodoPagoSeleccionado"
+                    placeholder="Selecciona un método" @change="onMetodoPagoChange" />
+
+                <div v-if="metodoPagoSeleccionado && metodoPagoSeleccionado.value === 'efectivo'"
+                    class="efectivo-section">
+                    <label for="montoEntregado">Monto entregado:</label>
+                    <InputText id="montoEntregado" v-model.number="montoEntregado" type="number" min="0"
+                        @input="calcularCambio" />
+                    <p>Cambio: {{ formatCurrency(cambio) }}</p>
+                </div>
+
+                <Button label="Confirmar Pago" icon="pi pi-check" class="p-button-primary" :disabled="!puedePagar"
+                    @click="guardarPedido" />
+            </div>
+        </Dialog>
     </div>
-
-    <Dialog v-model:visible="visible" maximizable modal header="Nuevo cliente" class="p-fluid"
-        :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
-        <template #header>
-            <div>
-
-            </div>
-        </template>
-        <div class="field">
-            <label for="name">Nombre Completo </label>
-            <InputText id="name" v-model.trim="cliente.nombre_completo" required="true" autofocus
-                :invalid="submitted && !cliente.nombre_completo" />
-            <small class="p-error" v-if="submitted && !cliente.nombre_completo">Nombre es obligatorio.</small>
-        </div>
-        <div class="field">
-            <label for="name">CI/NIT </label>
-            <InputText id="ci_nit" v-model.trim="cliente.ci_nit" required="true" autofocus
-                :invalid="submitted && !cliente.ci_nit" />
-            <small class="p-error" v-if="submitted && !cliente.ci_nit">CI/NIT.</small>
-        </div>
-        <div class="field">
-            <label for="name">Telefono </label>
-            <InputText id="tel" v-model.trim="cliente.telefono" autofocus />
-
-        </div>
-        <template #footer>
-            <Button label="Guardar cliente" icon="pi pi-chek" @click="guardarCliente" autofocus />
-
-        </template>
-    </Dialog>
-
-
+    <Toast ref="toast" />
 </template>
 
+
 <script setup>
+import { ref, computed, onMounted } from "vue";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import Dropdown from "primevue/dropdown";
+import jsPDF from 'jspdf';
 
-import clienteService from '../../../services/cliente.service';
+
+import categoriaService from "@/services/categoria.service";
+import platoService from "@/services/plato.service";
+import clienteService from "@/services/cliente.service";
 import pedidoService from '../../../services/pedido.service';
-import productoService from '../../../services/producto.service';
+
 import Toast from 'primevue/toast';
-import { ref, onMounted } from 'vue';
-
-const productos = ref([]);
-const totalRecords = ref(0);
-const loading = ref(false);
-const rows = ref(10);
-const lazyParams = ref({ page: 0, rows: rows.value });
-const buscar = ref('');
-const buscar_cliente = ref('');
-const cliente_seleccionado = ref({});
+const categorias = ref([]);
+const platos = ref([]);
+const categoriaSeleccionada = ref(null);
 const carrito = ref([]);
-const observaciones = ref('');
 const toast = ref(null);
-const cliente = ref({});
-const visible = ref(false);
-const submitted = ref(false);
+// Aquí la variable unificada para la búsqueda del cliente
+const busquedaCliente = ref('');
+const clienteSeleccionado = ref(null);
 
-onMounted(() => {
-    getProductos();
+// Variables para modal pago
+const mostrarModalPago = ref(false);
+const metodoPagoSeleccionado = ref(null);
+const metodosPago = [
+    { label: "Efectivo", value: "efectivo" },
+    { label: "QR", value: "qr" },
+    { label: "Tarjeta", value: "tarjeta" },
+];
+const montoEntregado = ref(0);
+const cambio = ref(0);
+
+// Carga las categorías al montar
+onMounted(async () => {
+    try {
+        const { data } = await categoriaService.getAll();
+        categorias.value = Array.isArray(data) ? data : data.data || [];
+    } catch (error) {
+        console.error("Error cargando categorías:", error);
+    }
 });
 
-const getProductos = async () => {
-    loading.value = true;
+// Selecciona categoría y carga platos
+const seleccionarCategoria = async (cat) => {
+    if (!cat || !cat.id) return;
+    categoriaSeleccionada.value = cat;
     try {
-        const page = lazyParams.value.page + 1;
-        const limit = lazyParams.value.rows;
-        const { data } = await productoService.index(page, limit, buscar.value);
-        productos.value = data.data;
-        totalRecords.value = data.total;
+        const { data } = await platoService.getByCategoria(cat.id);
+        platos.value = Array.isArray(data) ? data : data.data || [];
     } catch (error) {
-        console.error('Error al obtener productos:', error);
-    } finally {
-        loading.value = false;
+        console.error("Error cargando platos:", error);
+        platos.value = [];
     }
 };
 
-const formatCurrency = (value) => {
-    return value ? value.toLocaleString('es-BO', { style: 'currency', currency: 'BOB' }) : '';
+// Volver a mostrar categorías
+const volverACategorias = () => {
+    categoriaSeleccionada.value = null;
+    platos.value = [];
 };
 
-const onPage = (event) => {
-    lazyParams.value.page = event.page;
-    lazyParams.value.rows = event.rows;
-    getProductos();
-};
-
-const addCarrito = (prod) => {
-    const productoExistente = carrito.value.find(p => p.id === prod.id);
-    if (productoExistente) {
-        productoExistente.cantidad++;
+// Añadir plato al carrito
+const addCarrito = (plato) => {
+    const existente = carrito.value.find((p) => p.plato_id === plato.id);
+    if (existente) {
+        existente.cantidad++;
     } else {
-        carrito.value.push({ id: prod.id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 });
+        carrito.value.push({
+            plato_id: plato.id,
+            nombre: plato.nombre,
+            precio_venta: plato.precio_venta,
+            cantidad: 1,
+        });
     }
 };
 
-const quitarCarrito = (prod) => {
-    const index = carrito.value.findIndex(p => p.id === prod.id);
-    if (index !== -1) carrito.value.splice(index, 1);
+// Funciones para aumentar/disminuir cantidad y eliminar
+const aumentarCantidad = (item) => {
+    item.cantidad++;
 };
 
-const aumentarCantidad = (prod) => {
-    prod.cantidad = prod.cantidad + 1
-};
-const reducirCantidad = (prod) => {
-    if(prod.cantidad!=1){
-        prod.cantidad = prod.cantidad - 1
+const disminuirCantidad = (item) => {
+    if (item.cantidad > 1) {
+        item.cantidad--;
+    } else {
+        eliminarItem(item);
     }
-   
 };
 
+const eliminarItem = (item) => {
+    const index = carrito.value.findIndex((p) => p.plato_id === item.plato_id);
+    if (index !== -1) {
+        carrito.value.splice(index, 1);
+    }
+};
 
+// Obtener imagen del plato para mostrar en carrito
+const getImagenPlato = (platoId) => {
+    const plato = platos.value.find((p) => p.id === platoId);
+    return plato ? plato.imagen : "placeholder.png";
+};
 
+// Total a pagar
+const montoTotal = computed(() =>
+    carrito.value.reduce((acc, item) => acc + item.precio_venta * item.cantidad, 0)
+);
 
-const busquedaCliente = async () => {
+// Formatear moneda
+const formatCurrency = (value) =>
+    value
+        ? value.toLocaleString("es-BO", { style: "currency", currency: "BOB" })
+        : "";
 
-    const { data } = await clienteService.buscarCliente(buscar_cliente.value);
-    cliente_seleccionado.value = data;
+// Función para buscar cliente
+const buscarCliente = async () => {
+    if (busquedaCliente.value.length < 3) {
+        clienteSeleccionado.value = null;
+        return;
+    }
+    try {
+        const { data } = await clienteService.buscarCliente(busquedaCliente.value);
+        if (Array.isArray(data) && data.length > 0) {
+            clienteSeleccionado.value = data[0];
+        } else if (data && data.id) {
+            clienteSeleccionado.value = data;
+        } else {
+            clienteSeleccionado.value = null;
+        }
+    } catch (error) {
+        console.error("Error buscando cliente:", error);
+        clienteSeleccionado.value = null;
+    }
+};
 
+// Cambiar método de pago
+const onMetodoPagoChange = () => {
+    montoEntregado.value = 0;
+    cambio.value = 0;
+};
 
+// Calcular cambio
+const calcularCambio = () => {
+    cambio.value = montoEntregado.value - montoTotal.value;
+    if (cambio.value < 0) cambio.value = 0;
+};
+
+// Reset modal al cerrar
+const resetModal = () => {
+    mostrarModalPago.value = false;
+    busquedaCliente.value = "";
+    clienteSeleccionado.value = null;
+    metodoPagoSeleccionado.value = null;
+    montoEntregado.value = 0;
+    cambio.value = 0;
+};
+
+// Validación para activar botón pagar
+const puedePagar = computed(() => {
+    if (!clienteSeleccionado.value) return false;
+    if (!metodoPagoSeleccionado.value) return false;
+    if (metodoPagoSeleccionado.value.value === "efectivo" && montoEntregado.value < montoTotal.value) return false;
+    return true;
+});
+
+// Confirmar pago (ajusta esta función con lógica real)
+const confirmarPago = () => {
+    alert(`Pago confirmado por ${formatCurrency(montoTotal.value)} con método ${metodoPagoSeleccionado.value.label}.`);
+    // Aquí enviar al backend, limpiar carrito, cerrar modal, etc.
+    carrito.value = [];
+    resetModal();
 };
 
 const guardarPedido = async () => {
+    if (!clienteSeleccionado.value.id) {
+        toast.value.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'Debe seleccionar un cliente antes de registrar el pedido',
+            life: 3000
+        });
+        return;
+    }
+
+    const platosInvalidos = carrito.value.filter(plato => !plato.precio_venta);
+    if (platosInvalidos.length > 0) {
+        toast.value.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: `El plato ${platosInvalidos[0].plato_id} no tiene precio definido.`,
+            life: 3000
+        });
+        return;
+    }
+
+    let pedido = {
+        cliente_id: clienteSeleccionado.value.id,
+        estado: 1,
+        platos: carrito.value.map(p => ({
+            plato_id: p.plato_id || p.id,
+            cantidad: p.cantidad,
+            precio_venta: p.precio_venta
+        })),
+        monto_total: montoTotal.value,
+        metodo_pago: metodoPagoSeleccionado.value?.value || null,
+        monto_entregado: montoEntregado.value,
+        cambio: cambio.value
+    };
+
     try {
-        let pedido = {
-            cliente_id: cliente_seleccionado.value.id,
-            productos: [],
-            observaciones: observaciones.value
+        // ✅ Guardar el pedido y capturar la respuesta
+        const response = await pedidoService.store(pedido);
+
+        toast.value.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Pedido registrado correctamente',
+            life: 3000
+        });
+
+        // ✅ Exportar la factura
+        const pedidoImp = {
+            id: response.data.id ?? Date.now(),
+            fecha: new Date(),
+            cliente: clienteSeleccionado.value,
+            platos: carrito.value.map(p => ({
+                nombre: p.nombre,
+                pivot: {
+                    cantidad: p.cantidad,
+                    precio_unitario: p.precio_venta
+                }
+            })),
+            metodo_pago: metodoPagoSeleccionado.value?.value,
+            efectivo: montoEntregado.value,
+            cambio: cambio.value
         };
 
-        // Agregar productos al pedido
-        carrito.value.forEach(prod => {
-            pedido.productos.push({ producto_id: prod.id, cantidad: prod.cantidad });
-        });
+        exportPDF(pedidoImp);
+        exportComanda(pedidoImp);
 
-        // Crear una copia plana del pedido para evitar la reactividad
-        const pedidoPlana = JSON.parse(JSON.stringify(pedido));
-
-        // Llamada al servicio para guardar el pedido
-        const { data } = await pedidoService.store(pedidoPlana);
-
-        // Mostrar un toast de éxito
-        toast.value?.add({
-            severity: "success",
-            summary: "Éxito",
-            detail: "Pedido registrado correctamente",
-            life: 3000
-        });
-
-        // Limpiar el carrito y los datos del cliente
+        // ✅ Limpiar carrito y cerrar modal
         carrito.value = [];
-        cliente_seleccionado.value = {};
-        observaciones.value = "";  // Resetear observaciones
-
-        // Esperar el tiempo del toast antes de recargar la página
-        setTimeout(async () => {
-            // Recargar los productos después de guardar el pedido (actualizar el stock)
-            await obtenerProductosActualizados();
-
-            // Recargar la página para reflejar todos los cambios en la UI
-            window.location.reload();  // Esto recarga la página
-        }, 3500); // Esperar 3500ms para dar tiempo al toast de desaparecer
+        resetModal();
 
     } catch (error) {
-        // Mostrar un toast de error
-        toast.value?.add({
-            severity: "error",
-            summary: "Error",
-            detail: `Error al registrar el pedido: ${error.response ? error.response.data.message : error.message}`,
+        toast.value.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Hubo un problema al registrar el pedido',
             life: 3000
         });
-    }
-};
-
-
-// Función para obtener los productos actualizados desde el backend
-const obtenerProductosActualizados = async () => {
-    try {
-        // Llamada al servicio para obtener los productos actualizados (por ejemplo, los productos con stock actualizado)
-        const { data } = await productoService.obtenerTodos();  // Reemplaza con tu servicio adecuado
-        // Actualiza el estado de los productos en la interfaz (puedes tener algo como esto en tu app)
-        productos.value = data; // Aquí 'productos' es una variable reactiva que contiene todos los productos
-    } catch (error) {
-        console.error("Error al obtener productos actualizados:", error);
+        console.error('Error al guardar pedido:', error);
     }
 };
 
 
 
-const guardarCliente = async () => {
-    submitted.value = true;
-    if (cliente.value.nombre_completo.trim()) {
-        try {
+const exportPDF = (pedidoData) => {
+    if (!pedidoData || !pedidoData.platos) {
+        console.error("Datos insuficientes para generar factura");
+        return;
+    }
 
-            const { data } = await clienteService.store(cliente.value);
-            cliente_seleccionado.value = data;
-            toast.value?.add({
-                severity: "success",
-                summary: "Éxito",
-                detail: "Cliente registrado correctamente",
-                life: 3000
-            });
-            cliente.value = [];
+    // Configuración optimizada para impresora térmica
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 297] // 80mm de ancho (formato ticket)
+    });
 
-        } catch (error) {
-            // Mostrar un toast de error
-            toast.value?.add({
-                severity: "error",
-                summary: "Error",
-                detail: `Error al registrar al Cliente: ${error.response ? error.response.data.message : error.message}`,
-                life: 3000
-            });
+    // Estilos mejorados para mejor legibilidad
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10); // Tamaño ligeramente mayor
+    const margin = 5;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 10;
+
+    // --- Encabezado mejorado ---
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text("RESTAURANTE MI RESTAURANTE", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 5;
+
+    doc.setFontSize(9);
+    doc.text("NIT: 123456789 | Teléfono: 12345678", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 4;
+    doc.text("Av. Principal #123, La Paz - Bolivia", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
+
+    // Línea divisoria gruesa
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+
+    // --- Información de la factura ---
+    doc.setFont('helvetica', 'bold');
+    doc.text("FACTURA ORIGINAL", margin, yPos);
+    doc.text(`No. ${pedidoData.id}`, pageWidth - margin, yPos, { align: 'right' });
+    yPos += 4;
+
+    const fecha = pedidoData.fecha ? new Date(pedidoData.fecha) : new Date();
+    doc.text("Fecha:", margin, yPos);
+    doc.text(fecha.toLocaleDateString('es-BO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }), pageWidth - margin, yPos, { align: 'right' });
+    yPos += 5;
+
+    // --- Datos del cliente ---
+    doc.setFont('helvetica', 'bold');
+    doc.text("CLIENTE:", margin, yPos);
+    yPos += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nombre: ${pedidoData.cliente?.nombre_completo || "CONSUMIDOR FINAL"}`, margin + 5, yPos);
+    yPos += 4;
+    doc.text(`CI/NIT: ${pedidoData.cliente?.ci_nit || "0"}`, margin + 5, yPos);
+    yPos += 6;
+
+    // --- Tabla de productos mejorada ---
+    // Encabezado de tabla
+    doc.setFont('helvetica', 'bold');
+    doc.text("CANT  DESCRIPCIÓN       P.UNIT   TOTAL", margin, yPos);
+    yPos += 4;
+
+    // Línea divisoria
+    doc.setLineWidth(0.3);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+
+    // Detalle de productos
+    doc.setFont('helvetica', 'normal');
+    let total = 0;
+
+    pedidoData.platos.forEach(prod => {
+        const cantidad = prod.pivot?.cantidad || 1;
+        const precio_unitario = Number(prod.pivot?.precio_unitario) || 0;
+        const subtotal = cantidad * precio_unitario;
+        total += subtotal;
+
+
+
+        // Formato alineado para mejor legibilidad
+        const line = [
+            String(cantidad).padStart(3, ' '),
+            (prod.nombre || "Producto").substring(0, 15).padEnd(15, ' '),
+            precio_unitario.toFixed(2).padStart(15, ' '),
+            subtotal.toFixed(2).padStart(15, ' ')
+        ].join('  ');
+
+        doc.text(line, margin, yPos);
+        yPos += 5;
+
+        // Control de salto de página
+        if (yPos > 250) {
+            doc.addPage([80, 297]);
+            yPos = 10;
         }
-        visible.value = false
+    });
+
+    // --- Totales ---
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("TOTAL:", pageWidth - margin - 25, yPos);
+    doc.text(`${total.toFixed(2)} Bs`, pageWidth - margin, yPos, { align: 'right' });
+    yPos += 6;
+    // Mostrar cambio solo si método es efectivo
+    if (pedidoData.metodo_pago === 'efectivo') {
+        const efectivo = Number(pedidoData.efectivo) || 0;
+        const cambio = efectivo - total;
+
+        doc.text(`Efectivo: ${efectivo.toFixed(2)} Bs`, pageWidth - margin, yPos, { align: 'right' });
+        yPos += 5;
+        doc.text(`Cambio: ${cambio.toFixed(2)} Bs`, pageWidth - margin, yPos, { align: 'right' });
+        yPos += 6;
     }
 
 
 
+    // --- Información legal ---
+    doc.setFontSize(8);
+    doc.text("SON: " + numberToWords(total) + " BOLIVIANOS", margin, yPos);
+    yPos += 5;
+
+    doc.text("CÓDIGO DE CONTROL:", margin, yPos);
+    doc.text(generateControlCode(pedidoData.id, fecha), margin + 35, yPos);
+    yPos += 4;
+
+    doc.text("FECHA LÍMITE EMISIÓN:", margin, yPos);
+    const fechaLimite = new Date(fecha);
+    fechaLimite.setDate(fechaLimite.getDate() + 30);
+    doc.text(fechaLimite.toLocaleDateString('es-BO'), margin + 35, yPos);
+    yPos += 8;
+
+    // Mensaje legal (requerido en Bolivia)
+    doc.setFontSize(7);
+    doc.text("ESTA FACTURA CONTRIBUYE AL DESARROLLO DEL PAÍS.", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 3;
+    doc.text("EL USO INDEBIDO SERÁ SANCIONADO DE ACUERDO A LEY.", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 6;
+
+    // QR (simulado o real)
+    doc.setFontSize(6);
+    doc.text("AUTORIZACIÓN ELECTRÓNICA", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    // Espacio para código QR (implementación real requeriría librería QR)
+    doc.setDrawColor(100);
+    doc.setFillColor(230, 230, 230);
+    doc.roundedRect(pageWidth / 2 - 10, yPos, 20, 20, 2, 2, 'FD');
+    doc.text("COD. QR", pageWidth / 2, yPos + 25, { align: 'center' });
+    yPos += 30;
+
+    // Agradecimiento y marca para corte
+    doc.setFontSize(8);
+    doc.text("¡Gracias por su preferencia!", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 4;
+    doc.text("••••••••••••••••••••••••••••••", pageWidth / 2, yPos, { align: 'center' });
+
+    // Guardar el documento
+    doc.save(`FACTURA_${pedidoData.id}.pdf`);
 };
+
+// Función para generar código de control (formato boliviano simplificado)
+function generateControlCode(id, fecha) {
+    const randomChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+    }
+    return `${fecha.getDate()}${fecha.getMonth() + 1}${String(id).slice(-3)}-${code}`;
+}
+
+// Función mejorada para convertir números a palabras
+function numberToWords(num) {
+    num = Math.floor(Number(num) || 0);
+    const unidades = ['', 'un', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+    const decenas = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+    const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+    const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+
+    if (num === 0) return 'cero';
+    if (num < 10) return unidades[num];
+    if (num < 20) return especiales[num - 10];
+    if (num < 100) {
+        const decena = Math.floor(num / 10);
+        const unidad = num % 10;
+        return decenas[decena] + (unidad !== 0 ? ' y ' + unidades[unidad] : '');
+    }
+    if (num < 1000) {
+        const centena = Math.floor(num / 100);
+        const resto = num % 100;
+        return centenas[centena] + (resto !== 0 ? ' ' + numberToWords(resto) : '');
+    }
+    return num.toString(); // Para números mayores
+}
+
+const exportComanda = (pedidoData) => {
+    const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, 150]  // Mucho más pequeño que la factura
+    });
+
+    const margin = 5;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 10;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text("COMANDA", pageWidth / 2, yPos, { align: 'center' });
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.text(`Pedido No: ${pedidoData.id}`, margin, yPos);
+    yPos += 8;
+
+    pedidoData.platos.forEach(prod => {
+        const cantidad = prod.pivot?.cantidad || 1;
+        const nombre = prod.nombre || "Producto";
+
+        const line = `${String(cantidad).padStart(3, ' ')} x ${nombre}`;
+        doc.text(line, margin, yPos);
+        yPos += 7;
+    });
+
+    yPos += 10;
+    doc.setFontSize(8);
+    doc.text("¡Gracias!", pageWidth / 2, yPos, { align: 'center' });
+
+    // Guardar el archivo, o puedes mandar imprimir directo
+    doc.save(`COMANDA_${pedidoData.id}.pdf`);
+};
+
 
 </script>
+
+<style scoped>
+.pedido-container {
+    padding: 1rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Diseño de categorías */
+.categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.categoria-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    border: 1px solid #e2e8f0;
+}
+
+.categoria-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    border-color: #3498db;
+}
+
+.categoria-card i {
+    font-size: 2.8rem;
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+.categoria-card p {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+/* Layout principal */
+.contenido-pedido {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    align-items: flex-start;
+}
+
+/* Sección de platos */
+.platos-section {
+    flex: 1;
+    background: #f5f9f7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.platos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.plato-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    border: 1px solid #edf2f7;
+    text-align: center;
+    padding: 1rem;
+}
+
+.plato-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-color: #3498db;
+}
+
+.plato-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.plato-card h4 {
+    font-size: 1rem;
+    margin: 0.5rem 0 0.2rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.plato-card p {
+    font-size: 1rem;
+    color: #e53e3e;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Sección del carrito */
+.carrito-section {
+    width: 420px;
+    background: rgb(243, 241, 241);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+    font-size: 1.1rem;
+}
+
+.carrito-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.carrito-items {
+    max-height: 450px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.carrito-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #15599c;
+    align-items: center;
+}
+
+.carrito-img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.carrito-info h4 {
+    font-size: 1.1rem;
+    margin: 0 0 0.3rem 0;
+    color: #2d3748;
+    font-weight: bold;
+}
+
+.cantidad-control {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0.5rem 0;
+}
+
+.cantidad-control button {
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: #3498db;
+    color: white;
+    border-radius: 6px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cantidad-control button:hover {
+    background: #2c7be5;
+}
+
+.cantidad-control span {
+    min-width: 26px;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.btn-eliminar {
+    background: none;
+    border: none;
+    color: #e53e3e;
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    transition: color 0.2s;
+}
+
+.btn-eliminar:hover {
+    color: #c53030;
+}
+
+.total {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-top: 1.2rem;
+    text-align: right;
+    color: #2c3e50;
+}
+
+.pagar-container {
+    margin-top: 1.5rem;
+    text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .contenido-pedido {
+        flex-direction: column;
+    }
+
+    .carrito-section {
+        width: 100%;
+        position: static;
+        margin-top: 2rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .platos-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .categorias-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>

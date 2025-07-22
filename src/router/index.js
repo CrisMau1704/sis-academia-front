@@ -13,6 +13,9 @@ import NuevoPedido from '../views/admin/pedido/NuevoPedido.vue'
 import ListaPedido from '../views/admin/pedido/ListaPedido.vue'
 import Proveedor from '../views/admin/productos/Proveedor.vue'
 import NuevaCompra from '../views/admin/compras/NuevaCompra.vue'
+import Roles from '../views/admin/Roles.vue'
+import Dashboard from '../views/admin/Dashboard.vue'
+import Plato from '../views/admin/productos/Plato.vue'
 
 
 
@@ -81,6 +84,12 @@ const router = createRouter({
           meta:{requiereAuth: true}
         },
         {
+          path: 'plato',
+          name: 'plato',
+          component: Plato,
+          meta:{requiereAuth: true}
+        },
+        {
           path: 'pedido/Nuevo',
           name: 'NuevoPedido',
           component: NuevoPedido,
@@ -97,6 +106,16 @@ const router = createRouter({
           name: 'NuevaCompra',
           component: NuevaCompra,
           meta:{requiereAuth: true}
+        },
+        {
+          path: '/admin/roles',  // Asegúrate de que esta ruta sea la misma que usas en el menú
+          name: 'Roles',
+          component: Roles,  // Carga el componente Roles.vue
+        },
+        {
+          path: '/admin/dashboard',  // Asegúrate de que esta ruta sea la misma que usas en el menú
+          name: 'Dashboard',
+          component: Dashboard,  // Carga el componente Roles.vue
         },
        
 

@@ -56,6 +56,11 @@ const isOutsideClicked = (event) => {
     const sidebarEl = document.querySelector('.layout-topbar-menu');
     const topbarEl = document.querySelector('.layout-topbar-menu-button');
 
+    // Verifica si los elementos existen antes de llamar a sus métodos
+    if (!sidebarEl || !topbarEl) {
+        return false;  // Si no existen, no se puede verificar si el clic está fuera
+    }
+
     return !(sidebarEl.isSameNode(event.target) || sidebarEl.contains(event.target) || topbarEl.isSameNode(event.target) || topbarEl.contains(event.target));
 };
 
@@ -70,7 +75,7 @@ const onSalir = () =>{
     <div class="layout-topbar">
         <router-link to="/" class="layout-topbar-logo">
             <img :src="logoUrl" alt="logo" />
-            <span>Digital File</span>
+            <span>Restaurante</span>
         </router-link>
 
         <button class="p-link layout-menu-button layout-topbar-button" @click="onMenuToggle()">

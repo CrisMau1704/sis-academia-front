@@ -258,3 +258,10 @@ const deleteProduct = async () => {
 };
 
 </script>
+<style scoped>
+::v-deep(.p-datatable-thead > tr > th) {
+    background-color: #65a8d4; /* Cambia a tu color deseado */
+    color: white;              /* Color del texto */
+    font-weight: bold;
+}
+</style>

@@ -1,23 +1,39 @@
 import { Api } from "./Api.services";
 
 export default {
-
-     // Paginación
-    index(page = 1, limit = 10, q = "", fi="" ,ff="") {
+    // Paginación
+    index(page = 1, limit = 10, q = "") {
         return Api().get(`/pedido?page=${page}&limit=${limit}&q=${q}`);
     },
+
+
+    // Crear nuevo pedido
+    store(datos) {
+        const fecha = new Date().toISOString(); 
+        
+        const datosConFecha = {
+            ...datos,
+            fecha: fecha,
+        };
     
-    //store
-    store(datos) {  // Añade datos como parámetro aquí
-        return Api().post("/pedido", datos);
+        return Api().post("/pedido", datosConFecha);
     },
-    //show
+    
+
+    // Obtener un pedido por ID
     show(id) {
         return Api().get("/pedido/" + id);
     },
-    //update
-    update(id, datos) {  // Añade datos como parámetro aquí
+
+    // Actualizar un pedido existente
+    update(id, datos) {  // Recibe los datos actualizados del pedido
         return Api().put("/pedido/" + id, datos);
     },
-    
+
+    // Obtener el estado de un pedido (si es necesario, dependiendo de tu API)
+    status(id) {
+        return Api().get(`/pedido/status/${id}`);
+    },
+
+    // Agregar otros métodos si es necesario
 };

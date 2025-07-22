@@ -31,7 +31,7 @@
       </template>
 
       <Column field="id" header="ID" sortable style="min-width:12rem"></Column>
-      <Column field="nombre" header="PLATO" sortable style="min-width:16rem"></Column>
+      <Column field="nombre" header="Producto" sortable style="min-width:16rem"></Column>
       <Column field="stock" header="STOCK" sortable style="min-width:16rem"></Column>
       <Column field="stock" header="Status" sortable style="min-width:12rem">
         <template #body="slotProps">
@@ -43,21 +43,25 @@
 
       <Column header="Imagen">
         <template #body="slotProps">
-          <img :src="`http://127.0.0.1:8000/storage/${slotProps.data.imagen}`" alt="Imagen"
-            style="width: 50px; height: 50px;" />
-        </template>
+  {{ console.log(slotProps.data.imagen) }}
+  <img 
+    :src="`http://127.0.0.1:8000/storage/${slotProps.data.imagen}`" 
+    alt="Imagen"
+    style="width: 50px; height: 50px;" 
+  />
+</template>
       </Column>
 
-      <Column field="precio" header="Precio" sortable style="min-width:8rem">
+      <Column field="precio_compra" header="Precio_compra" sortable style="min-width:8rem">
         <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.precio) }}
+          {{ formatCurrency(slotProps.data.precio_compra) }}
         </template>
       </Column>
       <Column field="categoria.nombre" header="Categoria" sortable style="min-width:10rem"></Column>
 
       <Column :exportable="false" style="min-width:8rem">
         <template #body="slotProps">
-          <Button icon="pi pi-file-pdf" rounded severity="warning" class="mr-2" @click="abrirPDF(slotProps.data)" />
+          
           
           <Button icon="pi pi-pencil" rounded class="mr-2" @click="editProduct(slotProps.data)" />
           <Button icon="pi pi-trash" rounded severity="danger" @click="confirmDeleteProduct(slotProps.data)" />
@@ -79,6 +83,8 @@
           Categoría es obligatoria.
         </small>
       </div>
+
+      
       <div class="field">
         <label for="name">Nombre</label>
         <InputText id="name" v-model.trim="producto.nombre" required="true" autofocus
@@ -87,16 +93,16 @@
       </div>
 
       <div class="field">
-        <label for="description">Descripción</label>
-        <Textarea id="description" v-model="producto.descripcion" rows="3" cols="20" />
+        <label for="description">Unidad de medida</label>
+        <Textarea id="description" v-model="producto.unidad_medida" rows="3" cols="20" />
       </div>
 
       
 
       <div class="formgrid grid">
         <div class="field col">
-          <label for="price">Precio</label>
-          <InputNumber id="price" v-model="producto.precio" mode="currency" currency="USD" locale="en-US" />
+          <label for="price">Precio_compra</label>
+          <InputNumber id="price" v-model="producto.precio_compra" mode="currency" currency="USD" locale="en-US" />
         </div>
         <div class="field col">
           <label for="quantity">Cantidad</label>
@@ -171,7 +177,7 @@ const submitted = ref(false);
 const producto = ref({
   estado: true,
   categoria_id: null,
-  precio: null,
+  precio_compra: null,
   imagen: null,
 });
 const fileUploadRef = ref(null);
@@ -240,7 +246,7 @@ const exportCSV = () => {
 
 
 const abrirNuevoProducto = () => {
-  producto.value = { estado: true, categoria_id: null, precio: null, imagen: null };
+  producto.value = { estado: true, categoria_id: null, precio_compra: null, imagen: null };
   submitted.value = false;
   productDialog.value = true;
 };
@@ -287,7 +293,7 @@ const guardarProducto = async () => {
     getProductos();
 
     if (isNew) {
-      producto.value = { estado: true, categoria_id: null, precio: null, imagen: null };
+      producto.value = { estado: true, categoria_id: null, precio_compra: null, imagen: null };
       submitted.value = false;
     }
   } catch (error) {
@@ -409,12 +415,12 @@ const exportPDF = () => {
 
   doc.text('Lista de Productos', 14, 10);
 
-  const columns = ['ID', 'Nombre', 'Stock', 'Precio', 'Categoría'];
+  const columns = ['ID', 'Nombre', 'Stock', 'Precio_compra', 'Categoría'];
   const rows = productos.value.map(prod => [
     prod.id,
     prod.nombre,
     prod.stock,
-    prod.precio,
+    prod.precio_compra,
     prod.categoria?.nombre || 'Sin categoría'
   ]);
 
@@ -444,3 +450,10 @@ const abrirPDF = (data) => {
 
 
 </script>
+<style scoped>
+::v-deep(.p-datatable-thead > tr > th) {
+    background-color: #65a8d4; /* Cambia a tu color deseado */
+    color: white;              /* Color del texto */
+    font-weight: bold;
+}
+</style>

@@ -1,167 +1,258 @@
 <template>
-    <h1>Nueva Compra</h1>
-    <div class="grid">
-        <div class="md:col-7 col-12">
-            <div class="card">
-                
-                <DataTable ref="dt" :value="productos" dataKey="id" lazy :totalRecords="totalRecords" :loading="loading"
-                    :paginator="true" :rows="rows" @page="onPage"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    :rowsPerPageOptions="[3, 10, 20]"
-                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos">
+    <div class="container">
+        <h1>Nueva Compra</h1>
+        <div class="grid">
+            <!-- Sección de Productos -->
+            <div class="md:col-7 col-12">
+                <div class="card">
+                    <DataTable ref="dt" :value="productos" dataKey="id" lazy :totalRecords="totalRecords" 
+                        :loading="loading" :paginator="true" :rows="rows" @page="onPage"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 20, 50]"
+                        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos">
 
-                    <template #header>
-                        <div class="flex align-items-center justify-content-between">
-                            <h4 class="m-0">Productos</h4>
-                            <span class="p-input-icon-left">
-                                <i class="pi pi-search"></i>
-                                <InputText placeholder="Buscar..." v-model="buscar" @keypress.enter="getProductos" />
-                            </span>
+                        <template #header>
+                            <div class="flex align-items-center justify-content-between">
+                                <h4 class="m-0">Productos Disponibles</h4>
+                                <span class="p-input-icon-left">
+                                    <i class="pi pi-search"></i>
+                                    <InputText placeholder="Buscar por nombre..." v-model.trim="buscar" 
+                                        @keypress.enter="getProductos" />
+                                </span>
+                            </div>
+                        </template>
+
+                        <Column field="nombre" header="NOMBRE" sortable style="min-width:10rem"></Column>
+                        <Column field="stock" header="STOCK" sortable style="min-width:12rem">
+                            <template #body="slotProps">
+                                <Tag :severity="slotProps.data.stock <= 5 ? 'danger' : 'success'">
+                                    {{ slotProps.data.stock }}
+                                </Tag>
+                            </template>
+                        </Column>
+                        <Column header="Imagen" style="min-width:8rem">
+                            <template #body="slotProps">
+                                <img :src="getImageUrl(slotProps.data.imagen)" :alt="slotProps.data.nombre" 
+                                    class="product-image" />
+                            </template>
+                        </Column>
+                        <Column field="precio" header="PRECIO" sortable style="min-width:8rem">
+                            <template #body="slotProps">
+                                {{ formatCurrency(slotProps.data.precio) }}
+                            </template>
+                        </Column>
+                        <Column field="categoria.nombre" header="CATEGORÍA" sortable style="min-width:8rem"></Column>
+                        <Column header="ACCIONES" style="min-width:10rem">
+                            <template #body="slotProps">
+                                <Button icon="pi pi-plus" rounded severity="success" class="mr-2"
+                                    @click="addCarrito(slotProps.data)"
+                                    :disabled="slotProps.data.stock <= 0"
+                                    v-tooltip="slotProps.data.stock <= 0 ? 'Producto sin stock' : 'Agregar al carrito'" />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+            </div>
+
+            <!-- Sección del Carrito y Proveedor -->
+            <div class="md:col-5 col-12">
+                <div class="grid">
+                    <!-- Carrito de Compras -->
+                    <div class="col-12">
+                        <div class="card">
+                            <h4>Carrito de Compras</h4>
+                            <DataTable :value="carrito" :scrollable="true" scrollHeight="300px"
+                                class="p-datatable-sm" :emptyMessage="carritoEmptyMessage">
+                                <Column field="nombre" header="PRODUCTO"></Column>
+                                <Column header="PRECIO UNIT." style="width:120px">
+                                    <template #body="slotProps">
+                                        {{ formatCurrency(slotProps.data.precio) }}
+                                    </template>
+                                </Column>
+                                <Column field="cantidad" header="CANT." style="width:100px"></Column>
+                                <Column header="SUBTOTAL" style="width:120px">
+                                    <template #body="slotProps">
+                                        {{ formatCurrency(slotProps.data.precio * slotProps.data.cantidad) }}
+                                    </template>
+                                </Column>
+                                <Column header="ACCIONES" style="width:180px">
+                                    <template #body="slotProps">
+                                        <Button icon="pi pi-plus" rounded severity="info" class="mr-2 p-button-sm"
+                                            @click="aumentarCantidad(slotProps.data)"
+                                            v-tooltip="'Aumentar cantidad'" />
+                                        <Button icon="pi pi-minus" rounded severity="warning" class="mr-2 p-button-sm"
+                                            @click="reducirCantidad(slotProps.data)"
+                                            :disabled="slotProps.data.cantidad <= 1"
+                                            v-tooltip="'Reducir cantidad'" />
+                                        <Button icon="pi pi-trash" rounded severity="danger" class="p-button-sm"
+                                            @click="quitarCarrito(slotProps.data)"
+                                            v-tooltip="'Eliminar del carrito'" />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                            
+                            <Divider />
+                            
+                            <div class="flex justify-content-between align-items-center p-3">
+                                <span class="text-xl font-bold">TOTAL:</span>
+                                <span class="text-xl font-bold">{{ formatCurrency(totalCarrito) }}</span>
+                            </div>
                         </div>
-                    </template>
+                    </div>
 
-                    <Column field="nombre" header="NOMBRE" sortable style="min-width:16rem"></Column>
-                    <Column field="stock" header="STOCK" sortable style="min-width:12rem"></Column>
-                    <Column header="Imagen">
-                        <template #body="slotProps">
-                            <img :src="`http://127.0.0.1:8000/storage/${slotProps.data.imagen}`" alt="Imagen"
-                                style="width: 50px; height: 50px;" />
-                        </template>
-                    </Column>
-                    <Column field="precio" header="Precio" sortable style="min-width:8rem">
-                        <template #body="slotProps">
-                            {{ formatCurrency(slotProps.data.precio) }}
-                        </template>
-                    </Column>
-                    <Column field="categoria.nombre" header="Categoría" sortable style="min-width:8rem"></Column>
-                    <Column :exportable="false" style="min-width:8rem">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-plus" rounded severity="warning" class="mr-2"
-                                @click="addCarrito(slotProps.data)" />
-                        </template>
-                    </Column>
-                </DataTable>
+                    <!-- Datos del Proveedor -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+                                <h4 class="m-0">Proveedor</h4>
+                                <div class="flex gap-2">
+                                    <Button icon="pi pi-plus" rounded severity="success" 
+                                        @click="visible = true" v-tooltip="'Nuevo proveedor'" />
+                                    <span class="p-input-icon-left">
+                                        <i class="pi pi-search" />
+                                        <InputText placeholder="Buscar por CI/NIT..." v-model.trim="buscar_proveedor" 
+                                            @keypress.enter="busquedaProveedor" />
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div v-if="proveedor_seleccionado && proveedor_seleccionado.id" class="p-3 border-round surface-100">
+                                <h5 class="mt-0">Datos del Proveedor</h5>
+                                <div class="grid">
+                                    <div class="col-6">
+                                        <p><strong>Nombre:</strong> {{ proveedor_seleccionado.nombre }}</p>
+                                        <p><strong>CI/NIT:</strong> {{ proveedor_seleccionado.ci_nit }}</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Teléfono:</strong> {{ proveedor_seleccionado.telefono || 'No registrado' }}</p>
+                                        <Button icon="pi pi-times" label="Cambiar" severity="secondary" 
+                                            class="p-button-sm" @click="proveedor_seleccionado = {}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="p-3 text-center text-500">
+                                <i class="pi pi-info-circle mr-2"></i>
+                                Seleccione o registre un proveedor
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones Finales -->
+                    <div class="col-12">
+                        <div class="card">
+                         
+                     
+                            
+                            <div class="flex justify-content-end gap-2">
+                                <Button label="Limpiar" icon="pi pi-trash" severity="danger" 
+                                    @click="limpiarTodo" :disabled="carrito.length === 0" />
+                                <Button label="Registrar Compra" icon="pi pi-check" severity="success"
+                                    @click="guardarCompra" :disabled="!validarCompra"
+                                    v-tooltip="!validarCompra ? 'Debe tener productos en el carrito y seleccionar un proveedor' : ''" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <Toast ref="toast" />
-
-
-        <div class="md:col-5 col-12">
-            <div class="grid">
-                <div class="col-12">
-                    <div class="card">
-                        <DataTable :value="carrito">
-                            <Column field="nombre" header="Producto"></Column>
-                            <Column field="precio" header="Precio"></Column>
-                            <Column field="cantidad" header="Cantidad"></Column>
-                            <Column :exportable="false">
-                                <template #body="slotProps">
-                                    <Button icon="pi pi-plus" rounded severity="info" class="mr-2"
-                                        @click="aumentarCantidad(slotProps.data)" />
-                                    <Button icon="pi pi-minus" rounded severity="warning" class="mr-2"
-                                        @click="reducirCantidad(slotProps.data)" />
-                                    <Button icon="pi pi-trash" rounded severity="danger" class="mr-2"
-                                        @click="quitarCarrito(slotProps.data)" />
-                                </template>
-                            </Column>
-                        </DataTable>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="flex flex-wrap gap-2 align-items-center justify-content-between">
-                            <h4 class="m-0">Proveedor</h4>
-                            <Button icon="pi pi-plus" rounded severity="danger" class="mr-2" @click="visible = true" />
-
-                            <span class="p-input-icon-left">
-                                <i class="pi pi-search" />
-                                <InputText placeholder="Buscar por CI/NIT..." v-model="buscar_cliente"
-                                    @keypress.enter="busquedaCliente" />
-                            </span>
-                        </div>
-                        <br>
-                        <div v-if="cliente_seleccionado && cliente_seleccionado.id">
-                            <h4>Datos de cliente</h4>
-                            <h5>Nombre: {{ cliente_seleccionado.nombre_completo }}</h5>
-                            <h5>CI/NIT: {{ cliente_seleccionado.ci_nit }}</h5>
-                            <h5>Telefono: {{ cliente_seleccionado.telefono }}</h5>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="p-2 border-round-sm bg-primary font-bold">Carrito</div>
-                    <div class="card">
-                        <InputText class="mr-2" placeholder="Observaciones..." v-model="observaciones" />
-                        <Button label="Registrar pedido" icon="pi pi-check" @click="guardarPedido" />
-                    </div>
-                </div>
-
+        <!-- Diálogo para Nuevo Proveedor -->
+        <Dialog v-model:visible="visible" modal header="Nuevo Proveedor" :style="{ width: '60rem' }"
+            :breakpoints="{ '960px': '75vw', '640px': '90vw' }">
+            <div class="field">
+                <label for="nombre">Nombre Completo *</label>
+                <InputText id="nombre" v-model.trim="proveedor.nombre" 
+                    :class="{ 'p-invalid': submitted && !proveedor.nombre }" />
+                <small class="p-error" v-if="submitted && !proveedor.nombre">
+                    Nombre es obligatorio.
+                </small>
             </div>
-        </div>
+
+            <div class="field">
+                <label for="contacto">Contacto</label>
+                <InputText id="contacto" v-model.trim="proveedor.contacto" />
+            </div>
+
+            <div class="field">
+                <label for="telefono">Teléfono</label>
+                <InputText id="telefono" v-model.trim="proveedor.telefono" />
+            </div>
+
+            <div class="field">
+                <label for="email">email</label>
+                <InputText id="email" v-model.trim="proveedor.email" />
+            </div>
+            <div class="field">
+                <label for="direccion">direccion</label>
+                <InputText id="direccion" v-model.trim="proveedor.direccion" />
+            </div>
+            
+            <div class="field">
+                <label for="ci_nit">CI/NIT *</label>
+                <InputText id="ci_nit" v-model.trim="proveedor.ci_nit" 
+                    :class="{ 'p-invalid': submitted && !proveedor.ci_nit }" />
+                <small class="p-error" v-if="submitted && !proveedor.ci_nit">
+                    CI/NIT es obligatorio.
+                </small>
+            </div>
+            
+            
+            
+            <template #footer>
+                <Button label="Cancelar" icon="pi pi-times" severity="secondary" @click="cerrarDialogo" />
+                <Button label="Guardar" icon="pi pi-check" severity="success" @click="guardarProveedor" />
+            </template>
+        </Dialog>
+
+        <Toast position="top-right" />
     </div>
-
-    <Dialog v-model:visible="visible" maximizable modal header="Nuevo cliente" class="p-fluid"
-        :style="{ width: '50rem' }" :breakpoints="{ '1199px': '75vw', '575px': '90vw' }">
-        <template #header>
-            <div>
-
-            </div>
-        </template>
-        <div class="field">
-            <label for="name">Nombre Completo </label>
-            <InputText id="name" v-model.trim="cliente.nombre_completo" required="true" autofocus
-                :invalid="submitted && !cliente.nombre_completo" />
-            <small class="p-error" v-if="submitted && !cliente.nombre_completo">Nombre es obligatorio.</small>
-        </div>
-        <div class="field">
-            <label for="name">CI/NIT </label>
-            <InputText id="ci_nit" v-model.trim="cliente.ci_nit" required="true" autofocus
-                :invalid="submitted && !cliente.ci_nit" />
-            <small class="p-error" v-if="submitted && !cliente.ci_nit">CI/NIT.</small>
-        </div>
-        <div class="field">
-            <label for="name">Telefono </label>
-            <InputText id="tel" v-model.trim="cliente.telefono" autofocus />
-
-        </div>
-        <template #footer>
-            <Button label="Guardar cliente" icon="pi pi-chek" @click="guardarCliente" autofocus />
-
-        </template>
-    </Dialog>
-
-
 </template>
 
 <script setup>
-
-import clienteService from '../../../services/cliente.service';
-import pedidoService from '../../../services/pedido.service';
+import { ref, computed, onMounted } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import proveedorService from '../../../services/proveedor.service';
+import compraService from '../../../services/compra.service';
 import productoService from '../../../services/producto.service';
-import Toast from 'primevue/toast';
-import { ref, onMounted } from 'vue';
 
+const toast = useToast();
+
+// Variables reactivas
 const productos = ref([]);
 const totalRecords = ref(0);
 const loading = ref(false);
 const rows = ref(10);
 const lazyParams = ref({ page: 0, rows: rows.value });
 const buscar = ref('');
-const buscar_cliente = ref('');
-const cliente_seleccionado = ref({});
+const buscar_proveedor = ref('');
+const proveedor_seleccionado = ref({});
 const carrito = ref([]);
 const observaciones = ref('');
-const toast = ref(null);
-const cliente = ref({});
+const proveedor = ref({});
 const visible = ref(false);
 const submitted = ref(false);
 
-onMounted(() => {
-    getProductos();
+// Computed properties
+const totalCarrito = computed(() => {
+    return carrito.value.reduce((total, item) => total + (item.precio * item.cantidad), 0);
 });
+
+const carritoEmptyMessage = computed(() => {
+    return carrito.value.length === 0 ? 'No hay productos en el carrito' : '';
+});
+
+const validarCompra = computed(() => {
+    return carrito.value.length > 0 && proveedor_seleccionado.value?.id;
+});
+
+// Métodos
+const getImageUrl = (imagePath) => {
+    return imagePath ? `http://127.0.0.1:8000/storage/${imagePath}` : 'https://via.placeholder.com/50';
+};
+
+const formatCurrency = (value) => {
+    return value ? value.toLocaleString('es-BO', { style: 'currency', currency: 'BOB' }) : '$0.00';
+};
 
 const getProductos = async () => {
     loading.value = true;
@@ -172,14 +263,10 @@ const getProductos = async () => {
         productos.value = data.data;
         totalRecords.value = data.total;
     } catch (error) {
-        console.error('Error al obtener productos:', error);
+        showError('Error al cargar productos', error);
     } finally {
         loading.value = false;
     }
-};
-
-const formatCurrency = (value) => {
-    return value ? value.toLocaleString('es-BO', { style: 'currency', currency: 'BOB' }) : '';
 };
 
 const onPage = (event) => {
@@ -188,137 +275,195 @@ const onPage = (event) => {
     getProductos();
 };
 
-const addCarrito = (prod) => {
-    const productoExistente = carrito.value.find(p => p.id === prod.id);
+const addCarrito = (producto) => {
+    if (producto.stock <= 0) {
+        showWarning('Producto sin stock disponible');
+        return;
+    }
+
+    const productoExistente = carrito.value.find(p => p.id === producto.id);
+    
     if (productoExistente) {
+        if (productoExistente.cantidad >= producto.stock) {
+            showWarning('No hay suficiente stock disponible');
+            return;
+        }
         productoExistente.cantidad++;
     } else {
-        carrito.value.push({ id: prod.id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 });
+        carrito.value.push({ 
+            id: producto.id, 
+            nombre: producto.nombre, 
+            precio: producto.precio, 
+            cantidad: 1,
+            stock_disponible: producto.stock
+        });
+    }
+    
+    showSuccess('Producto agregado al carrito');
+};
+
+const quitarCarrito = (producto) => {
+    carrito.value = carrito.value.filter(p => p.id !== producto.id);
+    showSuccess('Producto eliminado del carrito');
+};
+
+const aumentarCantidad = (producto) => {
+    const productoEnCarrito = carrito.value.find(p => p.id === producto.id);
+    if (productoEnCarrito) {
+        if (productoEnCarrito.cantidad >= productoEnCarrito.stock_disponible) {
+            showWarning('No hay suficiente stock disponible');
+            return;
+        }
+        productoEnCarrito.cantidad++;
     }
 };
 
-const quitarCarrito = (prod) => {
-    const index = carrito.value.findIndex(p => p.id === prod.id);
-    if (index !== -1) carrito.value.splice(index, 1);
-};
-
-const aumentarCantidad = (prod) => {
-    prod.cantidad = prod.cantidad + 1
-};
-const reducirCantidad = (prod) => {
-    if(prod.cantidad!=1){
-        prod.cantidad = prod.cantidad - 1
+const reducirCantidad = (producto) => {
+    const productoEnCarrito = carrito.value.find(p => p.id === producto.id);
+    if (productoEnCarrito && productoEnCarrito.cantidad > 1) {
+        productoEnCarrito.cantidad--;
     }
-   
 };
 
-
-
-
-const busquedaCliente = async () => {
-
-    const { data } = await clienteService.buscarCliente(buscar_cliente.value);
-    cliente_seleccionado.value = data;
-
-
+const busquedaProveedor = async () => {
+    const { data } = await proveedorService.buscarProveedor(buscar_proveedor.value);
+    proveedor_seleccionado.value = data;
 };
 
-const guardarPedido = async () => {
+const guardarCompra = async () => {
+    if (!validarCompra.value) {
+        showWarning('Complete todos los campos requeridos');
+        return;
+    }
+
     try {
-        let pedido = {
-            cliente_id: cliente_seleccionado.value.id,
-            productos: [],
-            observaciones: observaciones.value
+        const compraData = {
+            proveedor_id: proveedor_seleccionado.value.id,
+            productos: carrito.value.map(item => ({
+                producto_id: item.id,
+                cantidad: item.cantidad,
+                precio_unitario: item.precio
+            })),
+            observaciones: observaciones.value,
+            total: totalCarrito.value
         };
 
-        // Agregar productos al pedido
-        carrito.value.forEach(prod => {
-            pedido.productos.push({ producto_id: prod.id, cantidad: prod.cantidad });
-        });
-
-        // Crear una copia plana del pedido para evitar la reactividad
-        const pedidoPlana = JSON.parse(JSON.stringify(pedido));
-
-        // Llamada al servicio para guardar el pedido
-        const { data } = await pedidoService.store(pedidoPlana);
-
-        // Mostrar un toast de éxito
-        toast.value?.add({
-            severity: "success",
-            summary: "Éxito",
-            detail: "Pedido registrado correctamente",
-            life: 3000
-        });
-
-        // Limpiar el carrito y los datos del cliente
-        carrito.value = [];
-        cliente_seleccionado.value = {};
-        observaciones.value = "";  // Resetear observaciones
-
-        // Esperar el tiempo del toast antes de recargar la página
-        setTimeout(async () => {
-            // Recargar los productos después de guardar el pedido (actualizar el stock)
-            await obtenerProductosActualizados();
-
-            // Recargar la página para reflejar todos los cambios en la UI
-            window.location.reload();  // Esto recarga la página
-        }, 3500); // Esperar 3500ms para dar tiempo al toast de desaparecer
+        const { data } = await compraService.store(compraData);
+        
+        showSuccess('Compra registrada exitosamente');
+        
+        // Limpiar y resetear
+        setTimeout(() => {
+            carrito.value = [];
+            proveedor_seleccionado.value = {};
+            observaciones.value = '';
+            getProductos(); // Actualizar stock
+        }, 2000);
 
     } catch (error) {
-        // Mostrar un toast de error
-        toast.value?.add({
-            severity: "error",
-            summary: "Error",
-            detail: `Error al registrar el pedido: ${error.response ? error.response.data.message : error.message}`,
-            life: 3000
-        });
+        showError('Error al registrar la compra', error);
     }
 };
 
-
-// Función para obtener los productos actualizados desde el backend
-const obtenerProductosActualizados = async () => {
-    try {
-        // Llamada al servicio para obtener los productos actualizados (por ejemplo, los productos con stock actualizado)
-        const { data } = await productoService.obtenerTodos();  // Reemplaza con tu servicio adecuado
-        // Actualiza el estado de los productos en la interfaz (puedes tener algo como esto en tu app)
-        productos.value = data; // Aquí 'productos' es una variable reactiva que contiene todos los productos
-    } catch (error) {
-        console.error("Error al obtener productos actualizados:", error);
-    }
-};
-
-
-
-const guardarCliente = async () => {
+const guardarProveedor = async () => {
     submitted.value = true;
-    if (cliente.value.nombre_completo.trim()) {
-        try {
-
-            const { data } = await clienteService.store(cliente.value);
-            cliente_seleccionado.value = data;
-            toast.value?.add({
-                severity: "success",
-                summary: "Éxito",
-                detail: "Cliente registrado correctamente",
-                life: 3000
-            });
-            cliente.value = [];
-
-        } catch (error) {
-            // Mostrar un toast de error
-            toast.value?.add({
-                severity: "error",
-                summary: "Error",
-                detail: `Error al registrar al Cliente: ${error.response ? error.response.data.message : error.message}`,
-                life: 3000
-            });
-        }
-        visible.value = false
+    
+    // Validación mejorada
+    if (!proveedor.value.nombre || !proveedor.value.ci_nit) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Advertencia',
+            detail: 'Complete todos los campos obligatorios',
+            life: 3000
+        });
+        return;
     }
 
-
-
+    try {
+        const response = await proveedorService.store(proveedor.value);
+        
+        toast.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Proveedor guardado exitosamente',
+            life: 3000
+        });
+        
+        // Cerrar diálogo y resetear formulario
+        visible.value = false;
+        proveedor_seleccionado.value = response.data; // Asignar el nuevo proveedor
+        proveedor.value = {}; // Limpiar formulario
+        submitted.value = false;
+        
+    } catch (error) {
+        console.error('Error al guardar proveedor:', error);
+        
+        const errorMessage = error.response?.data?.message || 'Hubo un error al guardar el proveedor';
+        
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: errorMessage,
+            life: 5000
+        });
+    }
 };
 
+const cerrarDialogo = () => {
+    visible.value = false;
+    proveedor.value = {};
+    submitted.value = false;
+};
+
+const limpiarTodo = () => {
+    carrito.value = [];
+    observaciones.value = '';
+    showSuccess('Carrito limpiado');
+};
+
+// Helpers para mostrar mensajes
+const showSuccess = (message) => {
+    toast.add({ severity: 'success', summary: 'Éxito', detail: message, life: 3000 });
+};
+
+const showError = (message, error) => {
+    console.error(error);
+    const errorMessage = error.response?.data?.message || error.message;
+    toast.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: `${message}: ${errorMessage}`,
+        life: 5000 
+    });
+};
+
+const showWarning = (message) => {
+    toast.add({ severity: 'warn', summary: 'Advertencia', detail: message, life: 3000 });
+};
+
+const showInfo = (message) => {
+    toast.add({ severity: 'info', summary: 'Información', detail: message, life: 3000 });
+};
+
+// Lifecycle hooks
+onMounted(() => {
+    getProductos();
+});
 </script>
+
+<style scoped>
+.product-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.container {
+    padding: 1rem;
+}
+
+.card {
+    margin-bottom: 1rem;
+}
+</style>

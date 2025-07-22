@@ -1,13 +1,12 @@
 import { Api } from "./Api.services";
 
 export default {
-
-     // Paginación
-     index(page = 1, limit = 10, q = "") {
+    // Paginación
+    index(page = 1, limit = 10, q = "") {
         return Api().get(`/producto?page=${page}&limit=${limit}&q=${q}`);
     },
-    
-    //store
+
+    // Crear un nuevo producto
     store(datos, imagen) {
         const formData = new FormData();
 
@@ -34,14 +33,14 @@ export default {
                 "Content-Type": "multipart/form-data",
             },
         })
-        .then(response => {
-            console.log('Producto creado correctamente:', response);
-            return response;
-        })
-        .catch(error => {
-            console.error('Error al crear el producto:', error);
-            throw error;
-        });
+            .then(response => {
+                console.log('Producto creado correctamente:', response);
+                return response;
+            })
+            .catch(error => {
+                console.error('Error al crear el producto:', error);
+                throw error;
+            });
     },
 
     // Obtener un producto específico por ID
@@ -49,20 +48,22 @@ export default {
         if (!id) throw new Error("El ID es requerido");
         return Api().get(`/producto/${id}`);
     },
-    //show
-    show(id) {
-        return Api().get("/producto/" + id);
-    },
-    //update
-    update(id, datos) {  // Añade datos como parámetro aquí
+
+    // Actualizar un producto
+    update(id, datos) {
         return Api().put("/producto/" + id, datos);
     },
-    //destroy
+
+    // Eliminar un producto
     destroy(id) {
         return Api().delete("/producto/" + id);
     },
 
-    buscarproducto(q=""){
-        return Api().get(`/producto/buscar-producto?q=${q}`)
-    }
+    // Buscar productos
+    buscarProducto(q = "") {
+        return Api().get(`/producto/buscar-producto?q=${q}`);
+    },
+
+    // Actualizar el stock de un producto
+  
 };
