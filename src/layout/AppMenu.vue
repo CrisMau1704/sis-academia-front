@@ -1,74 +1,125 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
-import authService from '../services/auth.service';  // Asegúrate de que la ruta es correcta
+import authService from '../services/auth.service';
 
 const model = ref([]);
 
-// Verifica si el rol se obtiene correctamente desde el servicio
 onMounted(() => {
-    const rol = authService.getUserRole();  // Obtener el rol del usuario desde el servicio
+    const rol = authService.getUserRole();
+    console.log('Rol del usuario:', rol);
 
-    console.log('Rol del usuario:', rol);  // Verifica si el rol se obtiene correctamente
+// En tu archivo del menú
+if (rol === 'super_admin') {
+    model.value = [
+        {
+            label: 'Inicio',
+            items: [
+                { label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/admin/dashboard' }
+            ]
+        },
+        {
+            label: 'Configuración General',
+            items: [
+                { label: 'Sucursales', icon: 'pi pi-fw pi-map-marker', to: '/admin/sucursales' },
+                { label: 'Disciplinas', icon: 'pi pi-fw pi-star', to: '/admin/disciplinas' },
+                { label: 'Modalidades', icon: 'pi pi-fw pi-briefcase', to: '/admin/modalidades' },
+                
+                { label: 'Horarios', icon: 'pi pi-fw pi-clock', to: '/admin/horarios' },
+                { label: 'Entrenadores', icon: 'pi pi-fw pi-id-card', to: '/admin/entrenadores' }
+            ]
+        },
+        {
+            label: 'Gestión de Estudiantes',
+            items: [
+                { label: 'Estudiantes', icon: 'pi pi-fw pi-users', to: '/admin/estudiantes' },
+                { label: 'Inscripciones', icon: 'pi pi-fw pi-list', to: '/admin/inscripciones' },
+                { 
+                    label: 'Asignar Días', 
+                    icon: 'pi pi-fw pi-calendar-plus', 
+                    to: '/admin/asignar-dias',
+                    badge: 'NUEVO'
+                }
+            ]
+        },
+        {
+            label: 'Control de Asistencia',
+            items: [
+                { 
+                    label: 'Registro Diario', 
+                    icon: 'pi pi-fw pi-check-square', 
+                    to: '/admin/registro-asistencia' 
+                },
+                { 
+                    label: 'Justificar Permisos', 
+                    icon: 'pi pi-fw pi-exclamation-triangle', 
+                    to: '/admin/permisos' 
+                },
+                { 
+                    label: 'Recuperar Clases', 
+                    icon: 'pi pi-fw pi-refresh', 
+                    to: '/admin/recuperaciones' 
+                }
+            ]
+        },
+        {
+            label: 'Pagos y Mensualidades',
+            items: [
+                { label: 'Registrar Pago', icon: 'pi pi-fw pi-credit-card', to: '/admin/registrar-pago' },
+                { label: 'Historial de Pagos', icon: 'pi pi-fw pi-history', to: '/admin/pagos' },
+                { label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', to: '/admin/vencimientos' }
+            ]
+        },
+        {
+            label: 'Reportes',
+            items: [
+                { 
+                    label: 'Clases Restantes', 
+                    icon: 'pi pi-fw pi-chart-line', 
+                    to: '/admin/reportes/clases-restantes',
+                    description: 'Ver cuántas clases le quedan a cada estudiante'
+                },
+                { 
+                    label: 'Asistencia Mensual', 
+                    icon: 'pi pi-fw pi-chart-bar', 
+                    to: '/admin/reportes/asistencia' 
+                },
+                { 
+                    label: 'Permisos Utilizados', 
+                    icon: 'pi pi-fw pi-exclamation-circle', 
+                    to: '/admin/reportes/permisos' 
+                },
+                { 
+                    label: 'Estudiantes por Vencer', 
+                    icon: 'pi pi-fw pi-bell', 
+                    to: '/admin/reportes/por-vencer',
+                    badge: 'URGENTE'
+                }
+            ]
+        },
+        {
+            label: 'Administración',
+            items: [
+                { label: 'Usuarios', icon: 'pi pi-fw pi-user', to: '/admin/usuario' },
+                { label: 'Roles y Permisos', icon: 'pi pi-fw pi-shield', to: '/admin/roles' },
+                { label: 'Configuración Sistema', icon: 'pi pi-fw pi-cog', to: '/admin/configuracion' }
+            ]
+        }
+    ];
 
-    // Definir el menú según el rol del usuario
-    if (rol === 'super_admin') {
-        model.value = [
-            {
-                label: 'Inicio',
-                items: [{ label: 'Administrador', icon: 'pi pi-fw pi-home', to: '/admin/dashboard' }]
-            },
-            {
-                label: 'Gestion Platos y productos',
-                items: [
-                    { label: 'Categorias', icon: 'pi pi-fw pi-check-square', to: '/admin/categoria' },
-                    { label: 'Productos', icon: 'pi pi-fw pi-id-card', to: '/admin/producto' },
-                    { label: 'Proveedores', icon: 'pi pi-fw pi-user-plus', to: '/admin/proveedor' },
-                    { label: 'Platos', icon: 'pi pi-fw pi-list', to: '/admin/plato' }
-                ]
-            },
-            {
-                label: 'Usuarios',
-                items: [
-                    { label: 'Usuarios', icon: 'pi pi-fw pi-user', to: '/admin/usuario', badge: 'NEW' },
-                    { label: 'Clientes', icon: 'pi pi-fw pi-user-plus', to: '/admin/cliente', target: '_blank' }
-                ]
-            },
-            {
-                label: 'Gestion Ventas',
-                items: [
-                    { label: 'Lista ventas', icon: 'pi pi-fw pi-list', to: '/admin/pedido' },
-                    { label: 'Nueva Venta', icon: 'pi pi-fw pi-plus', to: '/admin/pedido/nuevo' }
-                ]
-            },
-            {
-                label: 'Gestion Compras',
-                items: [
-                    { label: 'Lista de compras', icon: 'pi pi-fw pi-list', to: '/admin/compras' },
-                    { label: 'Nueva Compra', icon: 'pi pi-fw pi-plus', to: '/admin/compras/nuevo' }
-                ]
-            },
-            {
-                label: 'Configuracion',
-                icon: 'pi pi-fw pi-briefcase',
-                to: '/config',
-                items: [
-                    { label: 'Roles y Permisos', icon: 'pi pi-fw pi-user', to: '/admin/roles' }
-                ]
-            }
-        ];
+
     } else if (rol === 'vendedor') {
         model.value = [
             {
-                label: 'Gestion Ventas',
+                label: 'Gestión de estudiantes',
                 items: [
-                    { label: 'Lista ventas', icon: 'pi pi-fw pi-list', to: '/admin/pedido' },
-                    { label: 'Nueva Venta', icon: 'pi pi-fw pi-plus', to: '/admin/pedido/nuevo' }
+                    { label: 'Estudiantes', icon: 'pi pi-fw pi-users', to: '/admin/estudiantes' },
+                    { label: 'Clases restantes', icon: 'pi pi-fw pi-chart-line', to: '/admin/reportes' }
                 ]
             }
         ];
-    } else {
-        console.log('Rol no reconocido:', rol);  // Si no hay rol, imprime un mensaje de error
+    }else {
+        console.log('Rol no reconocido:', rol);
     }
 });
 </script>
@@ -82,48 +133,119 @@ onMounted(() => {
     </ul>
 </template>
 
-<style lang="scss"></style>
-
-<!--<style lang="scss">
-.layout-sidebar {
-  background-color: #1f2d3d !important;
-  color: white;
-}
-
+<style lang="scss">
+/* ESTILOS QUE GARANTIZAN LETRAS BLANCAS EN TODO EL MENÚ */
 
 .layout-menu {
-  background-color: #1f2d3d !important; // fondo oscuro elegante
+  background-color: #1f2d3d !important;
+  margin: 0;
+  padding: 1rem 0;
+  
+  /* FORZAR TEXTO BLANCO EN TODOS LOS ELEMENTOS */
+  * {
+    color: #ffffff !important;
+  }
 
-  li {
-    margin: 0.3rem 0;
+  /* Estilos específicos para garantizar visibilidad */
+  .p-menuitem-text,
+  .p-menu-label,
+  .menu-label,
+  span,
+  a,
+  .p-menuitem-content,
+  .p-submenu-header,
+  .p-menuitem-link {
+    color: #ffffff !important;
+    font-weight: 500;
+  }
 
-    a {
-      display: block;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
-      color: #ffffff !important; // texto blanco
-      text-decoration: none;
+  /* Íconos blancos */
+  .pi,
+  .p-menuitem-icon,
+  i {
+    color: #ffffff !important;
+  }
 
-      transition: background-color 0.3s, color 0.3s;
-
-      &:hover {
-        background-color: #2d3f50 !important; // color al pasar el mouse
-        color: #ffd700 !important; // dorado
-      }
-
-      .pi {
-        margin-right: 0.5rem;
-        color: #ffffff !important; // iconos blancos
-      }
+  /* Estados hover */
+  a:hover,
+  .p-menuitem-link:hover {
+    * {
+      color: #00d8ff !important;
     }
+    
+    .pi,
+    .p-menuitem-icon,
+    i {
+      color: #00d8ff !important;
+    }
+  }
 
-    &.active-menuitem > a {
-      background-color: #32475b !important; // fondo de item activo
-      color: #00d8ff !important; // color cyan para item activo
+  /* Estados activos */
+  .active-menuitem,
+  .router-link-active,
+  .p-highlight {
+    * {
+      color: #00d8ff !important;
+    }
+    
+    .pi,
+    .p-menuitem-icon,
+    i {
+      color: #00d8ff !important;
+    }
+  }
+
+  /* Badges blancos con fondo */
+  .p-badge,
+  .badge {
+    color: #ffffff !important;
+    background-color: #3b82f6 !important;
+  }
+
+  /* Separadores */
+  .menu-separator {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    margin: 0.75rem 1rem;
+  }
+
+  /* Submenús */
+  .p-submenu-list {
+    background-color: #2d3f50 !important;
+    
+    * {
+      color: #ffffff !important;
     }
   }
 }
-</style>-->
 
+/* Si usas PrimeVue, estas reglas adicionales son CRÍTICAS */
+.p-menu,
+.p-tieredmenu,
+.p-panelmenu {
+  background: #1f2d3d !important;
+  
+  * {
+    color: #ffffff !important;
+  }
+  
+  .p-menuitem-text {
+    color: #ffffff !important;
+  }
+  
+  .p-menuitem-icon {
+    color: #ffffff !important;
+  }
+}
 
+/* Regla NUCLEAR - Garantiza que TODO en el sidebar sea blanco */
+.layout-sidebar * {
+  color: #ffffff !important;
+}
 
+/* Excepción solo para inputs, pero mantiene el menú blanco */
+.layout-sidebar input,
+.layout-sidebar textarea,
+.layout-sidebar select {
+  color: #1f2d3d !important;
+}
+</style>

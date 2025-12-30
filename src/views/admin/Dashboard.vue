@@ -27,14 +27,14 @@
             <h3 class="m-0">Ventas diarias (últimos 7 días)</h3>
             <Dropdown v-model="selectedDays" :options="[7, 15, 30]" optionLabel="" placeholder="Días" class="w-6rem" />
           </div>
-          <Chart type="bar" :data="salesChartData" :options="salesChartOptions" height="300px" />
+          <Chart type="bar" :data="salesChartData" :options="salesChartOptions" :height="300" />
         </div>
       </div>
 
       <div class="col-12 lg:col-4 mt-4">
         <div class="surface-card shadow-2 p-4 border-round h-full">
           <h3 class="m-0 mb-4">Platos más vendidos</h3>
-          <Chart type="pie" :data="topDishesData" :options="pieChartOptions" height="300px" />
+          <Chart type="pie" :data="topDishesData" :options="pieChartOptions" :height="300" />
         </div>
       </div>
 
@@ -69,14 +69,16 @@
       <div class="col-12 md:col-6 mt-4">
         <div class="surface-card shadow-2 p-4 border-round h-full">
           <h3 class="m-0 mb-4">Ventas por mesero</h3>
-          <Chart type="horizontalBar" :data="salesByWaiterData" :options="horizontalBarOptions" height="300px" />
+         <Chart type="bar" :data="salesByWaiterData" :options="horizontalBarOptions" :height="300" />
+
+
         </div>
       </div>
 
       <div class="col-12 md:col-6 mt-4">
         <div class="surface-card shadow-2 p-4 border-round h-full">
           <h3 class="m-0 mb-4">Horarios pico</h3>
-          <Chart type="line" :data="peakHoursData" :options="lineChartOptions" height="300px" />
+          <Chart type="line" :data="peakHoursData" :options="lineChartOptions" :height="300" />
         </div>
       </div>
     </div>
@@ -175,13 +177,11 @@ const recentOrders = ref([
 // Ventas por mesero
 const salesByWaiterData = ref({});
 const horizontalBarOptions = ref({
-  indexAxis: 'y',
+  indexAxis: 'y', // ← esto hace que las barras sean horizontales
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: {
-      display: false
-    },
+    legend: { display: false },
     tooltip: {
       callbacks: {
         label: function(context) {
@@ -201,6 +201,7 @@ const horizontalBarOptions = ref({
     }
   }
 });
+
 
 // Horarios pico
 const peakHoursData = ref({});
@@ -281,14 +282,7 @@ onMounted(async () => {
   };
 
   // Cargar datos reales del backend
-  try {
-    const ventasResponse = await pedidoService.getDashboardData();
-    // Actualizar los datos con la respuesta del backend
-    // summaryCards.value[0].value = formatCurrency(ventasResponse.ventasHoy);
-    // etc...
-  } catch (error) {
-    console.error('Error al cargar datos del dashboard:', error);
-  }
+
 });
 </script>
 

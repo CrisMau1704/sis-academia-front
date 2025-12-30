@@ -81,4 +81,24 @@ const isOutsideClicked = (event) => {
     </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+/* Añade estos estilos al final del archivo */
+
+.layout-wrapper {
+  background-color: #1e1e2e !important; /* Fondo general oscuro */
+  min-height: 100vh;
+}
+
+.layout-sidebar {
+  background-color: #252a3d !important; /* Fondo oscuro para la barra lateral */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.layout-main-container {
+  background-color: #1e1e2e !important; /* Fondo del área principal */
+}
+
+.layout-main {
+  background-color: #1e1e2e !important; /* Fondo del contenido */
+}
+</style>

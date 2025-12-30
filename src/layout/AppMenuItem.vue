@@ -90,4 +90,100 @@ const checkActiveRoute = (item) => {
     </li>
 </template>
 
-<style lang="scss" scoped></style>
+
+<style lang="scss" scoped>
+/* Añade o modifica estos estilos */
+
+.menu-item-link {
+  color: #e2e8f0 !important; /* Texto blanco/plateado */
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  margin: 0.25rem 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &:hover {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.2) 0%, rgba(102, 126, 234, 0.1) 100%) !important;
+    color: white !important;
+    transform: translateX(4px);
+    
+    .menu-item-icon {
+      color: #667eea !important;
+      transform: scale(1.1);
+    }
+  }
+  
+  &.active {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    
+    .menu-item-icon {
+      color: white !important;
+    }
+  }
+}
+
+.menu-item-icon {
+  color: #a0aec0 !important;
+  font-size: 1.1rem;
+  margin-right: 0.75rem;
+  transition: all 0.3s ease;
+  width: 24px;
+  text-align: center;
+}
+
+.menu-item-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex: 1;
+  color: inherit;
+}
+
+.menu-item-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* Para los submenús */
+.submenu-item {
+  color: #cbd5e0 !important;
+  padding: 0.6rem 1rem 0.6rem 3rem !important;
+  font-size: 0.85rem;
+  
+  &:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+  
+  &.active {
+    color: white !important;
+    background: rgba(102, 126, 234, 0.2) !important;
+  }
+}
+
+/* Si usas PrimeVue */
+::v-deep(.p-menuitem-link) {
+  color: #e2e8f0 !important;
+  
+  &:hover {
+    background: rgba(102, 126, 234, 0.1) !important;
+  }
+}
+
+::v-deep(.p-menuitem-text) {
+  color: inherit !important;
+}
+
+::v-deep(.p-menuitem-icon) {
+  color: #a0aec0 !important;
+}
+</style>
