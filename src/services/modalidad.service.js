@@ -20,4 +20,8 @@ export default {
     delete(id) {
         return Api().delete(`/modalidades/${id}`);
     },
+    
+    obtenerTodas() {
+        return Api().get('/modalidades'); // <-- CAMBIAR axios por Api()
+    }
 };

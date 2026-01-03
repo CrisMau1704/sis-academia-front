@@ -1,26 +1,33 @@
 import { Api } from "./Api.services";
 
 export default {
-  
-   // Paginación
-     index(page = 1, limit = 10, q = "") {
+    // Obtener estudiantes con paginación y búsqueda
+    index(page = 1, limit = 100, q = "") {
         return Api().get(`/estudiantes?page=${page}&limit=${limit}&q=${q}`);
     },
     
-   store(datos) {
+    // Crear nuevo estudiante
+    store(datos) {
         return Api().post("/estudiantes", datos);
     },
 
-  show(id) {
-    return Api().get(`/estudiantes/${id}`);
-  },
+    // Obtener un estudiante por ID
+    show(id) {
+        return Api().get(`/estudiantes/${id}`);
+    },
 
+    // Actualizar estudiante
+    update(id, datos) {
+        return Api().put(`/estudiantes/${id}`, datos);
+    },
 
-  update(id, datos) {
-    return Api().put(`/estudiantes/${id}`, datos);
-  },
-
-  delete(id) {
-    return Api().delete(`/estudiantes/${id}`);
-  },
+    // Eliminar estudiante
+    delete(id) {
+        return Api().delete(`/estudiantes/${id}`);
+    },
+    
+    // Obtener todos los estudiantes (sin paginación)
+    obtenerTodos() {
+        return Api().get('/estudiantes'); // <-- CAMBIAR axios por Api()
+    }
 };

@@ -19,71 +19,141 @@
 
     <!-- Tabla de Horarios -->
     <div class="card">
-      <DataTable :value="horariosFiltrados" :paginator="true" :rows="10" dataKey="id"
-                 :loading="cargando" paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} horarios"
-                 :rowsPerPageOptions="[5, 10, 20]">
-        
-        <template #header>
-          <div class="flex align-items-center justify-content-between">
-            <h4 class="m-0">Lista de Horarios</h4>
-            <span class="p-input-icon-left">
-              <i class="pi pi-search"></i>
-              <InputText placeholder="Buscar..." v-model="buscar" @keyup.enter="cargarHorarios" />
-            </span>
-          </div>
-        </template>
+     <!-- Tabla de Horarios - En tu archivo actual -->
+<DataTable :value="horariosFiltrados" :paginator="true" :rows="10" dataKey="id"
+           :loading="cargando" 
+           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} horarios"
+           :rowsPerPageOptions="[5, 10, 20]">
+  
+  <template #header>
+    <div class="flex align-items-center justify-content-between">
+      <h4 class="m-0">Lista de Horarios</h4>
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <InputText placeholder="Buscar..." v-model="buscar" @keyup.enter="cargarHorarios" />
+      </span>
+    </div>
+  </template>
 
-        <Column field="id" header="ID" :sortable="true" style="width: 70px"></Column>
-        <Column header="Horario" style="width: 150px">
-          <template #body="slotProps">
-            <div class="flex flex-column">
-              <Tag :value="slotProps.data.dia_semana" class="mb-1" />
-              <span>{{ slotProps.data.hora_inicio.slice(0,5) }} - {{ slotProps.data.hora_fin.slice(0,5) }}</span>
-            </div>
-          </template>
-        </Column>
-        <Column field="nombre" header="Clase" :sortable="true"></Column>
-        <Column header="Disciplina">
-          <template #body="slotProps">
-            <Chip :label="slotProps.data.disciplina?.nombre || '--'" 
-                  :style="{ backgroundColor: slotProps.data.color }" />
-          </template>
-        </Column>
-        <Column header="Sucursal">
-          <template #body="slotProps">
-            {{ slotProps.data.sucursal?.nombre || '--' }}
-          </template>
-        </Column>
-        <Column header="Entrenador">
-          <template #body="slotProps">
-            {{ slotProps.data.entrenador?.nombres || '--' }}
-          </template>
-        </Column>
-        <Column header="Cupo" style="width: 120px">
-          <template #body="slotProps">
-            <div class="flex flex-column">
-              <ProgressBar :value="(slotProps.data.cupo_actual / slotProps.data.cupo_maximo) * 100" 
-                           :showValue="false" class="mb-1" />
-              <span>{{ slotProps.data.cupo_actual }}/{{ slotProps.data.cupo_maximo }}</span>
-            </div>
-          </template>
-        </Column>
-        <Column header="Estado" style="width: 100px">
-          <template #body="slotProps">
-            <Tag :severity="getSeverityEstado(slotProps.data.estado)" 
-                 :value="slotProps.data.estado" />
-          </template>
-        </Column>
-        <Column header="Acciones" style="width: 120px">
-          <template #body="slotProps">
-            <Button icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-sm mr-1" 
-                    @click="editarHorario(slotProps.data)" />
-            <Button icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm" 
-                    @click="confirmarEliminar(slotProps.data)" />
-          </template>
-        </Column>
-      </DataTable>
+  <!-- COLUMNAS EN ORDEN LÓGICO -->
+  <Column field="id" header="ID" :sortable="true" style="width: 70px"></Column>
+  
+  <!-- 1. Día de la semana -->
+  <Column header="Día" style="width: 120px" :sortable="true" sortField="dia_semana">
+    <template #body="slotProps">
+      <div class="flex flex-column align-items-start">
+        <Tag :value="slotProps.data.dia_semana" 
+             :severity="getSeverityDia(slotProps.data.dia_semana)" 
+             class="mb-1" />
+        <small v-if="slotProps.data.es_recurrente" class="text-xs text-500">
+          <i class="pi pi-sync mr-1"></i>Recurrente
+        </small>
+      </div>
+    </template>
+  </Column>
+  
+  <!-- 2. Horario (hora inicio - fin) -->
+  <Column header="Horario" style="width: 110px">
+    <template #body="slotProps">
+      <div class="flex flex-column align-items-center">
+        <span class="font-bold">{{ slotProps.data.hora_inicio?.slice(0,5) || '--:--' }}</span>
+        <i class="pi pi-arrow-down text-xs text-500 my-1"></i>
+        <span class="font-bold">{{ slotProps.data.hora_fin?.slice(0,5) || '--:--' }}</span>
+        <small class="text-xs text-500 mt-1">
+          {{ slotProps.data.duracion_minutos || 60 }} min
+        </small>
+      </div>
+    </template>
+  </Column>
+  
+  <!-- 3. Nombre de la clase -->
+  <Column header="Clase" :sortable="true" sortField="nombre" style="min-width: 150px">
+    <template #body="slotProps">
+      <div class="flex flex-column">
+        <span class="font-medium">{{ slotProps.data.nombre }}</span>
+        <small v-if="slotProps.data.descripcion" class="text-500 text-xs truncate">
+          {{ slotProps.data.descripcion }}
+        </small>
+      </div>
+    </template>
+  </Column>
+  
+  <!-- 4. Disciplina -->
+  <Column header="Disciplina" :sortable="true" sortField="disciplina.nombre">
+    <template #body="slotProps">
+      <Chip :label="slotProps.data.disciplina?.nombre || '--'" 
+            :style="{ 
+              backgroundColor: slotProps.data.color || '#3B82F6',
+              color: 'white'
+            }" />
+    </template>
+  </Column>
+  
+  <!-- 5. Sucursal -->
+  <Column header="Sucursal" :sortable="true" sortField="sucursal.nombre">
+    <template #body="slotProps">
+      {{ slotProps.data.sucursal?.nombre || '--' }}
+    </template>
+  </Column>
+  
+  <!-- 6. Entrenador -->
+  <Column header="Entrenador" :sortable="true" sortField="entrenador.nombres">
+    <template #body="slotProps">
+      <div class="flex align-items-center">
+        <Avatar :label="getInicialesEntrenador(slotProps.data.entrenador)" 
+                size="small" 
+                shape="circle" 
+                class="mr-2" 
+                :style="{ backgroundColor: slotProps.data.color || '#3B82F6' }" />
+        <span>{{ slotProps.data.entrenador?.nombres || '--' }} {{ slotProps.data.entrenador?.apellidos || '--' }}</span>
+      </div>
+    </template>
+  </Column>
+  
+  <!-- 7. Cupo -->
+  <Column header="Cupo" style="width: 130px">
+    <template #body="slotProps">
+      <div class="flex flex-column">
+        <div class="flex justify-content-between align-items-center mb-1">
+          <span class="text-sm">{{ slotProps.data.cupo_actual }}/{{ slotProps.data.cupo_maximo }}</span>
+          <span class="text-xs font-bold" 
+                :class="getColorCupo(slotProps.data.cupo_actual, slotProps.data.cupo_maximo)">
+            {{ Math.round((slotProps.data.cupo_actual / slotProps.data.cupo_maximo) * 100) }}%
+          </span>
+        </div>
+        <ProgressBar :value="(slotProps.data.cupo_actual / slotProps.data.cupo_maximo) * 100" 
+                     :showValue="false" 
+                     :style="{ height: '6px' }" />
+      </div>
+    </template>
+  </Column>
+  
+  <!-- 8. Estado -->
+  <Column header="Estado" style="width: 100px">
+    <template #body="slotProps">
+      <Tag :severity="getSeverityEstado(slotProps.data.estado)" 
+           :value="slotProps.data.estado"
+           rounded />
+    </template>
+  </Column>
+  
+  <!-- 9. Acciones -->
+  <Column header="Acciones" style="width: 100px">
+    <template #body="slotProps">
+      <div class="flex gap-1">
+        <Button icon="pi pi-pencil" 
+                class="p-button-rounded p-button-text p-button-sm" 
+                @click="editarHorario(slotProps.data)"
+                v-tooltip="'Editar'" />
+        <Button icon="pi pi-trash" 
+                class="p-button-rounded p-button-text p-button-danger p-button-sm" 
+                @click="confirmarEliminar(slotProps.data)"
+                v-tooltip="'Eliminar'" />
+      </div>
+    </template>
+  </Column>
+</DataTable>
+<Toast ref="toast" />
     </div>
 
     <!-- Diálogo Nuevo/Editar Horario -->
@@ -97,14 +167,34 @@
           </div>
         </div>
         
-        <div class="col-12 md:col-6">
-          <div class="field">
-            <label for="dia_semana">Día de la Semana *</label>
-            <Dropdown id="dia_semana" v-model="horarioForm.dia_semana" :options="diasSemana" 
-                      placeholder="Seleccionar día" class="w-full" />
-          </div>
+        <div class="col-12">
+  <div class="field">
+    <label for="dias_semana">Días de la Semana *</label>
+    
+    <!-- MultiSelect para seleccionar múltiples días -->
+    <MultiSelect 
+      id="dias_semana"
+      v-model="horarioForm.dias_semana_seleccionados"
+      :options="diasSemana"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Seleccione días"
+      display="chip"
+      class="w-full"
+      :maxSelectedLabels="3"
+      :showToggleAll="false"
+    >
+      <template #option="slotProps">
+        <div class="flex align-items-center">
+          <i class="pi pi-calendar mr-2"></i>
+          <span>{{ slotProps.option.label }}</span>
         </div>
-        
+      </template>
+    </MultiSelect>
+    
+    <small class="text-500">Seleccione uno o más días para este horario</small>
+  </div>
+</div>
         <div class="col-12 md:col-6">
           <div class="field">
             <label>Duración: {{ duracionCalculada }}</label>
@@ -196,10 +286,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
+import Toast from 'primevue/toast'; // Importación del componente
 
-// Services (usa tus métodos existentes)
+// Services
 import horarioService from '@/services/horario.service';
 import sucursalService from '@/services/sucursal.service';
 import disciplinaService from '@/services/disciplina.service';
@@ -222,9 +312,14 @@ import InputNumber from 'primevue/inputnumber';
 import ColorPicker from 'primevue/colorpicker';
 import Textarea from 'primevue/textarea';
 import ConfirmDialog from 'primevue/confirmdialog';
+import Avatar from 'primevue/avatar';
+// No necesitas importar Toast aquí ya que lo importaste arriba
 
-const toast = useToast();
 const confirm = useConfirm();
+
+// ========== ESTA ES LA LÍNEA QUE FALTA ==========
+const toast = ref(null);
+// ================================================
 
 // Estados
 const horarios = ref([]);
@@ -235,11 +330,21 @@ const modalidades = ref([]);
 const cargando = ref(false);
 const buscar = ref('');
 
+// ... resto de tu código ...
+
 // Filtros
 const filtroSucursal = ref(null);
 const filtroDisciplina = ref(null);
 const filtroDia = ref(null);
-const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const diasSemana = ref([
+  { label: 'Lunes', value: 'Lunes' },
+  { label: 'Martes', value: 'Martes' },
+  { label: 'Miércoles', value: 'Miércoles' },
+  { label: 'Jueves', value: 'Jueves' },
+  { label: 'Viernes', value: 'Viernes' },
+  { label: 'Sábado', value: 'Sábado' },
+  { label: 'Domingo', value: 'Domingo' }
+]);
 
 // Diálogos
 const dialogoHorario = ref(false);
@@ -290,7 +395,8 @@ function crearHorarioVacio() {
   return {
     id: null,
     nombre: '',
-    dia_semana: null,
+    dias_semana_seleccionados: [], // ← Array para múltiples días
+    dia_semana: null, // ← Mantener para compatibilidad
     hora_inicio_obj: null,
     hora_fin_obj: null,
     disciplina_id: null,
@@ -299,7 +405,8 @@ function crearHorarioVacio() {
     modalidad_id: null,
     cupo_maximo: 15,
     color: '#3B82F6',
-    descripcion: ''
+    descripcion: '',
+    es_recurrente: false // ← Nuevo campo
   };
 }
 
@@ -358,7 +465,7 @@ async function cargarDatos() {
     
   } catch (error) {
     console.error('Error cargando datos:', error);
-    toast.add({
+    toast.value.add({
       severity: 'error',
       summary: 'Error',
       detail: 'No se pudieron cargar los datos',
@@ -382,14 +489,16 @@ function abrirDialogoNuevo() {
 function editarHorario(horario) {
   tituloDialogo.value = 'Editar Horario';
   
-  // Convertir horas string a objetos Date para el Calendar
+  // Convertir horas string a objetos Date
   const horaInicioObj = horario.hora_inicio ? crearFechaDesdeHora(horario.hora_inicio) : null;
   const horaFinObj = horario.hora_fin ? crearFechaDesdeHora(horario.hora_fin) : null;
   
+  // Para edición, solo mostramos el día actual (por simplicidad)
   horarioForm.value = {
     id: horario.id,
-    nombre: horario.nombre,
-    dia_semana: horario.dia_semana,
+    nombre: horario.nombre.replace(/\s*\([^)]*\)$/, ''), // Remover "(Día)" si existe
+    dias_semana_seleccionados: [horario.dia_semana], // Array con un solo día
+    dia_semana: horario.dia_semana, // Mantener para compatibilidad
     hora_inicio_obj: horaInicioObj,
     hora_fin_obj: horaFinObj,
     disciplina_id: horario.disciplina_id,
@@ -397,8 +506,9 @@ function editarHorario(horario) {
     entrenador_id: horario.entrenador_id,
     modalidad_id: horario.modalidad_id,
     cupo_maximo: horario.cupo_maximo,
-    color: horario.color,
-    descripcion: horario.descripcion || ''
+    color: horario.color || '#3B82F6',
+    descripcion: horario.descripcion || '',
+    es_recurrente: false
   };
   
   dialogoHorario.value = true;
@@ -414,10 +524,14 @@ function crearFechaDesdeHora(horaString) {
 
 async function guardarHorario() {
   // Validaciones básicas
-  if (!horarioForm.value.nombre || !horarioForm.value.dia_semana || 
-      !horarioForm.value.disciplina_id || !horarioForm.value.sucursal_id || 
-      !horarioForm.value.entrenador_id || !horarioForm.value.cupo_maximo) {
-    toast.add({
+  if (!horarioForm.value.nombre || 
+      !horarioForm.value.dias_semana_seleccionados || 
+      horarioForm.value.dias_semana_seleccionados.length === 0 ||
+      !horarioForm.value.disciplina_id || 
+      !horarioForm.value.sucursal_id || 
+      !horarioForm.value.entrenador_id || 
+      !horarioForm.value.cupo_maximo) {
+    toast.value.add({
       severity: 'warn',
       summary: 'Validación',
       detail: 'Por favor complete todos los campos requeridos (*)',
@@ -425,83 +539,179 @@ async function guardarHorario() {
     });
     return;
   }
-  
+
+  // Validar horas
+  if (!horarioForm.value.hora_inicio_obj || !horarioForm.value.hora_fin_obj) {
+    toast.value.add({
+      severity: 'warn',
+      summary: 'Validación',
+      detail: 'Por favor seleccione hora de inicio y fin',
+      life: 3000
+    });
+    return;
+  }
+
+  // Validar que hora fin sea mayor que hora inicio
+  const inicio = new Date(horarioForm.value.hora_inicio_obj);
+  const fin = new Date(horarioForm.value.hora_fin_obj);
+  if (fin <= inicio) {
+    toast.value.add({
+      severity: 'error',
+      summary: 'Error en horario',
+      detail: 'La hora de fin debe ser mayor que la hora de inicio',
+      life: 3000
+    });
+    return;
+  }
+
+  // ========== NUEVA VALIDACIÓN: Verificar conflictos con horarios existentes ==========
+  const tieneConflictos = verificarConflictosFrontend();
+  if (tieneConflictos) {
+    // El mensaje de error ya se mostró en la función verificarConflictosFrontend
+    return;
+  }
+
   guardando.value = true;
   
   try {
-    // Preparar datos para enviar - SIN campos temporales
-    const datos = {
+    // Preparar datos base
+    const datosBase = {
       nombre: horarioForm.value.nombre,
-      dia_semana: horarioForm.value.dia_semana,
       disciplina_id: horarioForm.value.disciplina_id,
       sucursal_id: horarioForm.value.sucursal_id,
       entrenador_id: horarioForm.value.entrenador_id,
-      modalidad_id: horarioForm.value.modalidad_id,
+      modalidad_id: horarioForm.value.modalidad_id || null,
       cupo_maximo: horarioForm.value.cupo_maximo,
+      cupo_actual: 0,
       color: horarioForm.value.color,
       descripcion: horarioForm.value.descripcion || '',
-      estado: 'activo' // Siempre activo al crear
+      estado: 'activo',
+      es_recurrente: horarioForm.value.dias_semana_seleccionados.length > 1
     };
+
+    // Convertir horas
+    const horaInicio = new Date(horarioForm.value.hora_inicio_obj).toTimeString().slice(0, 5);
+    const horaFin = new Date(horarioForm.value.hora_fin_obj).toTimeString().slice(0, 5);
     
-    // Convertir horas si existen
-    if (horarioForm.value.hora_inicio_obj) {
-      datos.hora_inicio = new Date(horarioForm.value.hora_inicio_obj).toTimeString().slice(0, 5);
-    }
+    // Calcular duración
+    const duracionMinutos = Math.round((fin - inicio) / 60000);
     
-    if (horarioForm.value.hora_fin_obj) {
-      datos.hora_fin = new Date(horarioForm.value.hora_fin_obj).toTimeString().slice(0, 5);
-    }
+    datosBase.hora_inicio = horaInicio;
+    datosBase.hora_fin = horaFin;
+    datosBase.duracion_minutos = duracionMinutos;
     
-    // Si es edición, agregar ID
+    console.log('Datos base:', datosBase);
+    console.log('Días seleccionados:', horarioForm.value.dias_semana_seleccionados);
+    
+    let resultados = [];
+    
     if (horarioForm.value.id) {
-      datos.id = horarioForm.value.id;
-    }
-    
-    console.log('Datos a enviar:', datos); // DEBUG
-    
-    if (datos.id) {
-      // Actualizar
-      await horarioService.update(datos.id, datos);
-      toast.add({
+      // EDICIÓN: Solo actualizar un horario existente
+      datosBase.dia_semana = horarioForm.value.dias_semana_seleccionados[0];
+      const response = await horarioService.update(horarioForm.value.id, datosBase);
+      resultados.push(response);
+      
+      toast.value.add({
         severity: 'success',
         summary: 'Actualizado',
         detail: 'Horario actualizado correctamente',
         life: 3000
       });
     } else {
-      // Crear nuevo - SOLO campos necesarios
-      await horarioService.create(datos);
-      toast.add({
-        severity: 'success',
-        summary: 'Creado',
-        detail: 'Horario creado correctamente',
-        life: 3000
+      // CREACIÓN: Crear un horario para CADA día seleccionado
+      // Usamos Promise.allSettled para manejar errores individuales
+      const promesas = horarioForm.value.dias_semana_seleccionados.map(dia => {
+        const datosHorario = {
+          ...datosBase,
+          nombre: `${horarioForm.value.nombre} (${dia})`,
+          dia_semana: dia
+        };
+        
+        console.log(`Creando horario para ${dia}:`, datosHorario);
+        
+        return horarioService.store(datosHorario);
       });
+      
+      // ========== NUEVO: Manejo mejorado de errores ==========
+      const resultadosSettled = await Promise.allSettled(promesas);
+      
+      const exitosos = resultadosSettled.filter(r => r.status === 'fulfilled');
+      const fallidos = resultadosSettled.filter(r => r.status === 'rejected');
+      
+      resultados = exitosos.map(r => r.value);
+      
+      if (fallidos.length > 0) {
+        // Extraer mensajes de error específicos
+        const errores = fallidos.map((f, index) => {
+          const dia = horarioForm.value.dias_semana_seleccionados[index];
+          const mensaje = f.reason?.response?.data?.error || 
+                          f.reason?.response?.data?.message || 
+                          'Error desconocido';
+          return `${dia}: ${mensaje}`;
+        });
+        
+        // Mostrar errores específicos
+        if (exitosos.length > 0) {
+          // Algunos se crearon, otros no
+          toast.value.add({
+            severity: 'warn',
+            summary: 'Resultado parcial',
+            detail: `Se crearon ${exitosos.length} horarios. Errores: ${errores.join('; ')}`,
+            life: 6000
+          });
+        } else {
+          // Todos fallaron
+          toast.value.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `No se pudo crear ningún horario: ${errores.join('; ')}`,
+            life: 6000
+          });
+        }
+      } else {
+        // Todos exitosos
+        toast.value.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: `${resultados.length} horario(s) creado(s) correctamente`,
+          life: 4000
+        });
+      }
     }
+    
+    console.log('Resultados:', resultados);
     
     cerrarDialogo();
     await cargarDatos();
     
   } catch (error) {
     console.error('Error completo:', error);
-    console.error('Respuesta del error:', error.response);
+    console.error('Respuesta del error:', error.response?.data);
     
-    // Mostrar error más específico
+    // ========== MEJOR MANEJO DE ERRORES ==========
     let mensajeError = 'Error al guardar el horario';
-    if (error.response?.data?.errors) {
-      // Si hay errores de validación de Laravel
+    let detalles = '';
+    
+    if (error.response?.data?.error) {
+      mensajeError = error.response.data.error;
+      
+      // Mensajes específicos para errores conocidos
+      if (mensajeError.includes('entrenador ya tiene un horario')) {
+        detalles = 'El entrenador seleccionado ya tiene una clase asignada en ese horario. Por favor, verifique la disponibilidad.';
+      } else if (mensajeError.includes('intervalo de tiempo')) {
+        detalles = 'Conflicto de horarios. Verifique que el entrenador no tenga otras clases asignadas en el mismo horario.';
+      }
+    } else if (error.response?.data?.errors) {
       const errores = Object.values(error.response.data.errors).flat();
       mensajeError = errores.join(', ');
-    } else if (error.response?.data?.error) {
-      mensajeError = error.response.data.error;
     } else if (error.response?.data?.message) {
       mensajeError = error.response.data.message;
     }
     
-    toast.add({
+    toast.value.add({
       severity: 'error',
       summary: 'Error',
-      detail: mensajeError,
+      detail: detalles || mensajeError,
       life: 5000
     });
   } finally {
@@ -519,7 +729,7 @@ function confirmarEliminar(horario) {
     accept: async () => {
       try {
         await horarioService.delete(horario.id);
-        toast.add({
+        toast.value.add({
           severity: 'success',
           summary: 'Eliminado',
           detail: 'Horario eliminado correctamente',
@@ -528,7 +738,7 @@ function confirmarEliminar(horario) {
         await cargarDatos();
       } catch (error) {
         const mensajeError = error.response?.data?.error || 'No se pudo eliminar el horario';
-        toast.add({
+        toast.value.add({
           severity: 'error',
           summary: 'Error',
           detail: mensajeError,
@@ -538,6 +748,44 @@ function confirmarEliminar(horario) {
     }
   });
 }
+
+// Agrega estas funciones en tu script
+function getSeverityDia(dia) {
+  const severidades = {
+    'Lunes': 'info',
+    'Martes': 'info',
+    'Miércoles': 'info',
+    'Jueves': 'info',
+    'Viernes': 'info',
+    'Sábado': 'warning',
+    'Domingo': 'danger'
+  };
+  return severidades[dia] || 'secondary';
+}
+
+function getInicialesEntrenador(entrenador) {
+  if (!entrenador) return '?';
+  const nombres = entrenador.nombres || '';
+  const apellidos = entrenador.apellidos || '';
+  
+  if (nombres && apellidos) {
+    return (nombres[0] + apellidos[0]).toUpperCase();
+  } else if (nombres) {
+    return nombres.substring(0, 2).toUpperCase();
+  }
+  return '?';
+}
+
+function getColorCupo(actual, maximo) {
+  const porcentaje = (actual / maximo) * 100;
+  if (porcentaje >= 90) return 'text-red-500';
+  if (porcentaje >= 75) return 'text-orange-500';
+  if (porcentaje >= 50) return 'text-yellow-500';
+  return 'text-green-500';
+}
+
+// Asegúrate de importar Avatar si no lo tienes
+
 
 function cerrarDialogo() {
   dialogoHorario.value = false;
@@ -563,6 +811,77 @@ function getSeverityEstado(estado) {
     default: return 'info';
   }
 }
+
+// Función para verificar si dos intervalos de tiempo se solapan
+function horasSeSolapan(horaInicio1, horaFin1, horaInicio2, horaFin2) {
+  const inicio1 = new Date(horaInicio1).getTime();
+  const fin1 = new Date(horaFin1).getTime();
+  const inicio2 = new Date(horaInicio2).getTime();
+  const fin2 = new Date(horaFin2).getTime();
+  
+  // Se solapan si un intervalo empieza antes de que termine el otro
+  return (inicio1 < fin2 && fin1 > inicio2);
+}
+
+// Función para verificar conflictos en el frontend
+function verificarConflictosFrontend() {
+  if (!horarioForm.value.entrenador_id || !horarioForm.value.hora_inicio_obj || !horarioForm.value.hora_fin_obj) {
+    return false;
+  }
+
+  // Obtener horarios existentes del mismo entrenador
+  const horariosDelEntrenador = horarios.value.filter(
+    h => h.entrenador_id === horarioForm.value.entrenador_id && 
+    h.id !== horarioForm.value.id // Excluir el actual en edición
+  );
+
+  let conflictos = [];
+
+  // Verificar cada día seleccionado
+  horarioForm.value.dias_semana_seleccionados.forEach(diaSeleccionado => {
+    // Buscar horarios del entrenador en el mismo día
+    const horariosMismoDia = horariosDelEntrenador.filter(
+      h => h.dia_semana === diaSeleccionado
+    );
+
+    horariosMismoDia.forEach(horarioExistente => {
+      // Convertir horas existentes a objetos Date para comparar
+      const inicioExistente = crearFechaDesdeHora(horarioExistente.hora_inicio);
+      const finExistente = crearFechaDesdeHora(horarioExistente.hora_fin);
+      
+      if (horasSeSolapan(
+        horarioForm.value.hora_inicio_obj,
+        horarioForm.value.hora_fin_obj,
+        inicioExistente,
+        finExistente
+      )) {
+        conflictos.push({
+          dia: diaSeleccionado,
+          horarioExistente: horarioExistente,
+          mensaje: `El ${diaSeleccionado} de ${horarioExistente.hora_inicio.slice(0,5)} a ${horarioExistente.hora_fin.slice(0,5)} (${horarioExistente.nombre})`
+        });
+      }
+    });
+  });
+
+  if (conflictos.length > 0) {
+    // Mostrar todos los conflictos encontrados
+    const mensajeConflictos = conflictos.map(c => c.mensaje).join('\n');
+    
+    toast.value.add({
+      severity: 'error',
+      summary: 'Conflicto de horarios',
+      detail: `El entrenador ya tiene clases asignadas en:\n${mensajeConflictos}\n\nPor favor, seleccione otro horario o día.`,
+      life: 7000
+    });
+    
+    return true;
+  }
+  
+  return false;
+}
+
+
 </script>
 
 <style scoped>

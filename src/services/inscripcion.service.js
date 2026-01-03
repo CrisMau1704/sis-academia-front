@@ -1,43 +1,33 @@
-// src/services/inscripcion.service.js
 import { Api } from "./Api.services";
 
 export default {
-  index(page = 1, limit = 10, q = "") {
-    return Api().get(`/inscripciones?page=${page}&limit=${limit}&q=${q}`);
-  },
-  
-  getAll() {
-    return Api().get("/inscripciones");
-  },
+    // Obtener inscripciones con paginación
+    index(page = 1, limit = 100, q = "") {
+        return Api().get(`/inscripciones?page=${page}&limit=${limit}&q=${q}`);
+    },
+    
+    // Crear nueva inscripción
+    store(datos) {
+        return Api().post("/inscripciones", datos);
+    },
 
-  show(id) {
-    return Api().get(`/inscripciones/${id}`);
-  },
+    // Obtener una inscripción por ID
+    show(id) {
+        return Api().get(`/inscripciones/${id}`);
+    },
 
-  create(datos) {
-    return Api().post("/inscripciones", datos);
-  },
+    // Actualizar inscripción
+    update(id, datos) {
+        return Api().put(`/inscripciones/${id}`, datos);
+    },
 
-  update(id, datos) {
-    return Api().put(`/inscripciones/${id}`, datos);
-  },
-
-  delete(id) {
-    return Api().delete(`/inscripciones/${id}`);
-  },
-
-  asociarHorario(inscripcionId, horarioId, datosPivote = {}) {
-    return Api().post(`/inscripciones/${inscripcionId}/horarios`, {
-      horario_id: horarioId,
-      ...datosPivote
-    });
-  },
-
-  desasociarHorario(inscripcionId, horarioId) {
-    return Api().delete(`/inscripciones/${inscripcionId}/horarios/${horarioId}`);
-  },
-
-  renovar(id) {
-    return Api().post(`/inscripciones/${id}/renovar`);
-  }
+    // Eliminar inscripción
+    delete(id) {
+        return Api().delete(`/inscripciones/${id}`);
+    },
+    
+    // Renovar inscripción
+    renovar(id, datos) {
+        return Api().post(`/inscripciones/${id}/renovar`, datos);
+    }
 };
