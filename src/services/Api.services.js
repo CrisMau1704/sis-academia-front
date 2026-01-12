@@ -1,23 +1,23 @@
 import axios from "axios";
 
-const urlBaseMeta = "http://127.0.0.1:8000/api";
+const urlBaseMeta = import.meta.env.VITE_API_URL + "/api"; // Primero declarar
+
+console.log('VITE_API_URL desde env:', import.meta.env.VITE_API_URL);
+console.log('Base URL usada para API:', urlBaseMeta);
 
 export const Api = () => {
     let token = localStorage.getItem("access_token");
 
     const api = axios.create({
         baseURL: urlBaseMeta,
-        headers:{
+        headers: {
             'Accept': 'application/json',
             'Authorization': `Bearer ${token}`
-
         }
-
-
     });
 
     api.interceptors.response.use(
-        (response) => response, // Retornar respuesta directamente
+        (response) => response, // Retordasdanar respuesta directamente
         (error) => {
             if (error.response) {
                 if (error.response.status === 401) {
@@ -35,5 +35,4 @@ export const Api = () => {
     );
     
     return api;
-   
 }
