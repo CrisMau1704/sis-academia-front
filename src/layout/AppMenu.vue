@@ -34,12 +34,7 @@ if (rol === 'super_admin') {
             items: [
                 { label: 'Estudiantes', icon: 'pi pi-fw pi-users', to: '/admin/estudiantes' },
                 { label: 'Inscripciones', icon: 'pi pi-fw pi-list', to: '/admin/inscripciones' },
-                { 
-                    label: 'Asignar Días', 
-                    icon: 'pi pi-fw pi-calendar-plus', 
-                    to: '/admin/asignar-dias',
-                    badge: 'NUEVO'
-                }
+                
             ]
         },
         {
@@ -48,24 +43,20 @@ if (rol === 'super_admin') {
                 { 
                     label: 'Registro Diario', 
                     icon: 'pi pi-fw pi-check-square', 
-                    to: '/admin/registro-asistencia' 
+                    to: '/admin/asistencias' 
                 },
-                { 
-                    label: 'Justificar Permisos', 
-                    icon: 'pi pi-fw pi-exclamation-triangle', 
-                    to: '/admin/permisos' 
-                },
+                
                 { 
                     label: 'Recuperar Clases', 
                     icon: 'pi pi-fw pi-refresh', 
-                    to: '/admin/recuperaciones' 
+                    to: '/admin/recuperarclases' 
                 }
             ]
         },
         {
             label: 'Pagos y Mensualidades',
             items: [
-                { label: 'Registrar Pago', icon: 'pi pi-fw pi-credit-card', to: '/admin/registrar-pago' },
+               
                 { label: 'Historial de Pagos', icon: 'pi pi-fw pi-history', to: '/admin/pagos' },
                 { label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', to: '/admin/vencimientos' }
             ]

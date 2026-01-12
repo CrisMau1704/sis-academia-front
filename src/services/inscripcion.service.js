@@ -29,5 +29,21 @@ export default {
     // Renovar inscripción
     renovar(id, datos) {
         return Api().post(`/inscripciones/${id}/renovar`, datos);
+    },
+
+     obtenerActivaPorEstudiante(estudianteId) {
+        return Api().get(`/inscripciones/estudiante/${estudianteId}/activa`);
+    },
+    
+    // También podrías agregar estos si los necesitas:
+    
+    // Obtener inscripciones por estudiante (todas)
+    obtenerPorEstudiante(estudianteId) {
+        return Api().get(`/inscripciones/estudiante/${estudianteId}`);
+    },
+    
+    // Obtener inscripciones por estado
+    obtenerPorEstado(estado) {
+        return Api().get(`/inscripciones/estado/${estado}`);
     }
 };

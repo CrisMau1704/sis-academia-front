@@ -16,7 +16,7 @@
                     <!-- Logo circular con borde inspirado en dojo -->
                     <div class="logo-wrapper">
                         <img 
-                            src="/public/demo/images/images2.jpg"
+                            src="/public/demo/images/logo-king.jpg"
                             alt="King Boxi Academy"
                             class="academy-logo"
                         />
@@ -124,19 +124,19 @@
                                 binary 
                                 class="custom-checkbox"
                             />
-                            <label for="rememberme" class="option-label">
+                            <!--  <label for="rememberme" class="option-label">
                                 <i class="pi pi-bookmark" style="margin-right: 8px;"></i>
                                 Recordar sesión
-                            </label>
+                            </label>-->
                         </div>
                         
-                        <a class="forgot-password" @click="showPasswordRecovery">
+                      <a class="forgot-password" @click="showPasswordRecovery">
                             <i class="pi pi-question-circle" style="margin-right: 8px;"></i>
                             ¿Contraseña olvidada?
                         </a>
                     </div>
 
-                    <!-- Botón de ingreso con efecto -->
+                     
                     <div class="button-container">
                         <Button
                             label="INICIAR SESIÓN"
@@ -166,7 +166,7 @@
                     <div class="contact-info">
                         <p>
                             <i class="pi pi-phone" style="margin-right: 8px;"></i>
-                            Soporte: +591 789-456-123
+                            Soporte: +591 60108969
                         </p>
                         <p>
                             <i class="pi pi-clock" style="margin-right: 8px;"></i>
@@ -355,9 +355,9 @@ setInterval(() => {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(119, 198, 255, 0.3) 0%, transparent 50%);
+     background: radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(212, 175, 55, 0.15) 0%, transparent 50%);
     animation: particles-move 15s ease-in-out infinite alternate;
 }
 
@@ -411,7 +411,7 @@ setInterval(() => {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #6366F1;
+    border: 3px solid #60A5FA;
     box-shadow: 
         0 0 30px rgba(99, 102, 241, 0.4),
         inset 0 0 20px rgba(255, 255, 255, 0.1);
@@ -502,7 +502,7 @@ setInterval(() => {
 
 .divider-icon {
     margin: 0 20px;
-    color: #6366F1;
+    color: #60A5FA;
     font-size: 1.2rem;
     animation: icon-spin 4s linear infinite;
 }
@@ -556,7 +556,7 @@ setInterval(() => {
 
 .custom-input:focus {
     outline: none !important;
-    border-color: #6366F1 !important;
+    border-color: #60A5FA !important;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
     background: rgba(15, 23, 42, 0.9) !important;
 }
@@ -614,7 +614,7 @@ setInterval(() => {
 .login-button {
     width: 100% !important;
     padding: 18px !important;
-    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #D946EF 100%) !important;
+    background: linear-gradient(135deg, #DC2626 0%, #991B1B 50%, #450A0A 100%) !important;
     border: none !important;
     border-radius: 14px !important;
     font-size: 1.1rem !important;
@@ -641,7 +641,7 @@ setInterval(() => {
     transform: translate(-50%, -50%);
     width: calc(100% + 10px);
     height: calc(100% + 10px);
-    background: linear-gradient(135deg, #6366F1 0%, #2e068b 50%, #D946EF 100%);
+   background: linear-gradient(135deg, #DC2626 0%, #7F1D1D 50%, #450A0A 100%);
     filter: blur(15px);
     opacity: 0.6;
     border-radius: 16px;
@@ -791,7 +791,7 @@ setInterval(() => {
 
 .password-wrapper :deep(.p-password-input:focus) {
     outline: none !important;
-    border-color: #6366F1 !important;
+    border-color: #60A5FA !important;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
     background: rgba(15, 23, 42, 0.9) !important;
 }
@@ -809,7 +809,7 @@ setInterval(() => {
 }
 
 .password-wrapper :deep(.p-icon-wrapper:hover) {
-    color: #6366F1 !important;
+    color: #60A5FA !important;
     background: transparent !important;
 }
 

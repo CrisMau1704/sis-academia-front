@@ -1,6 +1,5 @@
 <template>
   <div class="inscripciones-container">
-
     <!-- Dashboard rápido -->
     <div class="dashboard-cards mb-4">
       <div class="grid">
@@ -77,13 +76,10 @@
       <TabPanel header="Todas las Inscripciones">
         <DataTable :value="inscripcionesFiltradas" :paginator="true" :rows="10" :loading="cargando"
           class="p-datatable-sm">
-
           <Column field="id" header="ID" :sortable="true" style="width: 70px"></Column>
-
           <Column header="Estudiante" :sortable="true">
             <template #body="slotProps">
               <div class="flex align-items-center">
-
                 <div>
                   <div class="font-medium">{{ slotProps.data.estudiante?.nombres }} {{
                     slotProps.data.estudiante?.apellidos }}</div>
@@ -92,7 +88,6 @@
               </div>
             </template>
           </Column>
-
           <Column header="Modalidad" :sortable="true" sortField="modalidad.nombre">
             <template #body="slotProps">
               <div class="flex flex-column">
@@ -101,22 +96,19 @@
               </div>
             </template>
           </Column>
-
           <Column header="Progreso">
-            <template #body="slotProps">
-              <div class="flex flex-column gap-1">
-                <div class="flex justify-content-between">
-                  <small>Clases:
-                    {{ (slotProps.data.clases_totales || 0) - (slotProps.data.clases_restantes_calculadas || 0) }}/{{
-                      slotProps.data.clases_totales }}
-                  </small>
-                  <small>Días: {{ slotProps.data.dias_restantes || 0 }}</small>
-                </div>
-                <ProgressBar :value="calcularProgresoClases(slotProps.data)" :showValue="false" />
-              </div>
-            </template>
-          </Column>
-
+  <template #body="slotProps">
+    <div class="flex flex-column gap-1">
+      <div class="flex justify-content-between">
+        <small>Clases:
+          {{ getClasesProgreso(slotProps.data).asistidas }}/{{ getClasesProgreso(slotProps.data).total }}
+        </small>
+        <small>Días: {{ slotProps.data.dias_restantes || 0 }}</small>
+      </div>
+      <ProgressBar :value="calcularProgresoClases(slotProps.data)" :showValue="false" />
+    </div>
+  </template>
+</Column>
           <Column header="Vencimiento">
             <template #body="slotProps">
               <div class="flex flex-column">
@@ -127,14 +119,12 @@
               </div>
             </template>
           </Column>
-
           <Column field="estado" header="Estado" :sortable="true">
             <template #body="slotProps">
               <Tag :value="slotProps.data.estado"
                 :severity="obtenerSeveridadEstado(slotProps.data.estado, slotProps.data.fecha_fin)" />
             </template>
           </Column>
-
           <Column header="Acciones" style="width: 120px">
             <template #body="slotProps">
               <div class="flex gap-1">
@@ -196,12 +186,11 @@
       </TabPanel>
     </TabView>
 
-    <!-- Diálogo de nueva inscripción MODAL -->
-    <!-- Diálogo de nueva inscripción MODAL -->
+    <!-- Diálogo de nueva inscripción -->
     <Dialog v-model:visible="dialogoInscripcion" :header="tituloDialogo" :modal="true"
       :style="{ width: '90vw', maxWidth: '1200px' }" :closable="false">
-
       <Stepper v-model:activeStep="pasoActual" class="mb-4">
+        <!-- Paso 1: Estudiante -->
         <StepperPanel header="Estudiante">
           <template #content="{ nextCallback }">
             <div class="p-3">
@@ -215,18 +204,16 @@
                         <InputText v-model="buscarEstudiante" placeholder="Buscar por nombre, ci, teléfono o correo..."
                           @input="filtrarEstudiantes" class="w-full" :disabled="estudiantes.length === 0" />
                       </span>
-
                     </div>
-
                     <DataTable :value="estudiantesFiltrados" selectionMode="single"
                       v-model:selection="estudianteSeleccionado" dataKey="id" :loading="cargandoEstudiantes"
                       class="p-datatable-sm" :paginator="true" :rows="5">
                       <Column selectionMode="single" headerStyle="width: 3rem"></Column>
                       <Column field="nombres" header="Nombres"></Column>
                       <Column field="apellidos" header="Apellidos"></Column>
-                      <Column field="ci" header="ci"></Column>
+                      <Column field="ci" header="CI"></Column>
                       <Column field="telefono" header="Teléfono"></Column>
-                      <Column field="correo" header="correo"></Column>
+                      <Column field="correo" header="Correo"></Column>
                       <Column field="estado" header="Estado">
                         <template #body="slotProps">
                           <Tag :value="slotProps.data.estado"
@@ -236,7 +223,6 @@
                     </DataTable>
                   </div>
                 </div>
-
                 <div class="col-12 md:col-4">
                   <div v-if="estudianteSeleccionado" class="card">
                     <h5>Estudiante Seleccionado</h5>
@@ -245,16 +231,13 @@
                       <h6>{{ estudianteSeleccionado.nombres }} {{ estudianteSeleccionado.apellidos }}</h6>
                       <p class="text-500 mb-1">{{ estudianteSeleccionado.ci }}</p>
                       <p class="text-500">{{ estudianteSeleccionado.telefono }}</p>
-
                       <Divider />
-
                       <h6>Inscripciones Activas</h6>
                       <div v-if="inscripcionesActivasEstudiante.length > 0">
                         <div v-for="insc in inscripcionesActivasEstudiante" :key="insc.id"
                           class="mb-2 p-2 border-round border-1 surface-border">
                           <small class="font-bold">{{ insc.modalidad?.nombre || 'Sin modalidad' }}</small>
                           <div class="text-sm text-500">
-                            <!-- Usar el campo calculado en lugar de clases_restantes -->
                             {{ insc.clases_restantes_calculadas || 0 }} clases restantes
                           </div>
                           <div class="text-xs text-500">
@@ -269,9 +252,6 @@
                             <small>Puede crear una nueva inscripción</small>
                           </div>
                         </template>
-                        <template v-else>
-                          Seleccione un estudiante para ver sus inscripciones
-                        </template>
                       </div>
                     </div>
                   </div>
@@ -281,475 +261,494 @@
                   </div>
                 </div>
               </div>
-
               <div class="flex justify-content-between mt-4">
-                <Button label="Cancelar" severity="secondary" @click="cerrarDialogo" />
-                <Button label="Siguiente" :disabled="!estudianteSeleccionado" @click="siguientePaso" />
+                <Button label="Cancelar" severity="secondary" @click="cerrarDialogoCompleto" />
+                <Button label="Siguiente" :disabled="!estudianteSeleccionado"
+                  @click="cargarHorariosDisponibles(); pasoActual = 1;" />
               </div>
             </div>
           </template>
         </StepperPanel>
 
-        <StepperPanel header="Modalidad">
-          <template #content="{ prevCallback, nextCallback }">
-            <div class="p-3">
-              <h4>Seleccionar Modalidad</h4>
-              <div class="grid">
-                <div v-for="modalidad in modalidades" :key="modalidad.id" class="col-12 md:col-6 lg:col-4">
-                  <Card class="modalidad-card" @click="seleccionarModalidad(modalidad)"
-                    :class="{ 'selected': inscripcionForm.modalidad_id === modalidad.id }">
-                    <template #title>
-                      <div class="flex justify-content-between align-items-center">
-                        <span>{{ modalidad.nombre }}</span>
-                        <Tag :value="`$${modalidad.precio_mensual}`" severity="success" />
-                      </div>
-                    </template>
-                    <template #content>
-                      <div class="modalidad-details">
-                        <div class="detail-item">
-                          <i class="pi pi-calendar text-primary"></i>
-                          <span>{{ modalidad.clases_mensuales }} clases/mes</span>
-                        </div>
-                        <div class="detail-item">
-                          <i class="pi pi-clock text-primary"></i>
-                          <span>{{ modalidad.duracion_clase || 60 }} min/clase</span>
-                        </div>
-                        <div class="detail-item">
-                          <i class="pi pi-shield text-primary"></i>
-                          <span>{{ modalidad.permisos_maximos || 2 }} permisos</span>
-                        </div>
-                        <div class="detail-item">
-                          <i class="pi pi-dollar text-primary"></i>
-                          <span>${{ modalidad.precio_mensual }}/mes</span>
-                        </div>
-                      </div>
-                    </template>
-                  </Card>
-                </div>
-              </div>
 
-              <div class="flex justify-content-between mt-4">
-                <Button label="Atrás" severity="secondary" @click="prevCallback" />
-                <Button label="Siguiente" :disabled="!inscripcionForm.modalidad_id" @click="siguientePaso" />
-              </div>
-            </div>
-          </template>
-        </StepperPanel>
 
-        <StepperPanel header="Detalles">
-          <template #content="{ prevCallback, nextCallback }">
-            <div class="p-3">
-              <h4>Información Adicional</h4>
+<StepperPanel header="Modalidad">
+    <template #content="{ nextCallback }">
+      <div class="p-3">
+        <h4>Selecciona un Plan</h4>
+        
+        <div v-if="cargandoModalidades" class="p-4 text-center">
+          <ProgressSpinner style="width: 50px; height: 50px" />
+          <p class="text-500 mt-2">Cargando planes disponibles...</p>
+        </div>
 
-              <div class="grid">
-                <div class="col-12 md:col-6">
-                  <div class="field mb-3">
-                    <label for="fecha_inicio">Fecha de inicio</label>
-                    <Calendar v-model="inscripcionForm.fecha_inicio" dateFormat="dd/mm/yy" class="w-full"
-                      :minDate="hoy" />
+        <div v-else-if="modalidades.length === 0" class="p-4 text-center border-round border-1 surface-border">
+          <i class="pi pi-box text-400" style="font-size: 3rem"></i>
+          <p class="text-500 mt-2">No hay modalidades disponibles</p>
+          <Button label="Atrás" severity="secondary" @click="pasoActual = 0;" class="mt-3" />
+        </div>
+        
+        <div v-else class="grid">
+          <div v-for="modalidad in modalidades" :key="modalidad.id" 
+               class="col-12 md:col-6 lg:col-4 mb-3">
+            <Card class="modalidad-card" 
+                  @click="seleccionarModalidad(modalidad)"
+                  :class="{ 
+                    'selected': modalidadSeleccionada?.id === modalidad.id,
+                    'border-primary border-2': modalidadSeleccionada?.id === modalidad.id,
+                    'cursor-pointer': true
+                  }">
+              <template #title>
+                <div class="flex justify-content-between align-items-center">
+                  <div>
+                    <span class="font-bold">{{ modalidad.nombre }}</span>
+                    <div class="text-xs text-500">{{ modalidad.descripcion_corta }}</div>
                   </div>
-
-                  <div class="field mb-3">
-                    <label for="fecha_fin">Fecha de fin</label>
-                    <Calendar v-model="inscripcionForm.fecha_fin" dateFormat="dd/mm/yy" class="w-full"
-                      :minDate="inscripcionForm.fecha_inicio || hoy" />
-                  </div>
-
-                  <div class="field mb-3">
-                    <label for="sucursal">Sucursal *</label>
-                    <Dropdown v-model="inscripcionForm.sucursal_id" :options="sucursales" optionLabel="nombre"
-                      optionValue="id" placeholder="Seleccione una sucursal" class="w-full" />
-                    <small v-if="!inscripcionForm.sucursal_id" class="p-error">Este campo es requerido</small>
+                  <div class="text-xl font-bold text-green-600">
+                    ${{ modalidad.precio_mensual }}
                   </div>
                 </div>
-
-                <div class="col-12 md:col-6">
-                  <div class="field mb-3">
-                    <label for="entrenador">Entrenador *</label>
-                    <Dropdown v-model="inscripcionForm.entrenador_id" :options="entrenadores" optionLabel="nombres"
-                      optionValue="id" placeholder="Seleccione un entrenador" class="w-full" />
-                    <small v-if="!inscripcionForm.entrenador_id" class="p-error">Este campo es requerido</small>
-                  </div>
-
-                  <div class="field mb-3">
-                    <label for="monto_mensual">Monto Mensual ($) *</label>
-                    <InputNumber v-model="inscripcionForm.monto_mensual" mode="currency" currency="USD" locale="en-US"
-                      class="w-full" :min="0" :max="1000" :fractionDigits="2" />
-                    <small v-if="!inscripcionForm.monto_mensual || inscripcionForm.monto_mensual <= 0"
-                      class="p-error">Ingrese un monto válido</small>
-                  </div>
-
-                  <div class="field mb-3">
-                    <label for="clases_totales">Clases Totales</label>
-                    <InputNumber v-model="inscripcionForm.clases_totales" class="w-full" :min="1" :max="50" :step="1" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Horarios opcionales -->
-              <!-- En el paso 3, cambia el MultiSelect -->
-              <!-- En el paso 3 "Detalles" del diálogo, reemplaza el MultiSelect actual por este: -->
-              <div class="field mb-3">
-                <label for="horarios">Horarios Disponibles</label>
-
-                <!-- Mensaje cuando no hay horarios -->
-                <div v-if="horariosDisponibles.length === 0 && inscripcionForm.modalidad_id"
-                  class="p-3 border-round bg-gray-100 mb-2">
+              </template>
+              <template #content>
+                <div class="space-y-2">
                   <div class="flex align-items-center">
-                    <i class="pi pi-info-circle text-primary mr-2"></i>
+                    <i class="pi pi-calendar text-primary mr-2"></i>
                     <div>
-                      <div class="font-medium">No hay horarios disponibles</div>
-                      <small class="text-500">
-                        {{
-                          inscripcionForm.sucursal_id
-                            ? 'No hay horarios para esta modalidad en la sucursal seleccionada'
-                            : 'Seleccione una modalidad para ver los horarios disponibles'
-                        }}
+                      <div class="font-medium">{{ modalidad.clases_mensuales }} clases/mes</div>
+                      <small class="text-500">{{ calcularClasesSemanales(modalidad.clases_mensuales) }} clases por semana</small>
+                    </div>
+                  </div>
+                  <div class="flex align-items-center">
+                    <i class="pi pi-shield text-primary mr-2"></i>
+                    <div>
+                      <div class="font-medium">{{ modalidad.permisos_maximos }} permisos</div>
+                      <small class="text-500">Para faltar sin penalización</small>
+                    </div>
+                  </div>
+                  <div v-if="modalidad.disciplina_nombre" class="text-xs text-500 mt-2">
+                    <i class="pi pi-tag mr-1"></i>
+                    <span>{{ modalidad.disciplina_nombre }}</span>
+                  </div>
+                </div>
+              </template>
+            </Card>
+          </div>
+        </div>
+        
+        <div class="flex justify-content-between mt-4">
+          <Button label="Atrás" severity="secondary" @click="pasoActual = 0;" />
+          <Button label="Siguiente" :disabled="!modalidadSeleccionada" 
+                  @click="cargarHorariosPorModalidad(modalidadSeleccionada.id); pasoActual = 2;" />
+        </div>
+      </div>
+    </template>
+  </StepperPanel>
+
+  <!-- Paso 3: Seleccionar Horarios -->
+  <StepperPanel header="Horarios">
+    <template #content="{ prevCallback, nextCallback }">
+      <div class="p-3">
+        <h4>Selecciona tus horarios</h4>
+        
+        <!-- Mostrar información de la modalidad seleccionada -->
+        <div v-if="modalidadSeleccionada" class="mb-4 p-3 border-round bg-blue-50">
+          <div class="flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mt-0 mb-1">{{ modalidadSeleccionada.nombre }}</h5>
+              <div class="flex align-items-center gap-2 flex-wrap">
+                <Tag :value="`${modalidadSeleccionada.clases_mensuales} clases/mes`" severity="info" />
+                <Tag :value="`$${modalidadSeleccionada.precio_mensual}`" severity="success" />
+                <Tag :value="`${modalidadSeleccionada.permisos_maximos} permisos`" severity="warning" />
+                <small class="text-500">Máximo {{ maxHorariosPorModalidad }} horarios</small>
+              </div>
+            </div>
+            <Button label="Cambiar" severity="secondary" text @click="pasoActual = 1;" 
+                    v-tooltip="'Seleccionar otra modalidad'" />
+          </div>
+        </div>
+
+        <!-- Información general -->
+        <div class="mb-4 p-3 border-round bg-green-50 flex justify-content-between align-items-center">
+          <div>
+            <i class="pi pi-info-circle text-primary mr-2"></i>
+            <span>Haz clic en los horarios que deseas (máximo {{ maxHorariosPorModalidad }})</span>
+          </div>
+          <div class="flex align-items-center gap-2">
+            <Tag :value="`${horariosSeleccionados.length} seleccionados`" severity="info" />
+            <Tag :value="`$${getPrecioTotal()}`" severity="success" />
+          </div>
+        </div>
+
+        <!-- Lista de horarios -->
+        <div v-if="cargandoHorarios" class="p-4 text-center">
+  <ProgressSpinner style="width: 50px; height: 50px" />
+  <p class="text-500 mt-2">Cargando horarios disponibles...</p>
+</div>
+
+        <div v-else-if="horariosFiltrados.length === 0" class="p-4 text-center border-round border-1 surface-border">
+  <i class="pi pi-calendar-times text-400" style="font-size: 3rem"></i>
+  <p class="text-500 mt-2">
+    No hay horarios disponibles para esta modalidad
+  </p>
+  <Button label="Cambiar Modalidad" severity="secondary" @click="pasoActual = 1;" class="mt-3" />
+</div>
+
+
+        <div v-else class="grid">
+          <div v-for="horario in horariosFiltrados" :key="horario.id" class="col-12 md:col-6 lg:col-4 mb-3">
+            <Card class="horario-card" @click="toggleHorarioSeleccionado(horario)" :class="{
+              'selected': estaSeleccionado(horario.id),
+              'border-primary border-2': estaSeleccionado(horario.id),
+              'cursor-pointer': true
+            }">
+              <template #title>
+                <div class="flex justify-content-between align-items-center">
+                  <div class="flex align-items-center">
+                    <div class="selection-indicator mr-2">
+                      <i v-if="estaSeleccionado(horario.id)" class="pi pi-check-circle text-primary"></i>
+                      <i v-else class="pi pi-circle text-400"></i>
+                    </div>
+                    <span class="font-bold">{{ horario.nombre_horario }}</span>
+                  </div>
+                  <Tag :value="`$${horario.precio}`" severity="success" />
+                </div>
+              </template>
+              <template #content>
+                <div class="space-y-3">
+                  <div class="flex align-items-center">
+                    <i class="pi pi-calendar text-primary mr-2"></i>
+                    <div>
+                      <div class="font-medium">{{ horario.dia_semana }}</div>
+                      <small class="text-500">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</small>
+                    </div>
+                  </div>
+                  <div class="flex align-items-center">
+                    <i class="pi pi-user text-primary mr-2"></i>
+                    <div>
+                      <div class="font-medium">Entrenador</div>
+                      <small class="text-500">{{ horario.entrenador_nombre }}</small>
+                    </div>
+                  </div>
+                  <div class="flex align-items-center">
+                    <i class="pi pi-building text-primary mr-2"></i>
+                    <div>
+                      <div class="font-medium">Sucursal</div>
+                      <small class="text-500">{{ horario.sucursal_nombre }}</small>
+                    </div>
+                  </div>
+                  <div class="flex align-items-center">
+                    <i class="pi pi-users text-primary mr-2"></i>
+                    <div>
+                      <div class="font-medium">Cupo disponible</div>
+                      <small :class="{
+                        'text-green-500 font-semibold': horario.cupo_disponible > 5,
+                        'text-yellow-500': horario.cupo_disponible > 0 && horario.cupo_disponible <= 5,
+                        'text-red-500': horario.cupo_disponible === 0
+                      }">
+                        {{ horario.cupo_disponible }}/{{ horario.cupo_maximo }}
                       </small>
                     </div>
                   </div>
                 </div>
+              </template>
+            </Card>
+          </div>
+        </div>
 
-                <!-- MultiSelect cuando hay horarios -->
-                <MultiSelect v-else-if="horariosDisponibles.length > 0" v-model="horariosSeleccionados"
-                  :options="horariosDisponibles" optionLabel="descripcion" optionValue="id"
-                  placeholder="Seleccione horarios" :filter="true" display="chip" class="w-full" :maxSelectedLabels="3"
-                  :showToggleAll="false">
-                  <!-- Template personalizado para las opciones -->
-                  <template #option="slotProps">
-                    <div class="flex align-items-center p-2">
-                      <!-- Círculo de color -->
-                      <div class="mr-3" :style="{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        backgroundColor: slotProps.option.color || '#3B82F6'
-                      }"></div>
+        <!-- Horarios seleccionados -->
+        <div v-if="horariosSeleccionados.length > 0" class="mt-4 p-3 border-round bg-green-50">
+          <div class="flex justify-content-between align-items-center mb-3">
+            <h5 class="mt-0 mb-0">✅ Horarios seleccionados ({{ horariosSeleccionados.length }}/{{ maxHorariosPorModalidad }})</h5>
+            <div class="text-lg font-bold text-green-600">Total: ${{ getPrecioTotal() }}</div>
+          </div>
+          
+          <div class="grid">
+            <div v-for="(horario, index) in horariosSeleccionadosDetalles" :key="horario.id"
+              class="col-12 md:col-6 lg:col-3 mb-2">
+              <div class="p-2 border-round border-1 surface-border bg-white">
+                <div class="flex justify-content-between align-items-center">
+                  <div>
+                    <div class="font-bold">{{ horario.nombre_horario }}</div>
+                    <small class="text-500">{{ horario.dia_semana }} {{ horario.hora_inicio }}</small>
+                  </div>
+                  <Button icon="pi pi-times" class="p-button-rounded p-button-text p-button-sm"
+                    @click.stop="quitarHorario(horario.id)" v-tooltip="'Quitar'" />
+                </div>
+                <div class="text-xs text-500 mt-1">
+                  {{ horario.entrenador_nombre }} • {{ horario.sucursal_nombre }}
+                </div>
+                <div class="text-xs font-semibold mt-1 text-primary">
+                  ${{ horario.precio }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                      <!-- Información del horario -->
-                      <div class="flex-grow-1">
-                        <div class="font-medium">{{ slotProps.option.nombre }}</div>
-                        <div class="text-sm text-500">
-                          {{ slotProps.option.dia_semana }} {{ slotProps.option.hora_inicio }} - {{
-                            slotProps.option.hora_fin }}
-                        </div>
-                        <div class="text-xs text-500 mt-1">
-                          <span class="mr-3">Cupo: {{ slotProps.option.cupo_disponible }}/{{
-                            slotProps.option.cupo_maximo }}</span>
-                          <span v-if="slotProps.option.entrenador_id">Entrenador: {{
-                            getNombreEntrenador(slotProps.option.entrenador_id) }}</span>
-                        </div>
+        <!-- Botones de navegación -->
+        <div class="flex justify-content-between mt-4">
+          <Button label="Atrás" severity="secondary" @click="pasoActual = 1;" />
+          <Button label="Continuar a Pago" :disabled="horariosSeleccionados.length === 0"
+            @click="validarYContinuar()" icon="pi pi-arrow-right" iconPos="right" />
+        </div>
+      </div>
+    </template>
+  </StepperPanel>
+
+<!-- Paso 4: Confirmar y Pagar -->
+<StepperPanel header="Confirmar y Pagar">
+  <template #content="{ prevCallback }">
+    <div class="p-3">
+      <h4>Confirmar Inscripción y Pago</h4>
+      
+      <!-- Mostrar información de la modalidad seleccionada -->
+      <div v-if="modalidadSeleccionada" class="mb-4 p-3 border-round bg-blue-50">
+        <div class="flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mt-0 mb-1">{{ modalidadSeleccionada.nombre }}</h5>
+            <div class="flex align-items-center gap-2">
+              <Tag :value="`${modalidadSeleccionada.clases_mensuales} clases/mes`" severity="info" />
+              <Tag :value="`$${modalidadSeleccionada.precio_mensual}`" severity="success" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid mb-4">
+        <div class="col-12 md:col-7">
+          <Card class="mb-3">
+            <template #title>📋 Resumen de la Inscripción</template>
+            <template #content>
+              <div class="mb-4">
+                <h6 class="mt-0 mb-2">👤 Estudiante</h6>
+                <div class="flex align-items-center">
+                  <Avatar :label="getIniciales(estudianteSeleccionado)" class="mr-2" />
+                  <div>
+                    <div class="font-bold">{{ estudianteSeleccionado?.nombres }} {{ estudianteSeleccionado?.apellidos }}</div>
+                    <small class="text-500">CI: {{ estudianteSeleccionado?.ci }}</small>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <h6 class="mt-0 mb-2">📅 Horarios seleccionados</h6>
+                <div class="grid">
+                  <div v-for="(horario, index) in horariosSeleccionadosDetalles" :key="horario.id"
+                    class="col-12 md:col-6 mb-2">
+                    <div class="p-2 border-round border-1 surface-border bg-gray-50">
+                      <div class="flex justify-content-between align-items-center">
+                        <div class="font-bold">{{ horario.dia_semana }}</div>
+                        <Tag :value="`#${index + 1}`" severity="info" />
                       </div>
-
-                      <!-- Check si está seleccionado -->
-                      <i v-if="horariosSeleccionados.includes(slotProps.option.id)"
-                        class="pi pi-check text-primary ml-2"></i>
+                      <div class="text-sm">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</div>
+                      <div class="text-xs text-500">
+                        {{ horario.entrenador_nombre }} | {{ horario.sucursal_nombre }}
+                      </div>
                     </div>
-                  </template>
-
-                  <!-- Template para los chips seleccionados -->
-                  <template #value="slotProps">
-                    <div v-if="slotProps.value && slotProps.value.length > 0" class="flex flex-wrap gap-1">
-                      <Chip v-for="horarioId in slotProps.value" :key="horarioId"
-                        :label="getHorarioChipLabel(horarioId)" class="mb-1"
-                        :style="{ backgroundColor: getHorarioColor(horarioId) + '20', color: getHorarioColor(horarioId) }">
-                        <template #removeicon>
-                          <i class="pi pi-times text-xs"></i>
-                        </template>
-                      </Chip>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Información de cálculo de clases -->
+              <div class="mb-4 p-3 border-round bg-green-50">
+                <h6 class="mt-0 mb-2">📊 Cálculo de Clases</h6>
+                <div class="grid">
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Clases por mes</label>
+                      <div class="font-bold">{{ modalidadSeleccionada?.clases_mensuales || '--' }}</div>
                     </div>
-                    <span v-else>{{ slotProps.placeholder }}</span>
-                  </template>
-                </MultiSelect>
+                  </div>
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Duración</label>
+                      <div class="font-bold">{{ calcularMesesDuracion() }} meses</div>
+                    </div>
+                  </div>
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Clases totales</label>
+                      <div class="font-bold text-green-600">{{ calcularClasesTotales() }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="grid">
+                <div class="col-12 md:col-6">
+                  <div class="field mb-3">
+                    <label for="fecha_inicio" class="text-500 block mb-1">Fecha de inicio *</label>
+                    <Calendar v-model="inscripcionForm.fecha_inicio" dateFormat="dd/mm/yy" class="w-full"
+                      :minDate="hoy" showIcon />
+                  </div>
+                </div>
+                <div class="col-12 md:col-6">
+                  <div class="field mb-3">
+                    <label for="fecha_fin" class="text-500 block mb-1">Fecha de fin *</label>
+                    <Calendar v-model="inscripcionForm.fecha_fin" dateFormat="dd/mm/yy" class="w-full"
+                      :minDate="inscripcionForm.fecha_inicio || hoy" showIcon />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
+        
+        <!-- SECCIÓN DE PAGO COMPLETA -->
+        <div class="col-12 md:col-5">
+          <Card class="mb-3">
+            <template #title>💰 Información de Pago</template>
+            <template #content>
+              <div class="space-y-4">
+                <!-- Mostrar precio total como referencia -->
+                <div>
+                  <label class="text-500 block mb-1">Precio de la Modalidad</label>
+                  <div class="text-2xl font-bold text-green-600">
+                    ${{ getPrecioTotal() }}
+                  </div>
+                  <small class="text-500">Precio mensual de la modalidad seleccionada</small>
+                </div>
 
-                <!-- Mensaje cuando no hay modalidad seleccionada -->
-                <div v-else class="p-3 border-round bg-gray-100">
+                <!-- Campo para ingresar el monto del pago -->
+                <div class="field">
+                  <label for="monto_pago" class="text-500 block mb-1">Monto a Pagar *</label>
+                  <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon">$</span>
+                    <InputNumber v-model="pagoForm.monto" :min="0" :max="10000" :step="10" class="w-full"
+                      :class="{ 'p-invalid': !pagoForm.monto || pagoForm.monto <= 0 }"
+                      placeholder="Ingrese el monto" />
+                  </div>
+                  <small v-if="!pagoForm.monto || pagoForm.monto <= 0" class="p-error">
+                    Ingrese un monto válido
+                  </small>
+                  <small v-else class="text-500">
+                    Precio de la modalidad: ${{ getPrecioTotal() }}
+                  </small>
+                </div>
+
+                <!-- Método de pago -->
+                <div class="field">
+                  <label for="metodo_pago" class="text-500 block mb-1">Método de Pago *</label>
+                  <Dropdown v-model="pagoForm.metodo_pago" :options="metodosPago" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione método" class="w-full"
+                    :class="{ 'p-invalid': !pagoForm.metodo_pago }" />
+                  <small v-if="!pagoForm.metodo_pago" class="p-error">Seleccione un método de pago</small>
+                </div>
+
+                <!-- Fecha de pago -->
+                <div class="field">
+                  <label for="fecha_pago" class="text-500 block mb-1">Fecha de Pago</label>
+                  <Calendar v-model="pagoForm.fecha_pago" dateFormat="dd/mm/yy" class="w-full"
+                    :maxDate="new Date()" showIcon />
+                </div>
+
+                <!-- Observaciones -->
+                <div class="field">
+                  <label for="observacion" class="text-500 block mb-1">Observaciones (Opcional)</label>
+                  <Textarea v-model="pagoForm.observacion" rows="2" class="w-full"
+                    placeholder="Notas sobre el pago..." />
+                </div>
+
+                <Divider />
+                <div class="text-sm">
+                  <div class="flex align-items-center mb-2">
+                    <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                    <span>{{ modalidadSeleccionada?.clases_mensuales || 12 }} clases mensuales</span>
+                  </div>
+                  <div class="flex align-items-center mb-2">
+                    <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                    <span>{{ modalidadSeleccionada?.permisos_maximos || 3 }} permisos</span>
+                  </div>
                   <div class="flex align-items-center">
-                    <i class="pi pi-info-circle text-500 mr-2"></i>
-                    <small class="text-500">Seleccione una modalidad primero para ver los horarios disponibles</small>
+                    <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                    <span>Acceso a instalaciones</span>
                   </div>
                 </div>
-
-                <!-- Contador -->
-                <small v-if="horariosDisponibles.length > 0" class="text-500 mt-1">
-                  <i class="pi pi-check-circle mr-1"></i>
-                  {{ horariosSeleccionados.length }} de {{ horariosDisponibles.length }} horarios seleccionados
-                </small>
               </div>
+            </template>
+          </Card>
+        </div>
+      </div>
 
-              <div class="flex justify-content-between mt-4">
-                <Button label="Atrás" severity="secondary" @click="prevCallback" />
-                <Button label="Siguiente"
-                  :disabled="!inscripcionForm.sucursal_id || !inscripcionForm.entrenador_id || !inscripcionForm.monto_mensual"
-                  @click="siguientePaso" />
+      <!-- Resumen Final -->
+      <Card class="mb-4">
+        <template #title>✅ Resumen Final</template>
+        <template #content>
+          <div class="grid">
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Modalidad:</span>
+                <span class="font-bold">{{ modalidadSeleccionada?.nombre || '--' }}</span>
               </div>
-            </div>
-          </template>
-        </StepperPanel>
-
-        <!-- REEMPLAZA el StepperPanel actual "Confirmación" con estos dos pasos -->
-
-        <!-- Paso 4: Pago (NUEVO) -->
-        <StepperPanel header="Pago">
-          <template #content="{ prevCallback, nextCallback }">
-            <div class="p-3">
-              <h4>Registro de Pago</h4>
-
-              <Card class="mb-4">
-                <template #title>Resumen de Montos</template>
-                <template #content>
-                  <div class="grid">
-                    <div class="col-12 md:col-6">
-                      <div class="flex flex-column gap-3">
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Modalidad:</span>
-                          <span class="font-bold">{{ modalidadSeleccionada?.nombre || '--' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Precio Mensual:</span>
-                          <span class="font-bold">${{ modalidadSeleccionada?.precio_mensual || '0.00' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Monto a Pagar:</span>
-                          <span class="font-bold text-green-600">${{ montoAPagar }}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col-12 md:col-6">
-                      <div class="flex flex-column gap-3">
-                        <div class="field">
-                          <label for="monto_pago" class="block mb-2">Monto a Pagar *</label>
-                          <InputNumber id="monto_pago" v-model="pagoForm.monto" mode="currency" currency="USD"
-                            locale="en-US" class="w-full" :min="0" :max="10000" :fractionDigits="2" />
-                        </div>
-
-                        <div class="field">
-                          <label for="metodo_pago" class="block mb-2">Método de Pago *</label>
-                          <Dropdown id="metodo_pago" v-model="pagoForm.metodo_pago" :options="metodosPago"
-                            optionLabel="label" optionValue="value" placeholder="Seleccione método" class="w-full"
-                            :class="{ 'p-invalid': !pagoForm.metodo_pago }" />
-                          <small v-if="!pagoForm.metodo_pago" class="p-error">Seleccione un método de pago</small>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Fecha de pago -->
-                  <div class="mt-3">
-                    <div class="field">
-                      <label for="fecha_pago" class="block mb-2">Fecha de Pago</label>
-                      <Calendar id="fecha_pago" v-model="pagoForm.fecha_pago" dateFormat="dd/mm/yy" class="w-full"
-                        :maxDate="new Date()" showIcon />
-                    </div>
-                  </div>
-
-                  <!-- Observaciones -->
-                  <div class="mt-3">
-                    <div class="field">
-                      <label for="observacion" class="block mb-2">Observaciones (Opcional)</label>
-                      <Textarea id="observacion" v-model="pagoForm.observacion" rows="2" class="w-full"
-                        placeholder="Notas sobre el pago..." />
-                    </div>
-                  </div>
-                </template>
-              </Card>
-
-              <!-- Resumen de lo que se está pagando -->
-              <Card class="mb-4">
-                <template #title>Detalles de lo que incluye el pago</template>
-                <template #content>
-                  <div class="grid">
-                    <div class="col-12 md:col-6">
-                      <ul class="list-none p-0 m-0">
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>{{ modalidadSeleccionada?.clases_mensuales || 0 }} clases mensuales</span>
-                        </li>
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>Acceso a instalaciones</span>
-                        </li>
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>Acompañamiento de entrenador</span>
-                        </li>
-                      </ul>
-                    </div>
-                    <div class="col-12 md:col-6">
-                      <ul class="list-none p-0 m-0">
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>{{ modalidadSeleccionada?.permisos_maximos || 2 }} permisos mensuales</span>
-                        </li>
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>Material básico incluido</span>
-                        </li>
-                        <li class="mb-2 flex align-items-center">
-                          <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                          <span>Válido por 1 mes</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </template>
-              </Card>
-
-              <div class="flex justify-content-between mt-4">
-                <Button label="Atrás" severity="secondary" @click="prevCallback" />
-                <Button label="Siguiente" severity="success" @click="validarPago"
-                  :disabled="!pagoForm.monto || !pagoForm.metodo_pago" />
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Horarios:</span>
+                <span class="font-bold">{{ horariosSeleccionados.length }}</span>
               </div>
             </div>
-          </template>
-        </StepperPanel>
-
-        <!-- Paso 5: Confirmación (actualizado) -->
-        <StepperPanel header="Confirmación">
-          <template #content="{ prevCallback }">
-            <div class="p-3">
-              <h4>Confirmar Inscripción y Pago</h4>
-
-              <div class="grid mb-4">
-                <div class="col-12 md:col-6">
-                  <Card class="mb-3">
-                    <template #title>Datos del Estudiante</template>
-                    <template #content>
-                      <div v-if="estudianteSeleccionado" class="flex flex-column gap-2">
-                        <div class="flex align-items-center">
-                          <Avatar :label="getIniciales(estudianteSeleccionado)" class="mr-2" />
-                          <div>
-                            <div class="font-bold">{{ estudianteSeleccionado.nombres }} {{
-                              estudianteSeleccionado.apellidos }}</div>
-                            <div class="text-sm text-500">CI: {{ estudianteSeleccionado.ci }}</div>
-                            <div class="text-sm text-500">Tel: {{ estudianteSeleccionado.telefono }}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </Card>
-                </div>
-
-                <div class="col-12 md:col-6">
-                  <Card class="mb-3">
-                    <template #title>Información de Pago</template>
-                    <template #content>
-                      <div class="flex flex-column gap-2">
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Monto:</span>
-                          <span class="font-bold text-green-600">${{ pagoForm.monto || '0.00' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Método:</span>
-                          <Tag :value="pagoForm.metodo_pago" :severity="getSeveridadMetodoPago(pagoForm.metodo_pago)" />
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Fecha:</span>
-                          <span class="font-bold">{{ formatFecha(pagoForm.fecha_pago) }}</span>
-                        </div>
-                        <div v-if="pagoForm.observacion" class="mt-2">
-                          <span class="text-500">Observación:</span>
-                          <p class="text-sm mt-1">{{ pagoForm.observacion }}</p>
-                        </div>
-                      </div>
-                    </template>
-                  </Card>
-                </div>
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Duración:</span>
+                <span class="font-bold">{{ calcularMesesDuracion() }} meses</span>
               </div>
-
-              <Card class="mb-4">
-                <template #title>Resumen Completo</template>
-                <template #content>
-                  <div class="grid">
-                    <div class="col-12 md:col-6">
-                      <div class="flex flex-column gap-3">
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Modalidad:</span>
-                          <span class="font-bold">{{ modalidadSeleccionada?.nombre || '--' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Sucursal:</span>
-                          <span class="font-bold">{{ sucursalSeleccionada?.nombre || '--' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Entrenador:</span>
-                          <span class="font-bold">{{ getNombreEntrenador(inscripcionForm.entrenador_id) || '--'
-                          }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Clases:</span>
-                          <span class="font-bold">{{ inscripcionForm.clases_totales || 0 }} clases</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col-12 md:col-6">
-                      <div class="flex flex-column gap-3">
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Fecha inicio:</span>
-                          <span class="font-bold">{{ formatFecha(inscripcionForm.fecha_inicio) }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Fecha fin:</span>
-                          <span class="font-bold">{{ formatFecha(inscripcionForm.fecha_fin) }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Monto mensual:</span>
-                          <span class="font-bold">${{ inscripcionForm.monto_mensual || '0.00' }}</span>
-                        </div>
-                        <div class="flex justify-content-between">
-                          <span class="text-500">Estado:</span>
-                          <Tag value="activa" severity="success" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Horarios seleccionados -->
-                  <div v-if="horariosSeleccionados.length > 0" class="mt-4 pt-3 border-top-1 surface-border">
-                    <h6 class="mb-2">Horarios Seleccionados:</h6>
-                    <div class="flex flex-wrap gap-2">
-                      <!-- En el StepperPanel "Confirmación", línea ~2050 -->
-                      <Chip v-for="horarioId in horariosSeleccionados" :key="horarioId"
-                        :label="getHorarioDescripcionCompleta(horarioId)" class="mb-1" :style="{
-                          backgroundColor: getHorarioColor(horarioId) + '20',
-                          color: getHorarioColor(horarioId)
-                        }" />
-                    </div>
-                  </div>
-                </template>
-              </Card>
-
-              <div class="flex justify-content-between mt-4">
-                <Button label="Atrás" severity="secondary" @click="prevCallback" />
-                <Button label="Confirmar Inscripción y Pago" severity="success" @click="guardarInscripcionYpago"
-                  :loading="guardando" />
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Clases totales:</span>
+                <span class="font-bold">{{ calcularClasesTotales() }} clases</span>
               </div>
             </div>
-          </template>
-        </StepperPanel>
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Total a Pagar:</span>
+                <span class="font-bold text-green-600 text-xl">${{ pagoForm.monto || getPrecioTotal() }}</span>
+              </div>
+              <div class="flex justify-content-between">
+                <span class="text-500">Estado:</span>
+                <Tag value="Activa" severity="success" />
+              </div>
+            </div>
+          </div>
+          <Divider />
+          <div class="mt-2">
+            <div class="text-500 mb-1">Distribución de clases estimada:</div>
+            <div class="flex flex-wrap gap-2">
+              <Chip v-for="(clases, index) in getDistribucionEstimada()" :key="index"
+                :label="`${horariosSeleccionadosDetalles[index]?.dia_semana || 'Horario'}: ${clases} clases`" 
+                severity="info" />
+            </div>
+            <small class="text-500 mt-1 block">
+              * Distribución aproximada basada en {{ calcularClasesTotales() }} clases
+            </small>
+          </div>
+        </template>
+      </Card>
+      
+      <div class="flex justify-content-between mt-4">
+        <Button label="Atrás" severity="secondary" @click="pasoActual = 2;" />
+        <Button label="✅ Confirmar Inscripción y Pago" severity="success" @click="guardarInscripcionYpago"
+          :loading="guardando"
+          :disabled="!pagoForm.metodo_pago || !inscripcionForm.fecha_inicio || !inscripcionForm.fecha_fin || !pagoForm.monto || pagoForm.monto <= 0" />
+      </div>
+    </div>
+  </template>
+</StepperPanel>
+
 
 
       </Stepper>
     </Dialog>
-
   </div>
+   <Toast /> 
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 
-
 // Importar servicios
 import inscripcionService from '@/services/inscripcion.service';
 import estudianteService from '@/services/estudiante.service';
-import modalidadService from '@/services/modalidad.service';
-import sucursalService from '@/services/sucursal.service';
-import entrenadorService from '@/services/entrenador.service';
 import horarioService from '@/services/horario.service';
 import pagoService from '@/services/pago.service';
+import modalidadService from '@/services/modalidad.service'
 
 // Importar componentes PrimeVue
 import Stepper from 'primevue/stepper';
@@ -769,9 +768,6 @@ import InputText from 'primevue/inputtext';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Calendar from 'primevue/calendar';
-
-import MultiSelect from 'primevue/multiselect';
-import InputNumber from 'primevue/inputnumber';
 import Textarea from 'primevue/textarea';
 import Chip from 'primevue/chip';
 
@@ -780,12 +776,10 @@ const toast = useToast();
 // Estados principales
 const inscripciones = ref([]);
 const estudiantes = ref([]);
-const modalidades = ref([]);
 
 // Estados para filtros
 const buscar = ref('');
 const filtroEstado = ref(null);
-const filtroModalidad = ref(null);
 
 // Estados para diálogo de nueva inscripción
 const dialogoInscripcion = ref(false);
@@ -793,18 +787,32 @@ const pasoActual = ref(0);
 const tituloDialogo = ref('Nueva Inscripción');
 const estudianteSeleccionado = ref(null);
 const buscarEstudiante = ref('');
-const inscripcionForm = ref({});
+const inscripcionForm = ref({
+  fecha_inicio: new Date(),
+  fecha_fin: new Date(new Date().setMonth(new Date().getMonth() + 1)) // 1 mes por defecto
+});
 const guardando = ref(false);
 
 // Estados para carga
 const cargando = ref(false);
 const cargandoEstudiantes = ref(false);
 
-const sucursales = ref([]);
-const entrenadores = ref([]);
 const horariosDisponibles = ref([]);
 const horariosSeleccionados = ref([]);
+const horariosSeleccionadosDetalles = ref([]);
 const hoy = ref(new Date());
+const filtroDisciplina = ref(null);
+
+const modalidades = ref([])
+const filtroModalidad = ref(null)
+
+
+
+
+const cargandoHorarios = ref(false);
+const cargandoModalidades = ref(false);
+
+
 
 const pagoForm = ref({
   monto: 0,
@@ -820,7 +828,6 @@ const metodosPago = ref([
   { label: 'Tarjeta de Crédito/Débito', value: 'tarjeta' },
   { label: 'Transferencia Bancaria', value: 'transferencia' }
 ]);
-
 
 // Estadísticas
 const estadisticas = ref({
@@ -839,18 +846,6 @@ const opcionesEstado = ref([
 ]);
 
 // Computed properties
-const inscripcionesPorVencer = computed(() => {
-  return inscripciones.value.filter(i =>
-    i.estado === 'activo' && i.dias_restantes <= 7 && i.dias_restantes > 0
-  );
-});
-
-const inscripcionesInactivas = computed(() => {
-  return inscripciones.value.filter(i =>
-    ['suspendido', 'inactivo', 'vencido'].includes(i.estado)
-  );
-});
-
 const inscripcionesFiltradas = computed(() => {
   let filtradas = inscripciones.value;
 
@@ -874,746 +869,196 @@ const inscripcionesFiltradas = computed(() => {
   return filtradas;
 });
 
-// Computed para monto a pagar
-const montoAPagar = computed(() => {
-  return inscripcionForm.value.monto_mensual || 0;
+const inscripcionesPorVencer = computed(() => {
+  return inscripciones.value.filter(i =>
+    i.estado === 'activo' && i.dias_restantes <= 7 && i.dias_restantes > 0
+  );
 });
 
-// Watch para auto-completar monto cuando cambie la modalidad
-watch(() => inscripcionForm.value.modalidad_id, (newVal) => {
-  if (newVal && modalidadSeleccionada.value) {
-    pagoForm.value.monto = modalidadSeleccionada.value.precio_mensual || 0;
-  }
+const inscripcionesInactivas = computed(() => {
+  return inscripciones.value.filter(i =>
+    ['suspendido', 'inactivo', 'vencido'].includes(i.estado)
+  );
 });
+
+
 
 const estudiantesFiltrados = computed(() => {
-  console.log('=== estudiantesFiltrados computed ===');
-  console.log('buscarEstudiante:', buscarEstudiante.value);
-  console.log('Total estudiantes:', estudiantes.value.length);
-
   if (!buscarEstudiante.value.trim()) {
-    console.log('Sin búsqueda, devolviendo todos');
     return estudiantes.value;
   }
 
   const search = buscarEstudiante.value.toLowerCase().trim();
-  console.log('Buscando:', search);
-
-  const resultados = estudiantes.value.filter(est => {
-    // Verificar cada campo
+  return estudiantes.value.filter(est => {
     const nombre = est.nombres?.toLowerCase() || '';
     const ci = est.ci?.toLowerCase() || '';
     const telefono = est.telefono?.toLowerCase() || '';
     const correo = est.correo?.toLowerCase() || '';
 
-    const coincide = nombre.includes(search) ||
+    return nombre.includes(search) ||
       ci.includes(search) ||
       telefono.includes(search) ||
       correo.includes(search);
-
-    if (coincide) {
-      console.log('Coincidencia encontrada:', est.nombres);
-    }
-
-    return coincide;
   });
-
-  console.log('Resultados encontrados:', resultados.length);
-  return resultados;
-});
-
-const modalidadSeleccionada = computed(() => {
-  if (!inscripcionForm.value.modalidad_id) return null;
-  return modalidades.value.find(m => m.id === inscripcionForm.value.modalidad_id);
 });
 
 const inscripcionesActivasEstudiante = computed(() => {
-  console.log('=== inscripcionesActivasEstudiante computed ===');
-  console.log('Estudiante seleccionado ID:', estudianteSeleccionado.value?.id);
-  console.log('Total inscripciones:', inscripciones.value.length);
-
   if (!estudianteSeleccionado.value) {
-    console.log('No hay estudiante seleccionado');
     return [];
   }
 
   const estudianteId = estudianteSeleccionado.value.id;
-
-  // Filtrar las inscripciones del estudiante
-  const inscripcionesDelEstudiante = inscripciones.value.filter(i => {
-    console.log(`Inscripción ${i.id}: estudiante_id = ${i.estudiante_id}, estado = ${i.estado}`);
-    return i.estudiante_id === estudianteId && i.estado === 'activa';
-  });
-
-  console.log(`Inscripciones activas encontradas: ${inscripcionesDelEstudiante.length}`);
-
-  // Mostrar detalles de cada inscripción encontrada
-  inscripcionesDelEstudiante.forEach(insc => {
-    console.log(`- Inscripción ${insc.id}: Modalidad: ${insc.modalidad?.nombre}, Clases restantes: ${insc.clases_restantes_calculadas}`);
-  });
-
-  return inscripcionesDelEstudiante;
+  return inscripciones.value.filter(i =>
+    i.estudiante_id === estudianteId && i.estado === 'activo'
+  );
 });
 
-// Agrega estas computed properties
-const sucursalSeleccionada = computed(() => {
-  if (!inscripcionForm.value.sucursal_id) return null;
-  return sucursales.value.find(s => s.id === inscripcionForm.value.sucursal_id);
-});
+// Variables reactivas nuevas
+const modalidadSeleccionada = ref(null);
+const maxHorariosPorModalidad = 4; // o lo que definas
 
-const entrenadorSeleccionado = computed(() => {
-  if (!inscripcionForm.value.entrenador_id) return null;
-  const encontrado = entrenadores.value.find(e => e.id === inscripcionForm.value.entrenador_id);
-  return encontrado ? { nombres: encontrado.nombres } : null;
-});
-
-// Función para obtener descripción de horario
-function getHorarioDescripcion(horarioId) {
-  const horario = horariosDisponibles.value.find(h => h.id === horarioId);
-  if (!horario) return `Horario ${horarioId}`;
-
-  return `${horario.nombre} - ${horario.dia_semana} ${horario.hora_inicio} a ${horario.hora_fin}`;
+// Funciones nuevas
+function seleccionarModalidad(modalidad) {
+  modalidadSeleccionada.value = modalidad;
+  // Resetear horarios seleccionados cuando cambia modalidad
+  horariosSeleccionados.value = [];
+  horariosSeleccionadosDetalles.value = [];
 }
 
-
-function getEntrenadorLabel(entrenador) {
-  if (!entrenador) return '';
-
-  // Prueba diferentes campos posibles
-  if (entrenador.nombre_completo) return entrenador.nombre_completo;
-  if (entrenador.nombres && entrenador.apellidos) return `${entrenador.nombres} ${entrenador.apellidos}`;
-  if (entrenador.nombre) return entrenador.nombre;
-  if (entrenador.nombres) return entrenador.nombres;
-  return `Entrenador ${entrenador.id}`;
-}
-// Actualiza la función crearInscripcionVacia()
-// En crearInscripcionVacia(), asegúrate de usar new Date() correctamente
-// Modifica la función crearInscripcionVacia para incluir datos del pago
-function crearInscripcionVacia() {
-  const fechaInicio = new Date();
-  const fechaFin = new Date();
-  fechaFin.setMonth(fechaFin.getMonth() + 1);
-
-  return {
-    // Datos de inscripción
-    estudiante_id: null,
-    modalidad_id: null,
-    sucursal_id: null,
-    entrenador_id: null,
-    fecha_inicio: fechaInicio,
-    fecha_fin: fechaFin,
-    clases_totales: 12,
-    clases_asistidas: 0,
-    permisos_usados: 0,
-    monto_mensual: 0,
-    estado: 'activa'
-  };
-}
-function getNombreEntrenador(entrenadorId) {
-  if (!entrenadorId) return null;
-  const entrenador = entrenadores.value.find(e => e.id === entrenadorId);
-  return entrenador ? entrenador.nombres : null;
+function calcularClasesSemanales(clasesMensuales) {
+  // 4.33 semanas promedio por mes
+  return Math.round(clasesMensuales / 4.33);
 }
 
-function getLabelEntrenador(entrenador) {
-  if (!entrenador) return '';
-
-  // Si tiene ambos campos
-  if (entrenador.nombres && entrenador.apellidos) {
-    return `${entrenador.nombres} ${entrenador.apellidos}`;
-  }
-  // Si solo tiene nombres
-  return entrenador.nombres || `Entrenador ${entrenador.id}`;
-}
-
-// Actualiza la función formatFecha para manejar objetos Date
-function formatFecha(fecha) {
-  if (!fecha) return '--';
-
-  let date;
-  if (fecha instanceof Date) {
-    date = fecha;
-  } else if (typeof fecha === 'string') {
-    date = new Date(fecha);
-  } else {
-    return '--';
-  }
-
-  return date.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-}
-
-// En la función guardarInscripcion, convierte las fechas a string ISO
-// 27. Guardar inscripción
-async function guardarInscripcionYpago() {
-  // Validar campos requeridos de inscripción
-  if (!estudianteSeleccionado.value) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione un estudiante',
-      life: 3000
-    });
-    return;
-  }
-
-  if (!inscripcionForm.value.modalidad_id) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione una modalidad',
-      life: 3000
-    });
-    return;
-  }
-
-  if (!inscripcionForm.value.sucursal_id) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione una sucursal',
-      life: 3000
-    });
-    return;
-  }
-
-  if (!inscripcionForm.value.entrenador_id) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione un entrenador',
-      life: 3000
-    });
-    return;
-  }
-
-  if (!inscripcionForm.value.monto_mensual || inscripcionForm.value.monto_mensual <= 0) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Ingrese un monto mensual válido',
-      life: 3000
-    });
-    return;
-  }
-
-  // Validar campos de pago
-  if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Ingrese un monto de pago válido',
-      life: 3000
-    });
-    return;
-  }
-
-  if (!pagoForm.value.metodo_pago) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione un método de pago',
-      life: 3000
-    });
-    return;
-  }
-
-  guardando.value = true;
-
+async function cargarModalidadesParaInscripcion() {
+  cargandoModalidades.value = true;
   try {
-    // ========== PASO 1: CREAR LA INSCRIPCIÓN ==========
-    console.log('=== CREANDO INSCRIPCIÓN ===');
-
-    // Función para formatear fecha a YYYY-MM-DD
-    const formatDateToYMD = (date) => {
-      if (!date) return null;
-      const d = new Date(date);
-      return d.toISOString().split('T')[0];
-    };
-
-    // Preparar datos para inscripción principal
-    const datosInscripcion = {
-      estudiante_id: estudianteSeleccionado.value.id,
-      modalidad_id: inscripcionForm.value.modalidad_id,
-      sucursal_id: inscripcionForm.value.sucursal_id,
-      entrenador_id: inscripcionForm.value.entrenador_id,
-      fecha_inicio: formatDateToYMD(inscripcionForm.value.fecha_inicio),
-      fecha_fin: formatDateToYMD(inscripcionForm.value.fecha_fin),
-      clases_totales: inscripcionForm.value.clases_totales || 
-                     modalidadSeleccionada.value?.clases_mensuales || 12,
-      monto_mensual: parseFloat(inscripcionForm.value.monto_mensual),
-      estado: 'activa',
-       horarios: horariosSeleccionados.value // <-- AGREGAR ESTA LÍNEA
-    };
-
-    console.log('Datos de inscripción a enviar:', datosInscripcion);
-
-    // Guardar la inscripción
-    const responseInscripcion = await inscripcionService.store(datosInscripcion);
-
-    console.log('Respuesta del servidor (inscripción):', responseInscripcion);
-
-    if (!responseInscripcion.data) {
-      throw new Error('Respuesta inválida del servidor');
-    }
-
-    // Manejar diferentes estructuras de respuesta
-    let inscripcionId;
-    if (responseInscripcion.data.success) {
-      inscripcionId = responseInscripcion.data.data?.id || 
-                     responseInscripcion.data.id;
-    } else if (responseInscripcion.data.id) {
-      inscripcionId = responseInscripcion.data.id;
-    }
-
-    if (!inscripcionId) {
-      console.error('No se pudo obtener el ID de la inscripción:', responseInscripcion);
-      throw new Error('No se obtuvo el ID de la inscripción creada');
-    }
-
-    console.log('Inscripción creada con ID:', inscripcionId);
-
-    // ========== PASO 2: CREAR EL PAGO ==========
-    console.log('=== CREANDO PAGO ===');
-
-    // Formatear fecha de pago
-    const fechaPagoFormateada = formatDateToYMD(pagoForm.value.fecha_pago);
-
-    // Preparar datos para el pago
-    const datosPago = {
-      inscripcion_id: inscripcionId,
-      monto: parseFloat(pagoForm.value.monto),
-      metodo_pago: pagoForm.value.metodo_pago,
-      fecha_pago: fechaPagoFormateada,
-      estado: 'pagado',
-      observacion: pagoForm.value.observacion?.trim() || ''
-    };
-
-    console.log('Datos de pago a enviar:', datosPago);
-
-    // Validar el pago
-    const validacionPago = {
-      valido: true,
-      errores: []
-    };
-
-    if (!datosPago.inscripcion_id) {
-      validacionPago.valido = false;
-      validacionPago.errores.push('ID de inscripción requerido');
-    }
-
-    if (!datosPago.monto || datosPago.monto <= 0) {
-      validacionPago.valido = false;
-      validacionPago.errores.push('Monto debe ser mayor a 0');
-    }
-
-    if (!datosPago.metodo_pago) {
-      validacionPago.valido = false;
-      validacionPago.errores.push('Método de pago requerido');
-    }
-
-    if (!datosPago.fecha_pago) {
-      validacionPago.valido = false;
-      validacionPago.errores.push('Fecha de pago requerida');
-    }
-
-    if (!validacionPago.valido) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error en datos del pago',
-        detail: validacionPago.errores.join(', '),
-        life: 4000
-      });
-
-      // Regresar al paso de pago para corregir
-      pasoActual.value = 3;
-      guardando.value = false;
-      return;
-    }
-
-    try {
-      // Guardar el pago
-      console.log('Enviando pago al servidor...');
-      const responsePago = await pagoService.store(datosPago);
-      
-      console.log('Respuesta del servidor (pago):', responsePago);
-
-      if (responsePago.data) {
-        if (responsePago.data.success) {
-          toast.add({
-            severity: 'success',
-            summary: 'Pago Registrado',
-            detail: `Pago de $${datosPago.monto} registrado correctamente`,
-            life: 3000
-          });
-        } else {
-          // Mostrar mensaje de error específico del servidor
-          const errorMsg = responsePago.data.message || 
-                         responsePago.data.error || 
-                         'Error al registrar el pago';
-          throw new Error(errorMsg);
-        }
-      } else {
-        throw new Error('Respuesta inválida del servidor');
-      }
-
-    } catch (pagoError) {
-      console.error('Error guardando pago:', pagoError);
-
-      let mensajePago = 'Error al registrar el pago';
-
-      if (pagoError.response) {
-        console.error('Error response data:', pagoError.response.data);
-        
-        if (pagoError.response.data?.errors) {
-          const errores = Object.values(pagoError.response.data.errors).flat();
-          mensajePago = errores.join(', ');
-        } else if (pagoError.response.data?.message) {
-          mensajePago = pagoError.response.data.message;
-        } else if (pagoError.response.data?.error) {
-          mensajePago = pagoError.response.data.error;
-        }
-      } else if (pagoError.message) {
-        mensajePago = pagoError.message;
-      }
-
-      throw new Error(`Error en pago: ${mensajePago}`);
-    }
-
-    // ========== PASO 3: CERRAR Y RECARGAR ==========
-    cerrarDialogoCompleto();
-
-    // Recargar datos
-    setTimeout(() => {
-      cargarDatos();
-    }, 500);
-
-    // Mostrar resumen final
-    toast.add({
-      severity: 'success',
-      summary: 'Proceso Completado',
-      detail: 'Inscripción y pago registrados exitosamente',
-      life: 4000
-    });
-
+    const response = await modalidadService.getActivas();
+    
+    // Procesar modalidades con información adicional
+    modalidades.value = response.data.map(mod => ({
+      ...mod,
+      descripcion_corta: mod.descripcion ? 
+        (mod.descripcion.length > 30 ? mod.descripcion.substring(0, 30) + '...' : mod.descripcion) : 
+        'Sin descripción',
+      // Agregar disciplina_nombre si viene en la respuesta
+      disciplina_nombre: mod.disciplina?.nombre || 'Sin disciplina'
+    }));
+    
   } catch (error) {
-    console.error('Error en el proceso completo:', error);
-
-    let mensaje = 'Error al procesar la inscripción';
-    let detalle = error.message || 'Ocurrió un error inesperado';
-
-    // Mostrar error detallado
+    console.error('Error cargando modalidades:', error);
     toast.add({
       severity: 'error',
-      summary: mensaje,
-      detail: detalle,
-      life: 6000
+      summary: 'Error',
+      detail: 'No se pudieron cargar las modalidades',
+      life: 3000
     });
-
-    // Si el error es del pago, regresar al paso de pago
-    if (error.message?.includes('pago') || detalle.includes('pago')) {
-      pasoActual.value = 3;
-    }
   } finally {
-    guardando.value = false;
-  }
-}
-// Función para cerrar completamente el diálogo
-function cerrarDialogoCompleto() {
-  dialogoInscripcion.value = false;
-  pasoActual.value = 0;
-  estudianteSeleccionado.value = null;
-  buscarEstudiante.value = '';
-  horariosSeleccionados.value = [];
-  inscripcionForm.value = crearInscripcionVacia();
-
-  // Resetear formulario de pago
-  pagoForm.value = {
-    monto: 0,
-    metodo_pago: null,
-    fecha_pago: new Date(),
-    observacion: ''
-  };
-}
-
-// Actualiza siguientePaso()
-function siguientePaso() {
-
-  if (pasoActual.value < 4) {
-    pasoActual.value++;
+    cargandoModalidades.value = false;
   }
 }
 
-// Función para validar pago antes de pasar al siguiente paso
-function validarPago() {
-  if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
+
+
+function calcularMesesDuracion() {
+  if (!inscripcionForm.value.fecha_inicio || !inscripcionForm.value.fecha_fin) {
+    return 1;
+  }
+  
+  const inicio = new Date(inscripcionForm.value.fecha_inicio);
+  const fin = new Date(inscripcionForm.value.fecha_fin);
+  const diffMeses = (fin.getFullYear() - inicio.getFullYear()) * 12 + 
+                    (fin.getMonth() - inicio.getMonth());
+  
+  return Math.max(1, diffMeses);
+}
+
+function calcularClasesTotales() {
+  if (!modalidadSeleccionada.value) return 12;
+  
+  const meses = calcularMesesDuracion();
+  return modalidadSeleccionada.value.clases_mensuales * meses;
+}
+
+function getDistribucionEstimada() {
+  const clasesTotales = calcularClasesTotales();
+  const totalHorarios = horariosSeleccionadosDetalles.value.length;
+  
+  if (totalHorarios === 0) return [];
+  
+  const base = Math.floor(clasesTotales / totalHorarios);
+  const extra = clasesTotales % totalHorarios;
+  
+  const distribucion = [];
+  for (let i = 0; i < totalHorarios; i++) {
+    distribucion.push(i < extra ? base + 1 : base);
+  }
+  
+  return distribucion;
+}
+
+function validarYContinuar() {
+  if (!modalidadSeleccionada.value) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Ingrese un monto válido',
+      summary: 'Seleccione modalidad',
+      detail: 'Debe seleccionar una modalidad primero',
       life: 3000
     });
     return;
   }
-
-  if (!pagoForm.value.metodo_pago) {
+  
+  if (horariosSeleccionados.value.length === 0) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Seleccione un método de pago',
+      summary: 'Seleccione horarios',
+      detail: 'Debe seleccionar al menos un horario',
       life: 3000
     });
     return;
   }
-
-  // Validar también con el servicio
-  const datosPagoPrueba = {
-    monto: pagoForm.value.monto,
-    metodo_pago: pagoForm.value.metodo_pago,
-    fecha_pago: pagoForm.value.fecha_pago,
-    inscripcion_id: 1 // valor temporal solo para validación
-  };
-
-  const validacion = pagoService.validarPago(datosPagoPrueba);
-  if (!validacion.valido) {
+  
+  // Verificar que los horarios pertenezcan a la modalidad seleccionada
+  const horariosInvalidos = horariosSeleccionadosDetalles.value.filter(
+    h => h.modalidad_id !== modalidadSeleccionada.value.id
+  );
+  
+  if (horariosInvalidos.length > 0) {
     toast.add({
-      severity: 'error',
-      summary: 'Error en pago',
-      detail: validacion.errores.join(', '),
+      severity: 'warn',
+      summary: 'Horarios no válidos',
+      detail: 'Algunos horarios no pertenecen a la modalidad seleccionada',
       life: 4000
     });
     return;
   }
-
-  // Si todo está bien, pasar al siguiente paso
-  pasoActual.value = 4; // Ir al paso de confirmación
-}
-
-// Función para obtener severidad del método de pago
-function getSeveridadMetodoPago(metodo) {
-  const severidades = {
-    'efectivo': 'success',
-    'qr': 'info',
-    'tarjeta': 'warning',
-    'transferencia': 'help'
-  };
-  return severidades[metodo] || 'info';
-}
-// Función para obtener la descripción completa del horario
-function getHorarioDescripcionCompleta(horarioId) {
-  const horario = horariosDisponibles.value.find(h => h.id === horarioId);
-  if (!horario) return `Horario ${horarioId}`;
-
-  return `${horario.nombre} - ${horario.dia_semana} ${horario.hora_inicio} a ${horario.hora_fin}`;
-}
-
-
-
-// Función para guardar inscripción y pago
-
-
-// Nueva función para guardar el pago
-async function guardarPago(inscripcionId) {
-  try {
-    const datosPago = {
-      inscripcion_id: inscripcionId,
-      monto: pagoForm.value.monto,
-      metodo_pago: pagoForm.value.metodo_pago,
-      fecha_pago: pagoForm.value.fecha_pago instanceof Date
-        ? pagoForm.value.fecha_pago.toISOString().split('T')[0]
-        : pagoForm.value.fecha_pago,
-      estado: 'pagado',
-      observacion: pagoForm.value.observacion || null
-    };
-
-    console.log('Datos del pago a enviar:', datosPago);
-
-    // Asumiendo que tienes un servicio para pagos
-    const response = await pagoService.store(datosPago);
-
-    if (response.data && response.data.success) {
-      toast.add({
-        severity: 'success',
-        summary: 'Pago Registrado',
-        detail: `Pago de $${pagoForm.value.monto} registrado correctamente`,
-        life: 3000
-      });
-
-      // Cerrar diálogo
-      cerrarDialogo();
-
-      // Recargar datos
-      await cargarDatos();
-    }
-
-  } catch (error) {
-    console.error('Error guardando pago:', error);
-
-    let mensaje = 'Error al registrar el pago';
-    if (error.response?.data?.message) {
-      mensaje = error.response.data.message;
-    }
-
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: mensaje,
-      life: 3000
-    });
-  }
-}
-
-// Variable para almacenar el ID de la inscripción creada
-const inscripcionGuardadaId = ref(null);
-
-
-// Asegúrate de cargar sucursales y entrenadores
-async function cargarDatosParaDialogo() {
-  try {
-    console.log('Cargando datos para diálogo...');
-
-    // Cargar sucursales
-    const sucursalesRes = await sucursalService.index(1, 100, "");
-    console.log('Respuesta sucursales:', sucursalesRes);
-
-    if (sucursalesRes.data) {
-      // Diferentes estructuras posibles
-      if (Array.isArray(sucursalesRes.data)) {
-        sucursales.value = sucursalesRes.data;
-      } else if (sucursalesRes.data.data && Array.isArray(sucursalesRes.data.data)) {
-        sucursales.value = sucursalesRes.data.data;
-      } else {
-        sucursales.value = [];
-      }
-    }
-
-    // Cargar entrenadores
-    const entrenadoresRes = await entrenadorService.index(1, 100, "");
-    console.log('Respuesta entrenadores:', entrenadoresRes);
-
-    if (entrenadoresRes.data) {
-      if (Array.isArray(entrenadoresRes.data)) {
-        entrenadores.value = entrenadoresRes.data;
-      } else if (entrenadoresRes.data.data && Array.isArray(entrenadoresRes.data.data)) {
-        entrenadores.value = entrenadoresRes.data.data;
-      } else {
-        entrenadores.value = [];
-      }
-    }
-
-    // Cargar horarios - prueba diferentes métodos
-    try {
-      let horariosRes;
-
-      // Intenta primero con la ruta específica
-      try {
-        horariosRes = await horarioService.disponibles();
-        console.log('Horarios disponibles:', horariosRes);
-      } catch (error) {
-        console.log('Ruta /disponibles no funciona, usando index:', error);
-        // Si falla, usa index
-        horariosRes = await horarioService.index(1, 100, "");
-      }
-
-      if (horariosRes.data) {
-        if (Array.isArray(horariosRes.data)) {
-          horariosDisponibles.value = horariosRes.data.map(h => ({
-            id: h.id,
-            descripcion: `${h.dia_semana} ${h.hora_inicio} - ${h.hora_fin} (${h.disciplina?.nombre || ''})`
-          }));
-        } else if (horariosRes.data.data && Array.isArray(horariosRes.data.data)) {
-          horariosDisponibles.value = horariosRes.data.data.map(h => ({
-            id: h.id,
-            descripcion: `${h.dia_semana} ${h.hora_inicio} - ${h.hora_fin} (${h.disciplina?.nombre || ''})`
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error cargando horarios:', error);
-      horariosDisponibles.value = [];
-    }
-
-    console.log('Datos cargados:', {
-      sucursales: sucursales.value.length,
-      entrenadores: entrenadores.value.length,
-      horarios: horariosDisponibles.value.length
-    });
-
-  } catch (error) {
-    console.error('Error cargando datos adicionales:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Error al cargar datos adicionales',
-      life: 3000
-    });
-  }
-}
-
-// Llama a esta función cuando abras el diálogo
-function abrirDialogoNueva() {
-  tituloDialogo.value = 'Nueva Inscripción';
-  pasoActual.value = 0;
-  estudianteSeleccionado.value = null;
-  buscarEstudiante.value = '';
-  horariosSeleccionados.value = [];
-  inscripcionForm.value = crearInscripcionVacia();
-  dialogoInscripcion.value = true;
-
-  // Cargar datos necesarios para el diálogo
-  cargarEstudiantesParaDialogo();
-  cargarModalidadesParaDialogo();
-  cargarDatosParaDialogo(); // <-- Nueva función
+  
+  // Continuar al paso de confirmación
+  pasoActual.value = 3;
 }
 
 // FUNCIONES PRINCIPALES
-
-// 1. Cargar datos principales
-// En tu componente Vue, en la función cargarDatos()
 async function cargarDatos() {
   cargando.value = true;
   try {
     console.log('Cargando inscripciones...');
     const response = await inscripcionService.index(1, 100, "");
 
-    console.log('Respuesta completa del backend:', response);
-    console.log('response.data:', response.data);
-    console.log('response.data?.data:', response.data?.data);
-
     let datosInscripciones = [];
 
     if (response.data && response.data.success) {
-      // CASO 1: Con paginación Laravel (la estructura ACTUAL)
       if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
         datosInscripciones = response.data.data.data;
-        console.log('Estructura: Laravel pagination (data.data.data)');
-      }
-      // CASO 2: Sin paginación (get())
-      else if (response.data.data && Array.isArray(response.data.data)) {
+      } else if (response.data.data && Array.isArray(response.data.data)) {
         datosInscripciones = response.data.data;
-        console.log('Estructura: Sin paginación (data.data)');
-      }
-      // CASO 3: Array directo
-      else if (Array.isArray(response.data.data)) {
+      } else if (Array.isArray(response.data.data)) {
         datosInscripciones = response.data.data;
-        console.log('Estructura: Array directo en data.data');
       }
     } else if (Array.isArray(response.data)) {
-      // CASO 4: Si response.data es array directamente
       datosInscripciones = response.data;
-      console.log('Estructura: response.data es array');
     }
 
     console.log(`Datos extraídos: ${datosInscripciones.length} inscripciones`);
-
-    if (datosInscripciones.length > 0) {
-      console.log('Primera inscripción procesada:', datosInscripciones[0]);
-      console.log('Tiene estudiante?:', !!datosInscripciones[0].estudiante);
-      console.log('Tiene modalidad?:', !!datosInscripciones[0].modalidad);
-    }
 
     // Procesar datos
     inscripciones.value = procesarInscripciones(datosInscripciones);
@@ -1634,20 +1079,777 @@ async function cargarDatos() {
   }
 }
 
-// 2. Función para abrir diálogo de nueva inscripción
+async function cargarHorariosDisponibles() {
+  try {
+    console.log('⏰ Cargando horarios disponibles...');
+    
+    // Usar el service correcto con parámetros
+    const response = await horarioService.index(1, 100, '', {
+      estado: 'activo',
+      with_cupo: true // si tu API soporta este parámetro
+    });
+    
+    console.log('📥 Respuesta horarios:', response.data);
+    
+    let datosHorarios = [];
+    
+    // Manejar diferentes estructuras de respuesta
+    if (response.data) {
+      // Estructura con success y data
+      if (response.data.success && response.data.data) {
+        if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          datosHorarios = response.data.data.data; // Paginación
+        } else if (Array.isArray(response.data.data)) {
+          datosHorarios = response.data.data; // Array directo
+        }
+      }
+      // Estructura con paginación
+      else if (response.data.data && Array.isArray(response.data.data)) {
+        datosHorarios = response.data.data;
+      }
+      // Array directo
+      else if (Array.isArray(response.data)) {
+        datosHorarios = response.data;
+      }
+    }
+    
+    // Filtrar por cupo disponible
+    datosHorarios = datosHorarios.filter(horario => {
+      const cupoMaximo = horario.cupo_maximo || 15;
+      const cupoActual = horario.cupo_actual || 0;
+      return cupoMaximo > cupoActual;
+    });
+    
+    console.log(`✅ ${datosHorarios.length} horarios disponibles`);
+    
+    // Procesar para la vista
+    procesarHorariosParaVista(datosHorarios);
+    
+  } catch (error) {
+    console.error('❌ Error cargando horarios:', error);
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudieron cargar los horarios disponibles',
+      life: 3000
+    });
+    
+    horariosDisponibles.value = [];
+  }
+}
+// Y actualiza tu función cargarHorariosPorModalidad:
+async function cargarHorariosPorModalidad(modalidadId) {
+  cargandoHorarios.value = true;
+  
+  try {
+    console.log(`🎯 Cargando horarios EXCLUSIVOS para modalidad ID: ${modalidadId}`);
+    
+    // OPCIÓN A: Si tu backend tiene endpoint para filtrar por modalidad
+    try {
+      const response = await horarioService.getPorModalidad(modalidadId);
+      console.log('📥 Respuesta por modalidad:', response.data);
+      
+      let datosHorarios = [];
+      
+      if (response.data) {
+        if (response.data.success && Array.isArray(response.data.data)) {
+          datosHorarios = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          datosHorarios = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          datosHorarios = response.data.data;
+        }
+      }
+      
+      console.log(`✅ ${datosHorarios.length} horarios de modalidad ${modalidadId}`);
+      procesarHorariosParaVista(datosHorarios);
+      
+    } catch (apiError) {
+      console.log('🔄 Falló endpoint específico, usando filtro manual...');
+      
+      // OPCIÓN B: Cargar todos y filtrar manualmente
+      await cargarTodosHorariosYFiltrar(modalidadId);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error cargando horarios:', error);
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudieron cargar los horarios',
+      life: 3000
+    });
+    
+  } finally {
+    cargandoHorarios.value = false;
+  }
+}
+
+async function cargarTodosHorariosYFiltrar(modalidadId) {
+  try {
+    const response = await horarioService.index(1, 100, '', {
+      estado: 'activo',
+      with_cupo: true,
+      include: 'modalidad'
+    });
+    
+    let todosHorarios = [];
+    
+    // Extraer datos
+    if (response.data) {
+      if (response.data.success && Array.isArray(response.data.data)) {
+        todosHorarios = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        todosHorarios = response.data;
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        todosHorarios = response.data.data;
+      }
+    }
+    
+    console.log(`📊 Total horarios cargados: ${todosHorarios.length}`);
+    
+    // FILTRAR SOLO LOS DE LA MODALIDAD SELECCIONADA
+    const horariosFiltrados = todosHorarios.filter(horario => {
+      const horarioModalidadId = horario.modalidad_id || 
+                                 (horario.modalidad ? horario.modalidad.id : null);
+      
+      console.log(`Horario ${horario.id}: modalidad_id = ${horarioModalidadId}, buscamos: ${modalidadId}`);
+      
+      return Number(horarioModalidadId) === Number(modalidadId);
+    });
+    
+    console.log(`✅ ${horariosFiltrados.length} horarios después del filtro`);
+    
+    // Debug: mostrar qué horarios se encontraron
+    horariosFiltrados.forEach(h => {
+      console.log(`- ${h.nombre} (ID: ${h.id}, Modalidad ID: ${h.modalidad_id})`);
+    });
+    
+    if (horariosFiltrados.length === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Sin horarios',
+        detail: 'No hay horarios disponibles para esta modalidad',
+        life: 3000
+      });
+    }
+    
+    procesarHorariosParaVista(horariosFiltrados);
+    
+  } catch (error) {
+    console.error('Error en filtro manual:', error);
+    throw error;
+  }
+}
+// También asegúrate de tener esta función:
+function procesarHorariosParaVista(datosHorarios) {
+  console.log('🔄 Procesando horarios para vista:', datosHorarios.length);
+  
+  horariosDisponibles.value = datosHorarios.map(horario => {
+    // Debug: ver qué modalidad tiene cada horario
+    console.log(`Procesando horario ${horario.id}: modalidad_id = ${horario.modalidad_id}`);
+    
+    // Calcular cupo disponible
+    const cupoMaximo = horario.cupo_maximo || 15;
+    const cupoActual = horario.cupo_actual || 0;
+    const cupoDisponible = Math.max(0, cupoMaximo - cupoActual);
+    
+    // Obtener datos de relaciones
+    const modalidad = horario.modalidad || {};
+    const entrenador = horario.entrenador || {};
+    const sucursal = horario.sucursal || {};
+    
+    return {
+      id: horario.id,
+      nombre_horario: horario.nombre || `Horario ${horario.id}`,
+      modalidad_id: horario.modalidad_id || modalidad.id,
+      modalidad_nombre: modalidad.nombre || 'Sin modalidad',
+      disciplina_id: horario.disciplina_id,
+      dia_semana: horario.dia_semana,
+      hora_inicio: horario.hora_inicio?.substring(0, 5) || '00:00',
+      hora_fin: horario.hora_fin?.substring(0, 5) || '00:00',
+      duracion_minutos: horario.duracion_minutos || 60,
+      entrenador_id: horario.entrenador_id,
+      entrenador_nombre: entrenador.nombres && entrenador.apellidos 
+        ? `${entrenador.nombres} ${entrenador.apellidos}`.trim()
+        : 'Sin entrenador',
+      sucursal_id: horario.sucursal_id,
+      sucursal_nombre: sucursal.nombre || 'Sin sucursal',
+      cupo_maximo: cupoMaximo,
+      cupo_actual: cupoActual,
+      cupo_disponible: cupoDisponible,
+      precio: parseFloat(modalidad.precio_mensual) || 0,
+      permisos_maximos: modalidad.permisos_maximos || 3,
+      estado: horario.estado || 'activo',
+      color: horario.color || '#3B82F6',
+      descripcion: horario.descripcion || ''
+    };
+  });
+  
+  console.log('✅ Horarios procesados:', horariosDisponibles.value);
+}
+
+// Y la computed property para horarios filtrados:
+const horariosFiltrados = computed(() => {
+  // Ahora no necesitamos filtrar por modalidad porque ya cargamos solo los de esa modalidad
+  return horariosDisponibles.value;
+});
+
+async function cargarHorariosConIndex() {
+  try {
+    console.log('Cargando horarios con método index...');
+    const response = await horarioService.index(1, 100, '', {
+      estado: 'activo',
+      include: 'modalidad,entrenador,sucursal'
+    });
+
+    let datosHorarios = [];
+
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        datosHorarios = response.data;
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        datosHorarios = response.data.data;
+      }
+    }
+
+    // Filtrar por cupo disponible
+    datosHorarios = datosHorarios.filter(h =>
+      h.estado === 'activo' &&
+      (h.cupo_maximo || 15) > (h.cupo_actual || 0)
+    );
+
+    procesarHorariosParaVista(datosHorarios);
+
+  } catch (error) {
+    console.error('Error cargando horarios con index:', error);
+    horariosDisponibles.value = obtenerHorariosDeEjemplo();
+    toast.add({
+      severity: 'info',
+      summary: 'Modo demostración',
+      detail: 'Mostrando datos de ejemplo',
+      life: 3000
+    });
+  }
+}
+
+function obtenerHorariosDeEjemplo() {
+  return [
+    {
+      id: 28,
+      modalidad_id: 11,
+      modalidad_nombre: 'Jujitsu para principiantes',
+      disciplina_id: 1,
+      dia_semana: 'Lunes',
+      hora_inicio: '15:00',
+      hora_fin: '16:00',
+      duracion_minutos: 60,
+      entrenador_id: 1,
+      entrenador_nombre: 'Carlos López',
+      sucursal_id: 1,
+      sucursal_nombre: 'Sucursal Centro',
+      cupo_maximo: 15,
+      cupo_actual: 5,
+      cupo_disponible: 10,
+      precio: 180,
+      permisos_maximos: 3,
+      estado: 'activo',
+      color: '#3B82F6'
+    },
+    {
+      id: 31,
+      modalidad_id: 12,
+      modalidad_nombre: 'King boxing avanzado',
+      disciplina_id: 2,
+      dia_semana: 'Lunes',
+      hora_inicio: '17:00',
+      hora_fin: '19:00',
+      duracion_minutos: 120,
+      entrenador_id: 1,
+      entrenador_nombre: 'Ana García',
+      sucursal_id: 3,
+      sucursal_nombre: 'Sucursal Norte',
+      cupo_maximo: 15,
+      cupo_actual: 8,
+      cupo_disponible: 7,
+      precio: 250,
+      permisos_maximos: 3,
+      estado: 'activo',
+      color: '#10B981'
+    }
+  ];
+}
+
+// Funciones para horarios
+function estaSeleccionado(horarioId) {
+  if (!Array.isArray(horariosSeleccionados.value)) {
+    horariosSeleccionados.value = [];
+    return false;
+  }
+  return horariosSeleccionados.value.includes(horarioId);
+}
+
+function toggleHorarioSeleccionado(horario) {
+  const index = horariosSeleccionados.value.indexOf(horario.id);
+
+  if (index === -1) {
+    if (horariosSeleccionados.value.length < 4) {
+      horariosSeleccionados.value = [...horariosSeleccionados.value, horario.id];
+      horariosSeleccionadosDetalles.value = [...horariosSeleccionadosDetalles.value, horario];
+      toast.add({
+        severity: 'success',
+        summary: 'Horario agregado',
+        detail: `${horario.dia_semana} ${horario.hora_inicio} seleccionado`,
+        life: 1500
+      });
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: 'Límite alcanzado',
+        detail: 'Máximo 4 horarios por inscripción',
+        life: 3000
+      });
+    }
+  } else {
+    horariosSeleccionados.value = horariosSeleccionados.value.filter(id => id !== horario.id);
+    horariosSeleccionadosDetalles.value = horariosSeleccionadosDetalles.value.filter(h => h.id !== horario.id);
+    toast.add({
+      severity: 'info',
+      summary: 'Horario removido',
+      detail: `${horario.dia_semana} ${horario.hora_inicio} removido`,
+      life: 1500
+    });
+  }
+}
+
+function quitarHorario(horarioId) {
+  horariosSeleccionados.value = horariosSeleccionados.value.filter(id => id !== horarioId);
+  horariosSeleccionadosDetalles.value = horariosSeleccionadosDetalles.value.filter(h => h.id !== horarioId);
+}
+
+function getPrecioTotal() {
+  if (!modalidadSeleccionada.value) return 0;
+  
+  const meses = calcularMesesDuracion();
+  return modalidadSeleccionada.value.precio_mensual * meses;
+}
+
+function getModalidadNombre() {
+  if (horariosSeleccionadosDetalles.value.length === 0) return '';
+  return horariosSeleccionadosDetalles.value[0]?.modalidad_nombre || '';
+}
+
+function getEntrenadorNombre() {
+  if (horariosSeleccionadosDetalles.value.length === 0) return '';
+  return horariosSeleccionadosDetalles.value[0]?.entrenador_nombre || '';
+}
+
+function getSucursalNombre() {
+  if (horariosSeleccionadosDetalles.value.length === 0) return '';
+  return horariosSeleccionadosDetalles.value[0]?.sucursal_nombre || '';
+}
+
+function getPermisosMaximos() {
+  if (horariosSeleccionadosDetalles.value.length === 0) return 3;
+  return horariosSeleccionadosDetalles.value[0]?.permisos_maximos || 3;
+}
+
+function getDistribucionArray() {
+  const totalHorarios = horariosSeleccionadosDetalles.value.length;
+  if (totalHorarios === 0) return [];
+
+  const clasesTotales = 12;
+  const base = Math.floor(clasesTotales / totalHorarios);
+  const extra = clasesTotales % totalHorarios;
+
+  const distribucion = [];
+  for (let i = 0; i < totalHorarios; i++) {
+    distribucion.push(i < extra ? base + 1 : base);
+  }
+
+  return distribucion;
+}
+
+function getDistribucionClases() {
+  const distribucion = getDistribucionArray();
+  if (distribucion.length === 0) return '';
+
+  let texto = '12 clases distribuidas: ';
+  distribucion.forEach((clases, index) => {
+    const horario = horariosSeleccionadosDetalles.value[index];
+    texto += `${horario.dia_semana} (${clases} clases)`;
+    if (index < distribucion.length - 1) texto += ', ';
+  });
+
+  return texto;
+}
 
 
-// 3. Crear inscripción vacía
 
 
-// 4. Cargar estudiantes para diálogo
+
+
+
+// Función para verificar datos antes de enviar
+function verificarDatosInscripcion() {
+  if (horariosSeleccionadosDetalles.value.length === 0) {
+    return { valido: false, error: 'No hay horarios seleccionados' };
+  }
+
+  const primerHorario = horariosSeleccionadosDetalles.value[0];
+
+  const verificaciones = [
+    { campo: 'estudiante_id', valor: estudianteSeleccionado.value?.id, requerido: true },
+    { campo: 'modalidad_id', valor: primerHorario.modalidad_id, requerido: true },
+    { campo: 'sucursal_id', valor: primerHorario.sucursal_id, requerido: true },
+    { campo: 'entrenador_id', valor: primerHorario.entrenador_id, requerido: true },
+    { campo: 'fecha_inicio', valor: inscripcionForm.value.fecha_inicio, requerido: true },
+    { campo: 'monto_mensual', valor: getPrecioTotal(), requerido: true },
+    { campo: 'horarios', valor: horariosSeleccionados.value, requerido: true }
+  ];
+
+  const errores = [];
+
+  for (const ver of verificaciones) {
+    if (ver.requerido && (!ver.valor || ver.valor === '' || ver.valor === 0)) {
+      errores.push(`${ver.campo} es requerido`);
+    }
+  }
+
+  return {
+    valido: errores.length === 0,
+    errores: errores,
+    datos: {
+      estudiante_id: estudianteSeleccionado.value?.id,
+      modalidad_id: primerHorario.modalidad_id,
+      sucursal_id: primerHorario.sucursal_id,
+      entrenador_id: primerHorario.entrenador_id,
+      fecha_inicio: inscripcionForm.value.fecha_inicio,
+      monto_mensual: getPrecioTotal(),
+      horarios: horariosSeleccionados.value
+    }
+  };
+}
+
+function crearInscripcionVacia() {
+  const fechaInicio = new Date();
+  const fechaFin = new Date();
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+  return {
+    estudiante_id: null,
+    modalidad_id: null,
+    sucursal_id: null,
+    entrenador_id: null,
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
+    clases_totales: 12,
+    clases_asistidas: 0,
+    permisos_usados: 0,
+    monto_mensual: 0,
+    estado: 'activo'
+  };
+}
+
+async function guardarInscripcionYpago() {
+  // Validación de estudiante
+  if (!estudianteSeleccionado.value || !estudianteSeleccionado.value.id) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Debe seleccionar un estudiante',
+      life: 4000
+    });
+    return;
+  }
+
+  // Validación de modalidad
+  if (!modalidadSeleccionada.value || !modalidadSeleccionada.value.id) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Debe seleccionar una modalidad',
+      life: 4000
+    });
+    return;
+  }
+
+  // Validación de horarios
+  if (!horariosSeleccionados.value.length || !horariosSeleccionadosDetalles.value.length) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Debe seleccionar al menos un horario',
+      life: 4000
+    });
+    return;
+  }
+
+  // Validación de fechas
+  if (!inscripcionForm.value.fecha_inicio) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Debe seleccionar una fecha de inicio',
+      life: 4000
+    });
+    return;
+  }
+
+  // Verificar que la fecha de inicio no sea anterior a hoy
+  const fechaInicio = new Date(inscripcionForm.value.fecha_inicio);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  
+  if (fechaInicio < hoy) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'La fecha de inicio no puede ser anterior a hoy',
+      life: 4000
+    });
+    return;
+  }
+
+  // Validación de fecha fin (si está presente)
+  if (inscripcionForm.value.fecha_fin) {
+    const fechaFin = new Date(inscripcionForm.value.fecha_fin);
+    if (fechaFin <= fechaInicio) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'La fecha fin debe ser posterior a la fecha inicio',
+        life: 4000
+      });
+      return;
+    }
+  }
+
+  // Validación de pago
+  if (pagoForm.value.monto <= 0) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'El monto del pago debe ser mayor a 0',
+      life: 4000
+    });
+    return;
+  }
+
+  // Validar que el monto no sea mayor al precio total
+  const precioTotal = getPrecioTotal();
+  if (parseFloat(pagoForm.value.monto) > parseFloat(precioTotal)) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Advertencia',
+      detail: `El monto del pago (${pagoForm.value.monto}) es mayor al precio total (${precioTotal})`,
+      life: 5000
+    });
+    // Continuar de todos modos, solo es advertencia
+  }
+
+  guardando.value = true;
+
+  try {
+    const formatDateToYMD = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      // Ajustar para evitar problemas de zona horaria
+      const adjustedDate = new Date(d.getTime() + Math.abs(d.getTimezoneOffset() * 60000));
+      return adjustedDate.toISOString().split('T')[0];
+    };
+
+    // Obtener el primer horario para sucursal y entrenador
+    const primerHorario = horariosSeleccionadosDetalles.value[0];
+    
+    // Validar que el horario tenga sucursal y entrenador
+    if (!primerHorario?.sucursal_id) {
+      throw new Error('El horario seleccionado no tiene sucursal asignada');
+    }
+    
+    if (!primerHorario?.entrenador_id) {
+      throw new Error('El horario seleccionado no tiene entrenador asignado');
+    }
+
+    const datosInscripcion = {
+      estudiante_id: Number(estudianteSeleccionado.value.id),
+      modalidad_id: Number(modalidadSeleccionada.value.id),
+      sucursal_id: primerHorario.sucursal_id ? Number(primerHorario.sucursal_id) : null,
+      entrenador_id: primerHorario.entrenador_id ? Number(primerHorario.entrenador_id) : null,
+      fecha_inicio: formatDateToYMD(inscripcionForm.value.fecha_inicio),
+      fecha_fin: formatDateToYMD(inscripcionForm.value.fecha_fin),
+      monto_mensual: Number(getPrecioTotal()),
+      horarios: horariosSeleccionados.value.map(id => Number(id)),
+      // Campos adicionales para validación en backend
+      mes_inicio: fechaInicio.getMonth() + 1,
+      anio_inicio: fechaInicio.getFullYear()
+    };
+
+    console.log('📤 Enviando datos de inscripción:', datosInscripcion);
+
+    // Crear inscripción
+    const responseInscripcion = await inscripcionService.store(datosInscripcion);
+    console.log('📥 Respuesta inscripción:', responseInscripcion.data);
+
+    if (!responseInscripcion.data.success) {
+      throw new Error(responseInscripcion.data.message || 'Error al crear la inscripción');
+    }
+
+    const inscripcionId = responseInscripcion.data.inscripcion_id;
+    
+    if (!inscripcionId) {
+      throw new Error('No se recibió el ID de la inscripción');
+    }
+
+    // CREAR PAGO
+    const fechaPagoFormateada = formatDateToYMD(pagoForm.value.fecha_pago || new Date());
+
+    const datosPago = {
+      inscripcion_id: inscripcionId,
+      monto: parseFloat(pagoForm.value.monto || getPrecioTotal()),
+      metodo_pago: pagoForm.value.metodo_pago || 'efectivo',
+      fecha_pago: fechaPagoFormateada,
+      estado: 'pagado',
+      observacion: pagoForm.value.observacion || '',
+      // Campos para control interno
+      mes_correspondiente: fechaInicio.getMonth() + 1,
+      anio_correspondiente: fechaInicio.getFullYear(),
+      tipo_pago: 'inscripcion' // Para identificar que es pago de inscripción
+    };
+
+    console.log('📤 Enviando datos de pago:', datosPago);
+
+    const responsePago = await pagoService.store(datosPago);
+    console.log('📥 Respuesta pago:', responsePago.data);
+
+    if (!responsePago.data.success) {
+      // Si el pago falla, podrías querer revertir la inscripción
+      console.warn('⚠️ Pago creado pero con advertencias:', responsePago.data.message);
+      // No hacemos throw aquí para no revertir la inscripción exitosa
+    }
+
+    // ÉXITO - Cerrar diálogo y recargar datos
+    cerrarDialogoCompleto();
+    
+    // Mensaje de éxito principal
+    toast.add({
+      severity: 'success',
+      summary: '✅ Inscripción y Pago Registrados',
+      detail: `Inscripción #${inscripcionId} creada exitosamente`,
+      life: 5000
+    });
+
+    // Mostrar distribución de clases si está disponible
+    if (responseInscripcion.data.data?.distribucion) {
+      const distrib = responseInscripcion.data.data.distribucion;
+      const totalClases = responseInscripcion.data.data.clases_totales;
+      
+      // Mensaje adicional con información de distribución
+      setTimeout(() => {
+        toast.add({
+          severity: 'info',
+          summary: '📋 Distribución de Clases',
+          detail: `Total: ${totalClases} clases (${distrib.clases_por_horario_base} base + ${distrib.horarios_con_extra} extra)`,
+          life: 6000
+        });
+      }, 1000);
+    }
+
+    // Recargar datos después de un breve delay
+    setTimeout(() => {
+      cargarDatos();
+      // También podrías querer emitir un evento para notificar a otros componentes
+      // emit('inscripcion-creada', { id: inscripcionId });
+    }, 800);
+
+  } catch (error) {
+    console.error('❌ Error completo:', error);
+    
+    let detalle = error.message;
+    let summary = 'Error al procesar';
+    
+    // Manejo de errores específicos
+    if (error.response) {
+      // Error de respuesta HTTP
+      if (error.response.status === 422) {
+        summary = 'Error de validación';
+        detalle = error.response.data.message || 'Datos inválidos';
+        
+        // Mostrar errores de validación específicos
+        if (error.response.data.errors) {
+          const errores = Object.values(error.response.data.errors).flat();
+          detalle = errores.join(', ');
+        }
+      } else if (error.response.status === 409) {
+        summary = 'Conflicto';
+        detalle = error.response.data.message || 'El estudiante ya tiene una inscripción activa';
+      } else if (error.response.status === 404) {
+        summary = 'No encontrado';
+        detalle = error.response.data.message || 'Recurso no encontrado';
+      } else if (error.response.data?.message) {
+        detalle = error.response.data.message;
+      }
+    } else if (error.request) {
+      // Error de red o timeout
+      summary = 'Error de conexión';
+      detalle = 'No se pudo conectar con el servidor. Verifique su conexión.';
+    }
+
+    // Mostrar error al usuario
+    toast.add({
+      severity: 'error',
+      summary: summary,
+      detail: detalle,
+      life: 7000
+    });
+
+    // Opcional: Log adicional para depuración
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Detalles del error:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data
+      });
+    }
+    
+  } finally {
+    guardando.value = false;
+  }
+}
+
+function cerrarDialogoCompleto() {
+  dialogoInscripcion.value = false;
+  pasoActual.value = 0;
+  estudianteSeleccionado.value = null;
+  buscarEstudiante.value = '';
+  horariosSeleccionados.value = [];
+  horariosSeleccionadosDetalles.value = [];
+  modalidadSeleccionada.value = null;
+  modalidades.value = [];
+  horariosDisponibles.value = [];
+  
+  // Resetear formularios
+  inscripcionForm.value = {
+    fecha_inicio: new Date(),
+    fecha_fin: new Date(new Date().setMonth(new Date().getMonth() + 1))
+  };
+
+  pagoForm.value = {
+    monto: 0,
+    metodo_pago: null,
+    fecha_pago: new Date(),
+    observacion: ''
+  };
+}
+
 async function cargarEstudiantesParaDialogo() {
   cargandoEstudiantes.value = true;
   try {
     console.log('=== CARGANDO ESTUDIANTES ===');
     const response = await estudianteService.obtenerTodos();
 
-    // DEPURACIÓN DETALLADA
     console.log('Respuesta completa:', response);
     console.log('response.data:', response.data);
     console.log('¿Es array?:', Array.isArray(response.data));
@@ -1655,16 +1857,6 @@ async function cargarEstudiantesParaDialogo() {
     if (response.data && Array.isArray(response.data)) {
       estudiantes.value = response.data;
       console.log('Cargados', estudiantes.value.length, 'estudiantes');
-
-      if (estudiantes.value.length > 0) {
-        console.log('Primer estudiante:', {
-          id: estudiantes.value[0].id,
-          nombre: estudiantes.value[0].nombres,
-          ci: estudiantes.value[0].ci,
-          telefono: estudiantes.value[0].telefono,
-          correo: estudiantes.value[0].correo
-        });
-      }
     } else if (Array.isArray(response)) {
       estudiantes.value = response;
       console.log('Cargados (array directo):', estudiantes.value.length, 'estudiantes');
@@ -1689,17 +1881,6 @@ async function cargarEstudiantesParaDialogo() {
   }
 }
 
-// 5. Cargar modalidades para diálogo
-async function cargarModalidadesParaDialogo() {
-  try {
-    const response = await modalidadService.obtenerTodas();
-    modalidades.value = response.data || response || [];
-  } catch (error) {
-    console.error('Error cargando modalidades:', error);
-  }
-}
-
-// 6. Procesar datos de inscripciones
 function procesarInscripciones(data) {
   if (!Array.isArray(data)) {
     console.error('Datos de inscripciones no es un array:', data);
@@ -1707,77 +1888,243 @@ function procesarInscripciones(data) {
   }
 
   return data.map(insc => {
-    // Calcular días restantes
     const diasRestantes = calcularDiasRestantes(insc.fecha_fin);
-
-    // Asegurar que monto_mensual sea número
     let montoMensual = insc.monto_mensual;
+
     if (typeof montoMensual === 'string') {
       montoMensual = parseFloat(montoMensual);
     }
+
     if (isNaN(montoMensual)) {
       montoMensual = 0;
     }
 
+    // Calcular progreso una sola vez
+    const progreso = getClasesProgreso(insc);
+    const porcentaje = calcularProgresoClases(insc);
+
     return {
       ...insc,
       dias_restantes: diasRestantes,
-      monto_mensual: montoMensual, // Asegurar que sea número
-      // Agregar campo calculado para mostrar en la tabla
-      clases_restantes_calculadas: insc.clases_restantes_calculadas || 
-                                  insc.clases_restantes || 
-                                  0
+      monto_mensual: montoMensual,
+      clases_restantes_calculadas: insc.clases_restantes_calculadas ||
+        insc.clases_restantes ||
+        0,
+      clases_progreso: progreso, // ← Nuevo
+      progreso_porcentaje: porcentaje // ← Nuevo
     };
   });
 }
-
-// 7. Calcular progreso de clases
-// 7. Calcular progreso de clases CORREGIDO
-function calcularProgresoClases(inscripcion) {
-  // Opción 1: Si viene con datos de inscripcionHorarios
-  if (inscripcion.inscripcion_horarios && inscripcion.inscripcion_horarios.length > 0) {
-    const totalRestantes = inscripcion.inscripcion_horarios.reduce((sum, ih) => {
-      return sum + (ih.clases_restantes || 0);
-    }, 0);
+async function cargarModalidades() {
+  cargandoModalidades.value = true;
+  try {
+    console.log('📦 Cargando modalidades...');
     
+    // Opción 1: Usar el método index con filtros
+    const response = await modalidadService.index(1, 100, '', {
+      estado: 'activo'
+    });
+    
+    console.log('📥 Respuesta completa:', response);
+    console.log('📥 Datos recibidos:', response.data);
+    
+    let datosModalidades = [];
+    
+    // Manejar diferentes estructuras de respuesta
+    if (response.data) {
+      // Estructura 1: Laravel con paginación
+      if (response.data.data && Array.isArray(response.data.data)) {
+        datosModalidades = response.data.data;
+      }
+      // Estructura 2: Array directo
+      else if (Array.isArray(response.data)) {
+        datosModalidades = response.data;
+      }
+      // Estructura 3: Con success wrapper
+      else if (response.data.success && response.data.data) {
+        if (Array.isArray(response.data.data)) {
+          datosModalidades = response.data.data;
+        } else if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          datosModalidades = response.data.data.data; // Paginación anidada
+        }
+      }
+    }
+    
+    // Asegurar que sea array
+    if (!Array.isArray(datosModalidades)) {
+      console.warn('⚠️ Los datos no son un array, convirtiendo:', datosModalidades);
+      datosModalidades = [];
+    }
+    
+    // Filtrar por estado activo (por si acaso)
+    modalidades.value = datosModalidades.filter(m => 
+      m.estado === 'activo' || m.estado === undefined || m.estado === null
+    );
+    
+    console.log(`✅ ${modalidades.value.length} modalidades cargadas:`, 
+      modalidades.value.map(m => ({ id: m.id, nombre: m.nombre, estado: m.estado }))
+    );
+    
+    // Mostrar toast si no hay modalidades
+    if (modalidades.value.length === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Sin modalidades',
+        detail: 'No se encontraron modalidades activas',
+        life: 3000
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error cargando modalidades:', error);
+    
+    // Intentar método alternativo
+    try {
+      console.log('🔄 Intentando método alternativo...');
+      const responseAlt = await modalidadService.obtenerTodas();
+      
+      if (responseAlt.data) {
+        let datosAlt = [];
+        
+        if (Array.isArray(responseAlt.data)) {
+          datosAlt = responseAlt.data;
+        } else if (responseAlt.data.data && Array.isArray(responseAlt.data.data)) {
+          datosAlt = responseAlt.data.data;
+        }
+        
+        modalidades.value = datosAlt.filter(m => 
+          m.estado === 'activo' || m.estado === undefined || m.estado === null
+        );
+        
+        console.log(`🔄 ${modalidades.value.length} modalidades cargadas (método alternativo)`);
+      }
+    } catch (secondError) {
+      console.error('❌ Error en método alternativo:', secondError);
+      
+      toast.add({
+        severity: 'error',
+        summary: 'Error de conexión',
+        detail: 'No se pudo conectar con el servidor de modalidades',
+        life: 4000
+      });
+      
+      modalidades.value = [];
+    }
+  } finally {
+    cargandoModalidades.value = false;
+  }
+}
+
+// Computed para modalidades con emoji y precio formateado
+const modalidadesConInfo = computed(() => {
+  const emojisPorDisciplina = {
+    1: '🥋', // Jujitsu
+    2: '🥊', // Boxing
+    8: '🏋️'  // Gimnasio
+  }
+  
+  return modalidades.value.map(modalidad => {
+    const emoji = emojisPorDisciplina[modalidad.disciplina_id] || '🎯'
+    
+    return {
+      ...modalidad,
+      emoji: emoji,
+      precio_formateado: `$${modalidad.precio_mensual}`,
+      descripcion_corta: modalidad.descripcion ? 
+        (modalidad.descripcion.length > 30 ? 
+          modalidad.descripcion.substring(0, 30) + '...' : 
+          modalidad.descripcion) : 
+        'Sin descripción'
+    }
+  })
+})
+
+
+// Al seleccionar una modalidad, mostrar información
+const modalidadSeleccionadaInfo = computed(() => {
+  if (filtroModalidad.value === null) return null
+  return modalidades.value.find(m => m.id === filtroModalidad.value)
+})
+
+function getClasesProgreso(inscripcion) {
+  // Si tiene inscripcion_horarios
+  if (inscripcion.inscripcion_horarios && inscripcion.inscripcion_horarios.length > 0) {
     const totalClases = inscripcion.inscripcion_horarios.reduce((sum, ih) => {
       return sum + (ih.clases_totales || 0);
     }, 0);
     
-    if (totalClases === 0) return 0;
+    const totalRestantes = inscripcion.inscripcion_horarios.reduce((sum, ih) => {
+      return sum + (ih.clases_restantes || 0);
+    }, 0);
     
-    const asistidas = totalClases - totalRestantes;
-    return (asistidas / totalClases) * 100;
+    const asistidas = Math.max(0, totalClases - totalRestantes);
+    return { asistidas, total: totalClases };
   }
   
-  // Opción 2: Si viene con datos directos
-  const total = inscripcion.clases_totales || 1;
-  // Suponiendo que el backend envía clases_restantes_calculadas
-  const restantes = inscripcion.clases_restantes_calculadas || 0;
-  const asistidas = total - restantes;
+  // Si no, usar los campos directos
+  const total = inscripcion.clases_totales || 12;
+  const restantes = inscripcion.clases_restantes_calculadas || 
+                    inscripcion.clases_restantes || 
+                    total;
   
-  return (asistidas / total) * 100;
+  const asistidas = Math.max(0, total - restantes);
+  return { asistidas, total };
 }
 
-// 8. Calcular si se puede renovar
+
+function calcularProgresoClases(inscripcion) {
+  console.log('📊 Calculando progreso para inscripción:', inscripcion.id);
+  
+  // CASO 1: Si tiene inscripcion_horarios (relación cargada)
+  if (inscripcion.inscripcion_horarios && inscripcion.inscripcion_horarios.length > 0) {
+    console.log('📅 Usando datos de inscripcion_horarios');
+    
+    const totalRestantes = inscripcion.inscripcion_horarios.reduce((sum, ih) => {
+      return sum + (ih.clases_restantes || 0);
+    }, 0);
+
+    const totalClases = inscripcion.inscripcion_horarios.reduce((sum, ih) => {
+      return sum + (ih.clases_totales || 0);
+    }, 0);
+
+    console.log(`📊 Total clases: ${totalClases}, Restantes: ${totalRestantes}`);
+    
+    if (totalClases === 0) return 0;
+
+    const asistidas = Math.max(0, totalClases - totalRestantes);
+    const porcentaje = (asistidas / totalClases) * 100;
+    
+    console.log(`📊 Asistidas: ${asistidas}, Porcentaje: ${porcentaje}%`);
+    return Math.min(100, Math.max(0, porcentaje));
+  }
+
+  // CASO 2: Si tiene clases_totales directamente
+  const total = inscripcion.clases_totales || 12; // Default 12 clases/mes
+  const restantes = inscripcion.clases_restantes_calculadas || 
+                    inscripcion.clases_restantes || 
+                    inscripcion.clases_totales || 12;
+  
+  const asistidas = Math.max(0, total - restantes);
+  const porcentaje = (asistidas / total) * 100;
+  
+  console.log(`📊 Caso 2 - Total: ${total}, Restantes: ${restantes}, Asistidas: ${asistidas}, Porcentaje: ${porcentaje}%`);
+  return Math.min(100, Math.max(0, porcentaje));
+}
+
 function puedeRenovar(inscripcion) {
   if (inscripcion.estado !== 'activo') return false;
-
   const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
-  return diasRestantes <= 7; // Se puede renovar si quedan 7 días o menos
+  return diasRestantes <= 7;
 }
 
-// 9. Calcular días restantes
 function calcularDiasRestantes(fechaFin) {
   if (!fechaFin) return 0;
-
   const hoy = new Date();
   const fin = new Date(fechaFin);
   const diffTime = fin - hoy;
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-// 10. Obtener severidad del estado
 function obtenerSeveridadEstado(estado, fechaFin) {
   const diasRestantes = calcularDiasRestantes(fechaFin);
 
@@ -1795,10 +2142,25 @@ function obtenerSeveridadEstado(estado, fechaFin) {
   }
 }
 
-// 11. Formatear fecha
+function formatFecha(fecha) {
+  if (!fecha) return '--';
 
+  let date;
+  if (fecha instanceof Date) {
+    date = fecha;
+  } else if (typeof fecha === 'string') {
+    date = new Date(fecha);
+  } else {
+    return '--';
+  }
 
-// 12. Obtener color de vencimiento
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
 function getColorVencimiento(fechaFin) {
   const dias = calcularDiasRestantes(fechaFin);
   if (dias <= 0) return 'text-red-500 font-bold';
@@ -1807,7 +2169,6 @@ function getColorVencimiento(fechaFin) {
   return '';
 }
 
-// 13. Obtener días restantes como texto
 function getDiasRestantes(fechaFin) {
   const dias = calcularDiasRestantes(fechaFin);
   if (dias === 0) return 'Vence hoy';
@@ -1816,7 +2177,6 @@ function getDiasRestantes(fechaFin) {
   return `Hace ${Math.abs(dias)} días`;
 }
 
-// 14. Renovar inscripción
 async function renovarInscripcion(inscripcion) {
   try {
     const datosRenovacion = {
@@ -1825,7 +2185,6 @@ async function renovarInscripcion(inscripcion) {
       motivo: 'Renovación mensual'
     };
 
-    // USAR renovar() en lugar del método anterior
     await inscripcionService.renovar(inscripcion.id, datosRenovacion);
 
     toast.add({
@@ -1842,32 +2201,12 @@ async function renovarInscripcion(inscripcion) {
   }
 }
 
-// 15. Calcular nueva fecha fin
 function calcularNuevaFechaFin() {
   const fecha = new Date();
   fecha.setMonth(fecha.getMonth() + 1);
   return fecha.toISOString().split('T')[0];
 }
 
-// Funciones auxiliares para horarios
-function getHorarioChipLabel(horarioId) {
-  const horario = horariosDisponibles.value.find(h => h.id == horarioId);
-  if (!horario) return `H-${horarioId}`;
-
-  // Formato corto: "Lun 18:00"
-  const diaCorto = horario.dia_semana?.substring(0, 3) || horario.dia_semana || 'Sin';
-  const hora = horario.hora_inicio?.substring(0, 5) || '';
-  return `${diaCorto} ${hora}`;
-}
-
-function getHorarioColor(horarioId) {
-  const horario = horariosDisponibles.value.find(h => h.id == horarioId);
-  return horario?.color || '#3B82F6';
-}
-
-
-
-// 16. Ver detalles
 function verDetalles(inscripcion) {
   toast.add({
     severity: 'info',
@@ -1875,10 +2214,8 @@ function verDetalles(inscripcion) {
     detail: `Mostrando detalles de inscripción #${inscripcion.id}`,
     life: 3000
   });
-  // Aquí puedes implementar un diálogo de detalles
 }
 
-// 17. Exportar a Excel
 async function exportarExcel() {
   try {
     toast.add({
@@ -1892,7 +2229,6 @@ async function exportarExcel() {
   }
 }
 
-// 18. Manejo de errores
 function manejarError(mensaje, error) {
   console.error(mensaje, error);
 
@@ -1913,60 +2249,43 @@ function manejarError(mensaje, error) {
   });
 }
 
-// 19. Calcular estadísticas
 function calcularEstadisticas() {
   console.log('=== CALCULANDO ESTADÍSTICAS ===');
   console.log('Total inscripciones:', inscripciones.value.length);
-  
-  // Mostrar datos para depuración
-  if (inscripciones.value.length > 0) {
-    console.log('Primera inscripción:', {
-      id: inscripciones.value[0].id,
-      estado: inscripciones.value[0].estado,
-      monto_mensual: inscripciones.value[0].monto_mensual,
-      tipo_monto: typeof inscripciones.value[0].monto_mensual
-    });
-  }
 
-  const totalActivas = inscripciones.value.filter(i => 
-    i.estado === 'activa' || i.estado === 'activo'
+  const totalActivas = inscripciones.value.filter(i =>
+    i.estado === 'activo' || i.estado === 'activo'
   ).length;
-  
+
   const porVencer = inscripciones.value.filter(i => {
-    const estadoActivo = i.estado === 'activa' || i.estado === 'activo';
+    const estadoActivo = i.estado === 'activo' || i.estado === 'activo';
     const diasRestantes = i.dias_restantes || 0;
     return estadoActivo && diasRestantes <= 7 && diasRestantes > 0;
   }).length;
 
-  // Clases hoy (ejemplo simple)
   const hoy = new Date().toISOString().split('T')[0];
   const clasesHoy = inscripciones.value.filter(i => {
-    // Lógica básica: inscripciones activas hoy
-    const estadoActivo = i.estado === 'activa' || i.estado === 'activo';
+    const estadoActivo = i.estado === 'activo' || i.estado === 'activo';
     return estadoActivo;
   }).length;
-  
-  // Calcular ingresos con validación robusta
+
   const ingresosMes = inscripciones.value.reduce((sum, inscripcion) => {
     try {
       let monto = inscripcion.monto_mensual;
-      
-      // Si es null/undefined
+
       if (monto === null || monto === undefined) {
         return sum;
       }
-      
-      // Si es string, convertir a número
+
       if (typeof monto === 'string') {
         monto = parseFloat(monto.replace(/[^0-9.-]+/g, ''));
       }
-      
-      // Si no es número válido
+
       if (isNaN(monto) || !isFinite(monto)) {
         console.warn(`Monto inválido en inscripción ${inscripcion.id}:`, inscripcion.monto_mensual);
         return sum;
       }
-      
+
       return sum + monto;
     } catch (error) {
       console.error(`Error procesando monto de inscripción ${inscripcion.id}:`, error);
@@ -1983,194 +2302,21 @@ function calcularEstadisticas() {
 
   console.log('Estadísticas finales:', estadisticas.value);
 }
-// 20. Aplicar filtros avanzados
+
 function aplicarFiltrosAvanzados() {
   cargarDatos();
 }
 
-// 21. Limpiar filtros
 function limpiarFiltros() {
   buscar.value = '';
   filtroEstado.value = null;
-  filtroModalidad.value = null;
   cargarDatos();
 }
 
-// 22. Cerrar diálogo
-function cerrarDialogo() {
-  dialogoInscripcion.value = false;
-  pasoActual.value = 0;
-  estudianteSeleccionado.value = null;
-  buscarEstudiante.value = '';
-  inscripcionForm.value = crearInscripcionVacia();
-
-  // Resetear formulario de pago
-  pagoForm.value = {
-    monto: 0,
-    metodo_pago: null,
-    fecha_pago: new Date(),
-    observacion: ''
-  };
-
-  inscripcionGuardadaId.value = null;
-}
-
-// 23. Siguiente paso en el diálogo
-
-
-// 24. Seleccionar modalidad
-async function seleccionarModalidad(modalidad) {
-  inscripcionForm.value.modalidad_id = modalidad.id;
-  inscripcionForm.value.clases_totales = modalidad.clases_mensuales || 12;
-
-  // ¡REMOVER ESTA LÍNEA! `clases_restantes` no existe en `inscripciones`
-  // inscripcionForm.value.clases_restantes = modalidad.clases_mensuales || 12;
-
-  // Establecer monto mensual por defecto
-  if (!inscripcionForm.value.monto_mensual || inscripcionForm.value.monto_mensual === 0) {
-    inscripcionForm.value.monto_mensual = modalidad.precio_mensual || 0;
-  }
-
-  // Cargar horarios de esta modalidad
-  await cargarHorariosPorModalidad(modalidad.id);
-}
-
-// Para obtener horarios por modalidad
-async function cargarHorariosPorModalidad(modalidadId) {
-  try {
-    console.log('Cargando horarios para modalidad ID:', modalidadId);
-
-    // Verificar que tengamos una modalidad seleccionada
-    if (!modalidadId) {
-      console.warn('No hay modalidad seleccionada');
-      horariosDisponibles.value = [];
-      return;
-    }
-
-    // Limpiar selección anterior
-    horariosSeleccionados.value = [];
-
-    // Construir parámetros de búsqueda
-    const params = {
-      estado: 'activo',
-      con_cupo: 'true' // Solo horarios con cupo disponible
-    };
-
-    // Si ya se seleccionó una sucursal, agregar filtro
-    if (inscripcionForm.value.sucursal_id) {
-      params.sucursal_id = inscripcionForm.value.sucursal_id;
-      console.log('Filtrando también por sucursal:', inscripcionForm.value.sucursal_id);
-    }
-
-    // Opción 1: Usando la ruta específica /horarios/modalidad/{id}
-    let horariosRes;
-    try {
-      horariosRes = await Api().get(`/horarios/modalidad/${modalidadId}`, { params });
-      console.log('Respuesta ruta específica:', horariosRes);
-    } catch (error) {
-      console.log('Ruta específica falló, intentando con index:', error);
-      // Opción 2: Usando el index con filtros
-      params.modalidad_id = modalidadId;
-      horariosRes = await horarioService.index(1, 100, '', params);
-    }
-
-    // Procesar la respuesta
-    console.log('Respuesta horarios:', horariosRes);
-
-    let horariosData = [];
-
-    if (horariosRes.data) {
-      // Diferentes estructuras posibles
-      if (Array.isArray(horariosRes.data)) {
-        horariosData = horariosRes.data;
-        console.log('Estructura: Array directo');
-      } else if (horariosRes.data.data && Array.isArray(horariosRes.data.data)) {
-        horariosData = horariosRes.data.data;
-        console.log('Estructura: data.data (Laravel pagination)');
-      } else if (horariosRes.data.success && Array.isArray(horariosRes.data.data)) {
-        horariosData = horariosRes.data.data;
-        console.log('Estructura: {success: true, data: []}');
-      } else {
-        console.warn('Estructura no reconocida:', horariosRes.data);
-      }
-    }
-
-    // Formatear los datos para el dropdown
-    horariosDisponibles.value = horariosData.map(h => {
-      // Obtener nombres de relaciones si existen
-      const disciplinaNombre = h.disciplina?.nombre || 'Sin disciplina';
-      const entrenadorNombre = h.entrenador?.nombres || 'Sin entrenador';
-      const sucursalNombre = h.sucursal?.nombre || 'Sin sucursal';
-
-      return {
-        id: h.id,
-        nombre: h.nombre || `Horario ${h.id}`,
-        dia_semana: h.dia_semana,
-        hora_inicio: h.hora_inicio,
-        hora_fin: h.hora_fin,
-        descripcion: `${h.nombre} - ${h.dia_semana} ${h.hora_inicio} a ${h.hora_fin}`,
-        descripcion_completa: `${h.nombre} | ${h.dia_semana} ${h.hora_inicio}-${h.hora_fin} | ${disciplinaNombre} | ${entrenadorNombre} | ${sucursalNombre}`,
-        disciplina_id: h.disciplina_id,
-        sucursal_id: h.sucursal_id,
-        entrenador_id: h.entrenador_id,
-        modalidad_id: h.modalidad_id,
-        cupo_maximo: h.cupo_maximo,
-        cupo_actual: h.cupo_actual,
-        cupo_disponible: (h.cupo_maximo - h.cupo_actual) || 0,
-        color: h.color || '#3B82F6'
-      };
-    });
-
-    console.log('Horarios disponibles formateados:', horariosDisponibles.value.length);
-
-    if (horariosDisponibles.value.length === 0) {
-      toast.add({
-        severity: 'warn',
-        summary: 'Sin horarios',
-        detail: 'No hay horarios disponibles para esta modalidad' +
-          (inscripcionForm.value.sucursal_id ? ' en la sucursal seleccionada' : ''),
-        life: 3000
-      });
-    } else {
-      toast.add({
-        severity: 'success',
-        summary: 'Horarios cargados',
-        detail: `${horariosDisponibles.value.length} horario(s) disponible(s)`,
-        life: 2000
-      });
-    }
-
-  } catch (error) {
-    console.error('Error cargando horarios por modalidad:', error);
-
-    let mensajeError = 'Error al cargar los horarios';
-    if (error.response?.status === 404) {
-      mensajeError = 'La ruta para horarios por modalidad no existe';
-    } else if (error.response?.data?.message) {
-      mensajeError = error.response.data.message;
-    }
-
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: mensajeError,
-      life: 3000
-    });
-
-    horariosDisponibles.value = [];
-  }
-}
-
-// 25. Filtrar estudiantes
 function filtrarEstudiantes() {
   // La búsqueda se maneja automáticamente con la computed property
 }
 
-
-// 27. Guardar inscripción
-
-
-// 28. Obtener iniciales
 function getIniciales(estudiante) {
   if (!estudiante || !estudiante.nombres) return '?';
   const nombres = estudiante.nombres.split(' ');
@@ -2180,10 +2326,23 @@ function getIniciales(estudiante) {
   return nombres[0][0].toUpperCase();
 }
 
-// Ciclo de vida
+function abrirDialogoNueva() {
+  tituloDialogo.value = 'Nueva Inscripción';
+  pasoActual.value = 0;
+  estudianteSeleccionado.value = null;
+  buscarEstudiante.value = '';
+  filtroDisciplina.value = null;
+  inscripcionForm.value = crearInscripcionVacia();
+  dialogoInscripcion.value = true;
+
+  cargarEstudiantesParaDialogo();
+}
+
 onMounted(() => {
   cargarDatos();
+  cargarModalidades()
 });
+
 </script>
 
 <style scoped>

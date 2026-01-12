@@ -22,29 +22,30 @@ export default {
         return Api().delete(`/horarios/${id}`);
     },
     
-    obtenerTodos() {
-        return Api().get('/horarios?limit=1000');
+     // Método 1: Horarios disponibles (usa tu ruta existente)
+    obtenerDisponibles(filtros = {}) {
+        return Api().get('/horarios/disponibles', {
+            params: {
+                ...filtros
+            }
+        });
     },
     
-    // Si tu API tiene esta ruta específica
-    disponibles() {
-        return Api().get('/horarios/disponibles');
+    // Método 2: Horarios por modalidad
+    obtenerPorModalidad(modalidadId) {
+        return Api().get(`/horarios/modalidad/${modalidadId}`);
     },
     
-    // O usa obtenerTodos si no tienes /disponibles
-    horariosDisponibles() {
-        return this.obtenerTodos();
+    // Método 3: Horarios por día
+    obtenerPorDia(dia) {
+        return Api().get('/horarios/por-dia', {
+            params: { dia }
+        });
     },
-      porModalidad(modalidadId) {
-        return Api().get(`/horarios`, { params: { modalidad_id: modalidadId } });
-    },
-    // Obtener horarios disponibles
-    disponibles(modalidadId = null) {
-        const params = {};
-        if (modalidadId) {
-            params.modalidad_id = modalidadId;
-        }
-        return Api().get('/horarios/disponibles', { params });
+    
+    // Método 4: Estadísticas
+    obtenerEstadisticas() {
+        return Api().get('/horarios/estadisticas');
     }
     
 };

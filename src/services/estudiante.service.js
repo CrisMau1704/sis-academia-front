@@ -29,5 +29,14 @@ export default {
     // Obtener todos los estudiantes (sin paginación)
     obtenerTodos() {
         return Api().get('/estudiantes'); // <-- CAMBIAR axios por Api()
-    }
+    },
+      conInscripcionesActivas() {
+        return api.get('/estudiantes/con-inscripciones-activas');
+    },
+    obtenerInscripcionActiva(estudianteId) {
+    return Api().get(`/estudiantes/${estudianteId}/inscripcion-activa`);
+  },
+  inscripcionActiva(estudianteId) {
+    return Api().get(`/estudiantes/${estudianteId}/inscripcion-activa`);
+  }
 };

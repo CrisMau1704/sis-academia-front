@@ -17,6 +17,7 @@ import Sucursales from '../views/admin/Sucursales.vue'
 import Entrenadores from '../views/admin/Entrenadores.vue'
 import Disciplinas from '../views/admin/Disciplina.vue'
 
+
 const routes = [
   {
     path: '/',
@@ -69,6 +70,7 @@ const routes = [
         name: 'Asistencias',
         component: Asistencias
       },
+     
       {
         path: 'reportes',
         name: 'Reportes',

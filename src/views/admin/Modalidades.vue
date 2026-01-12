@@ -21,6 +21,7 @@
                 </template>
             </Column>
             <Column field="descripcion" header="Descripción" sortable />
+            <Column field="clases_mensuales" header="clases_mensuales" sortable />
             <Column field="permisos_maximos" header="Permisos" sortable />
             <Column field="estado" header="Estado" sortable>
                 <template #body="slotProps">
@@ -98,6 +99,21 @@
                     </div>
 
                     <div class="grid">
+                        <div class="col-6">
+                            <div class="field">
+                                <label for="permisos">Clases mensuales *</label>
+                                <InputNumber 
+                                    id="permisos" 
+                                    v-model="modalidad.clases_mensuales" 
+                                    :min="0" 
+                                    :max="100" 
+                                    showButtons
+                                    class="w-full"
+                                    :class="{ 'p-invalid': errors.clases_mensuales }"
+                                />
+                                <small class="p-error" v-if="errors.clases_mensuales">{{ errors.clases_mensuales }}</small>
+                            </div>
+                        </div>
                         <div class="col-6">
                             <div class="field">
                                 <label for="permisos">Permisos Máximos *</label>
@@ -237,6 +253,7 @@ const abrirDialogoModalidad = () => {
         nombre: '',
         precio_mensual: 0,
         descripcion: '',
+        clases_mensuales: '',
         permisos_maximos: 3,
         estado: 'activo'
     };
