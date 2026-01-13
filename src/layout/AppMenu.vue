@@ -92,8 +92,8 @@ if (rol === 'super_admin') {
             label: 'Administración',
             items: [
                 { label: 'Usuarios', icon: 'pi pi-fw pi-user', to: '/admin/usuario' },
-                { label: 'Roles y Permisos', icon: 'pi pi-fw pi-shield', to: '/admin/roles' },
-                { label: 'Configuración Sistema', icon: 'pi pi-fw pi-cog', to: '/admin/configuracion' }
+                { label: 'Roles y Permisos', icon: 'pi pi-fw pi-shield', to: '/admin/roles' }
+               
             ]
         }
     ];

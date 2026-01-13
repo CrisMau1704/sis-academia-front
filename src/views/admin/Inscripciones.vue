@@ -1598,16 +1598,68 @@ async function guardarInscripcionYpago() {
     return;
   }
 
-  // Verificar que la fecha de inicio no sea anterior a hoy
-  const fechaInicio = new Date(inscripcionForm.value.fecha_inicio);
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  // FUNCIÓN CORREGIDA PARA FORMATO DE FECHA
+  const formatDateToYMD = (date) => {
+    if (!date) return null;
+    
+    const d = new Date(date);
+    
+    // Verificar si la fecha es válida
+    if (isNaN(d.getTime())) {
+      console.error('❌ Fecha inválida recibida:', date);
+      // Si la fecha es inválida, usar hoy
+      const hoy = new Date();
+      const year = hoy.getFullYear();
+      const month = String(hoy.getMonth() + 1).padStart(2, '0');
+      const day = String(hoy.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Usar componentes locales para evitar problemas de zona horaria
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    
+    const fechaFormateada = `${year}-${month}-${day}`;
+    
+    console.log(`📅 Formateando fecha: ${date} -> ${fechaFormateada}`);
+    console.log(`   - Original: ${d}`);
+    console.log(`   - UTC: ${d.toISOString()}`);
+    console.log(`   - Local: ${d.toLocaleDateString('es-ES')}`);
+    console.log(`   - Timezone Offset: ${d.getTimezoneOffset()} minutos`);
+    
+    return fechaFormateada;
+  };
+
+  // Debug: Mostrar información de zona horaria
+  console.log('🕒 Zona horaria del navegador:', Intl.DateTimeFormat().resolvedOptions().timeZone);
   
-  if (fechaInicio < hoy) {
+  // Obtener fechas formateadas para validación
+  const fechaInicioFormateada = formatDateToYMD(inscripcionForm.value.fecha_inicio);
+  const fechaFinFormateada = formatDateToYMD(inscripcionForm.value.fecha_fin);
+  
+  // Para validación, usar el objeto Date original
+  const fechaInicioDate = new Date(inscripcionForm.value.fecha_inicio);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0); // Asegurar que sea inicio del día
+  
+  // DEBUG: Mostrar fechas para validación
+  console.log('📊 DEBUG VALIDACIÓN FECHAS:');
+  console.log('Fecha inicio Date:', fechaInicioDate);
+  console.log('Fecha inicio formateada:', fechaInicioFormateada);
+  console.log('Fecha inicio local:', fechaInicioDate.toLocaleDateString('es-ES'));
+  console.log('Hoy:', hoy.toLocaleDateString('es-ES'));
+  console.log('Hoy Date:', hoy);
+  
+  // Comparar fechas usando componentes locales (no horas)
+  const fechaInicioComparar = new Date(fechaInicioDate);
+  fechaInicioComparar.setHours(0, 0, 0, 0);
+  
+  if (fechaInicioComparar < hoy) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'La fecha de inicio no puede ser anterior a hoy',
+      detail: `La fecha de inicio (${fechaInicioDate.toLocaleDateString('es-ES')}) no puede ser anterior a hoy (${hoy.toLocaleDateString('es-ES')})`,
       life: 4000
     });
     return;
@@ -1615,12 +1667,14 @@ async function guardarInscripcionYpago() {
 
   // Validación de fecha fin (si está presente)
   if (inscripcionForm.value.fecha_fin) {
-    const fechaFin = new Date(inscripcionForm.value.fecha_fin);
-    if (fechaFin <= fechaInicio) {
+    const fechaFinDate = new Date(inscripcionForm.value.fecha_fin);
+    fechaFinDate.setHours(0, 0, 0, 0);
+    
+    if (fechaFinDate <= fechaInicioComparar) {
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'La fecha fin debe ser posterior a la fecha inicio',
+        detail: `La fecha fin (${fechaFinDate.toLocaleDateString('es-ES')}) debe ser posterior a la fecha inicio (${fechaInicioDate.toLocaleDateString('es-ES')})`,
         life: 4000
       });
       return;
@@ -1653,14 +1707,6 @@ async function guardarInscripcionYpago() {
   guardando.value = true;
 
   try {
-    const formatDateToYMD = (date) => {
-      if (!date) return null;
-      const d = new Date(date);
-      // Ajustar para evitar problemas de zona horaria
-      const adjustedDate = new Date(d.getTime() + Math.abs(d.getTimezoneOffset() * 60000));
-      return adjustedDate.toISOString().split('T')[0];
-    };
-
     // Obtener el primer horario para sucursal y entrenador
     const primerHorario = horariosSeleccionadosDetalles.value[0];
     
@@ -1673,21 +1719,28 @@ async function guardarInscripcionYpago() {
       throw new Error('El horario seleccionado no tiene entrenador asignado');
     }
 
+    // Obtener mes y año de la fecha de inicio
+    const mesInicio = fechaInicioDate.getMonth() + 1;
+    const anioInicio = fechaInicioDate.getFullYear();
+
+    // Preparar datos de inscripción con fechas corregidas
     const datosInscripcion = {
       estudiante_id: Number(estudianteSeleccionado.value.id),
       modalidad_id: Number(modalidadSeleccionada.value.id),
       sucursal_id: primerHorario.sucursal_id ? Number(primerHorario.sucursal_id) : null,
       entrenador_id: primerHorario.entrenador_id ? Number(primerHorario.entrenador_id) : null,
-      fecha_inicio: formatDateToYMD(inscripcionForm.value.fecha_inicio),
-      fecha_fin: formatDateToYMD(inscripcionForm.value.fecha_fin),
+      fecha_inicio: fechaInicioFormateada,
+      fecha_fin: fechaFinFormateada,
       monto_mensual: Number(getPrecioTotal()),
       horarios: horariosSeleccionados.value.map(id => Number(id)),
       // Campos adicionales para validación en backend
-      mes_inicio: fechaInicio.getMonth() + 1,
-      anio_inicio: fechaInicio.getFullYear()
+      mes_inicio: mesInicio,
+      anio_inicio: anioInicio
     };
 
     console.log('📤 Enviando datos de inscripción:', datosInscripcion);
+    console.log('📊 Fecha inicio que se envía:', datosInscripcion.fecha_inicio);
+    console.log('📊 Fecha fin que se envía:', datosInscripcion.fecha_fin);
 
     // Crear inscripción
     const responseInscripcion = await inscripcionService.store(datosInscripcion);
@@ -1703,9 +1756,9 @@ async function guardarInscripcionYpago() {
       throw new Error('No se recibió el ID de la inscripción');
     }
 
-    // CREAR PAGO
-    const fechaPagoFormateada = formatDateToYMD(pagoForm.value.fecha_pago || new Date());
-
+    // CREAR PAGO - Usar la fecha actual formateada
+    const fechaPagoFormateada = formatDateToYMD(new Date());
+    
     const datosPago = {
       inscripcion_id: inscripcionId,
       monto: parseFloat(pagoForm.value.monto || getPrecioTotal()),
@@ -1714,12 +1767,13 @@ async function guardarInscripcionYpago() {
       estado: 'pagado',
       observacion: pagoForm.value.observacion || '',
       // Campos para control interno
-      mes_correspondiente: fechaInicio.getMonth() + 1,
-      anio_correspondiente: fechaInicio.getFullYear(),
+      mes_correspondiente: mesInicio,
+      anio_correspondiente: anioInicio,
       tipo_pago: 'inscripcion' // Para identificar que es pago de inscripción
     };
 
     console.log('📤 Enviando datos de pago:', datosPago);
+    console.log('📊 Fecha pago que se envía:', datosPago.fecha_pago);
 
     const responsePago = await pagoService.store(datosPago);
     console.log('📥 Respuesta pago:', responsePago.data);
@@ -1733,11 +1787,17 @@ async function guardarInscripcionYpago() {
     // ÉXITO - Cerrar diálogo y recargar datos
     cerrarDialogoCompleto();
     
-    // Mensaje de éxito principal
+    // Mensaje de éxito principal con información clara
+    const fechaInicioMostrar = fechaInicioDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+    
     toast.add({
       severity: 'success',
       summary: '✅ Inscripción y Pago Registrados',
-      detail: `Inscripción #${inscripcionId} creada exitosamente`,
+      detail: `Inscripción #${inscripcionId} creada exitosamente para el ${fechaInicioMostrar}`,
       life: 5000
     });
 
@@ -1760,8 +1820,6 @@ async function guardarInscripcionYpago() {
     // Recargar datos después de un breve delay
     setTimeout(() => {
       cargarDatos();
-      // También podrías querer emitir un evento para notificar a otros componentes
-      // emit('inscripcion-creada', { id: inscripcionId });
     }, 800);
 
   } catch (error) {
@@ -1791,6 +1849,9 @@ async function guardarInscripcionYpago() {
       } else if (error.response.data?.message) {
         detalle = error.response.data.message;
       }
+      
+      // Log detallado de la respuesta del servidor
+      console.error('📥 Respuesta del servidor:', error.response.data);
     } else if (error.request) {
       // Error de red o timeout
       summary = 'Error de conexión';
@@ -1805,14 +1866,12 @@ async function guardarInscripcionYpago() {
       life: 7000
     });
 
-    // Opcional: Log adicional para depuración
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Detalles del error:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data
-      });
-    }
+    // Log adicional para depuración
+    console.error('Detalles del error:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    });
     
   } finally {
     guardando.value = false;
@@ -2347,82 +2406,588 @@ onMounted(() => {
 
 <style scoped>
 .inscripciones-container {
-  padding: 1rem;
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
 }
 
+/* HEADER GLASSMORPHISM */
 .dashboard-cards {
-  .stat-card {
-    height: 100%;
-    transition: transform 0.2s;
-
-    &:hover {
-      transform: translateY(-2px);
-    }
-
-    .stat-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      .stat-icon {
-        font-size: 2rem;
-        opacity: 0.8;
-      }
-
-      .stat-value {
-        font-size: 2rem;
-        font-weight: bold;
-      }
-    }
-  }
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
 }
 
-.modalidad-card {
-  cursor: pointer;
-  transition: all 0.2s;
+/* STAT CARDS MEJORADAS */
+.stat-card {
+  border-radius: 12px;
+  border: none;
+  transition: all 0.3s ease;
   height: 100%;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  &.selected {
-    border: 2px solid var(--primary-color);
-    background-color: rgba(var(--primary-color-rgb), 0.05);
-  }
-
-  .modalidad-details {
-    .detail-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-  }
+  position: relative;
+  overflow: hidden;
 }
 
-.info-box {
-  text-align: center;
-
-  h6 {
-    margin: 0.5rem 0;
-  }
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.text-red-500 {
-  color: #f87171 !important;
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--card-color), transparent);
+  opacity: 0.7;
 }
 
-.text-orange-500 {
-  color: #fb923c !important;
+.stat-card:nth-child(1) { --card-color: #3b82f6; }
+.stat-card:nth-child(2) { --card-color: #f59e0b; }
+.stat-card:nth-child(3) { --card-color: #10b981; }
+.stat-card:nth-child(4) { --card-color: #8b5cf6; }
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, var(--card-color), #6b7280);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* TOOLBAR MEJORADO */
+.custom-toolbar {
+  background: white !important;
+  border-radius: 12px;
+  padding: 1rem 1.5rem !important;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem !important;
+}
+
+/* TABVIEW MODERNO */
+:deep(.p-tabview) {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.p-tabview-nav) {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0 1rem;
+}
+
+:deep(.p-tabview-nav-link) {
+  padding: 1rem 1.5rem !important;
+  font-weight: 600 !important;
+  color: #6b7280 !important;
+  transition: all 0.2s;
+}
+
+:deep(.p-tabview-nav-link:hover) {
+  background: #f1f5f9 !important;
+  color: #3b82f6 !important;
+}
+
+:deep(.p-tabview-selected .p-tabview-nav-link) {
+  color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* DATATABLE MEJORADO */
+:deep(.p-datatable) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.p-datatable-thead > tr > th) {
+  background: #f8fafc !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  padding: 1rem !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+:deep(.p-datatable-tbody > tr) {
+  transition: background-color 0.2s;
+}
+
+:deep(.p-datatable-tbody > tr:hover) {
+  background: #f9fafb !important;
+}
+
+:deep(.p-datatable-tbody > tr > td) {
+  padding: 1rem !important;
+  border-color: #f3f4f6 !important;
+}
+
+/* DIALOGO DE NUEVA INSCRIPCIÓN */
+:deep(.p-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+:deep(.p-dialog-header) {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 1.5rem;
+}
+
+:deep(.p-dialog-title) {
+  color: white !important;
+  font-weight: 600;
+}
+
+:deep(.p-dialog-content) {
+  background: #f8fafc;
+  padding: 0 !important;
+}
+
+/* STEPPER MEJORADO */
+:deep(.p-stepper) {
+  background: transparent;
+}
+
+:deep(.p-stepper-header) {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.p-stepper-step .p-stepper-number) {
+  background: #e5e7eb;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+}
+
+:deep(.p-stepper-step.p-highlight .p-stepper-number) {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+:deep(.p-stepper-step .p-stepper-title) {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+:deep(.p-stepper-step.p-highlight .p-stepper-title) {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* CARDS DE MODALIDAD MEJORADAS */
+.modalidad-card {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  height: 100%;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.modalidad-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.modalidad-card.selected {
+  border-color: #3b82f6;
+  background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.05), white);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+}
+
+.modalidad-card :deep(.p-card-title) {
+  color: #1f2937;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modalidad-card :deep(.p-card-content) {
+  padding-top: 0.5rem;
+}
+
+/* HORARIO CARD */
+.horario-card {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  height: 100%;
+  cursor: pointer;
+}
+
+.horario-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.horario-card.selected {
+  border-color: #10b981;
+  background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.05), white);
+}
+
+.selection-indicator {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CHIPS Y TAGS MEJORADOS */
+:deep(.p-chip) {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+:deep(.p-tag) {
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+}
+
+/* BADGES DE ESTADO */
+:deep(.p-tag.p-tag-success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+:deep(.p-tag.p-tag-warning) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+:deep(.p-tag.p-tag-danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+:deep(.p-tag.p-tag-info) {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+/* PROGRESS BAR MEJORADO */
+:deep(.p-progressbar) {
+  border-radius: 10px;
+  height: 8px;
+  background: #e5e7eb;
+}
+
+:deep(.p-progressbar-value) {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 10px;
+}
+
+/* AVATAR CIRCULAR */
+:deep(.p-avatar) {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  font-weight: 600;
+}
+
+/* BOTONES MEJORADOS */
+:deep(.p-button) {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+:deep(.p-button-success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+}
+
+:deep(.p-button-success:hover) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+:deep(.p-button-primary) {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+}
+
+:deep(.p-button-primary:hover) {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+:deep(.p-button-help) {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+}
+
+:deep(.p-button-help:hover) {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* INPUTS MEJORADOS */
+:deep(.p-inputtext) {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s;
+  padding: 0.75rem 1rem;
+}
+
+:deep(.p-inputtext:focus) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+:deep(.p-dropdown) {
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+:deep(.p-calendar) {
+  border-radius: 8px;
+}
+
+:deep(.p-calendar .p-inputtext) {
+  border-radius: 8px 0 0 8px !important;
+}
+
+/* SECTIONS CON COLORES SUAVES */
+.bg-blue-50 {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.bg-green-50 {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bg-gray-50 {
+  background: linear-gradient(135deg, rgba(243, 244, 246, 0.8), rgba(249, 250, 251, 0.9));
+  border: 1px solid rgba(209, 213, 219, 0.3);
+}
+
+/* BORDES REDONDEADOS */
+.border-round {
+  border-radius: 12px;
+}
+
+/* TEXTO MEJORADO */
+.text-green-600 {
+  color: #059669 !important;
+  font-weight: 600;
 }
 
 .text-yellow-500 {
-  color: #fbbf24 !important;
+  color: #d97706 !important;
+  font-weight: 500;
 }
 
-.text-green-500 {
-  color: #10b981 !important;
+.text-red-500 {
+  color: #dc2626 !important;
+  font-weight: 500;
 }
+
+.text-primary {
+  color: #3b82f6 !important;
+}
+
+/* GRID MEJORADO */
+.grid {
+  margin: 0 -0.75rem;
+}
+
+.grid .col {
+  padding: 0.75rem;
+}
+
+/* ANIMACIONES */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalidad-card, .horario-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* SCROLLBAR PERSONALIZADO */
+:deep(.p-datatable-wrapper) {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+:deep(.p-datatable-wrapper::-webkit-scrollbar) {
+  width: 6px;
+  height: 6px;
+}
+
+:deep(.p-datatable-wrapper::-webkit-scrollbar-track) {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+:deep(.p-datatable-wrapper::-webkit-scrollbar-thumb) {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+:deep(.p-datatable-wrapper::-webkit-scrollbar-thumb:hover) {
+  background: #9ca3af;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .inscripciones-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-cards {
+    padding: 1rem;
+  }
+  
+  .stat-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-value {
+    font-size: 1.8rem;
+  }
+  
+  :deep(.p-toolbar) {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  :deep(.p-toolbar-start),
+  :deep(.p-toolbar-end) {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  :deep(.p-tabview-nav) {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-cards .grid .col {
+    margin-bottom: 1rem;
+  }
+  
+  :deep(.p-dialog) {
+    width: 95vw !important;
+    margin: 0.5rem;
+  }
+  
+  :deep(.p-stepper) {
+    flex-direction: column;
+  }
+}
+
+/* LOADING STATES */
+:deep(.p-progress-spinner) {
+  color: #3b82f6;
+}
+
+/* HOVER EFFECTS PARA FILAS DE TABLA */
+:deep(.p-datatable-tbody > tr) {
+  cursor: pointer;
+}
+
+:deep(.p-datatable-tbody > tr:hover td) {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.02), transparent);
+}
+
+/* DROPDOWN MEJORADO */
+:deep(.p-dropdown-panel) {
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+:deep(.p-dropdown-item) {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+}
+
+:deep(.p-dropdown-item:hover) {
+  background: #f3f4f6;
+}
+
+/* CALENDAR MEJORADO */
+:deep(.p-datepicker) {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* ESTILOS ESPECÍFICOS PARA ÍCONOS */
+.pi-users { color: #3b82f6; }
+.pi-clock { color: #f59e0b; }
+.pi-calendar { color: #10b981; }
+.pi-money-bill { color: #8b5cf6; }
+.pi-search { color: #9ca3af; }
+.pi-filter { color: #6b7280; }
+.pi-eye { color: #3b82f6; }
+.pi-refresh { color: #10b981; }
+.pi-user-plus { color: #10b981; }
+.pi-file-excel { color: #059669; }
+.pi-check { color: #10b981; }
+.pi-times { color: #ef4444; }
+.pi-info-circle { color: #3b82f6; }
+.pi-tag { color: #8b5cf6; }
+.pi-shield { color: #f59e0b; }
+.pi-building { color: #6b7280; }
+.pi-user { color: #3b82f6; }
+.pi-calendar-check { color: #10b981; }
+.pi-ticket { color: #f59e0b; }
+.pi-ellipsis-h { color: #6b7280; }
+.pi-arrow-right { color: white; }
+.pi-bug { color: #8b5cf6; }
+.pi-calendar-plus { color: #059669; }
 </style>

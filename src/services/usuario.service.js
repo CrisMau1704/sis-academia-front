@@ -4,23 +4,23 @@ export default {
 
      // Paginación
       index(page = 1, limit = 10, q = "") {
-             return Api().get(`/usuario?page=${page}&limit=${limit}&q=${q}`);
+             return Api().get(`/usuarios?page=${page}&limit=${limit}&q=${q}`);
          },
     
 
     guardarUsuario(datos) {  // Añade datos como parámetro aquí
-        return Api().post("/usuario", datos);
+        return Api().post("/usuarios", datos);
     },
 
     mostrarUsuario(id) {
-        return Api().get("/usuario/" + id);
+        return Api().get("/usuarios/" + id);
     },
 
     modificarUsuario(id, datos) {  // Añade datos como parámetro aquí
-        return Api().put("/usuario/" + id, datos);
+        return Api().put("/usuarios/" + id, datos);
     },
 
     eliminarUsuario(id) {
-        return Api().delete("/usuario/" + id);
+        return Api().delete("/usuarios/" + id);
     },
 };

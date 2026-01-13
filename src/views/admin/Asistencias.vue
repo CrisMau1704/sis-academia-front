@@ -1,239 +1,335 @@
 <template>
-  <div class="asistencias-simple-container">
-    <!-- Header simplificado -->
-    <div class="header-section mb-4">
-      <div class="flex justify-content-between align-items-center">
-        <div>
-          <h1 class="text-3xl font-bold m-0">🎯 Asistencia Diaria</h1>
-          <p class="text-500 m-0 mt-1">{{ fechaFormateada }}</p>
+  <div class="asistencia-container">
+    <!-- HEADER MEJORADO -->
+    <div class="header-glass">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="date-display">
+            <i class="pi pi-calendar text-primary"></i>
+            <div>
+              <h1 class="m-0 text-2xl font-bold">Asistencia Diaria</h1>
+              <p class="m-0 text-500 flex align-items-center gap-2">
+                <span>{{ fechaFormateada }}</span>
+                <Badge :value="totalEstudiantes" severity="info" size="small" />
+              </p>
+            </div>
+          </div>
         </div>
-        <div class="flex gap-2">
-          <Button icon="pi pi-calendar" @click="toggleCalendar" 
-                  :class="{'p-button-outlined': !mostrarCalendario}" />
-          <Button icon="pi pi-filter" label="Filtrar" @click="abrirFiltros" />
-          <Button icon="pi pi-user-plus" label="Agregar" severity="success" 
-                  @click="abrirRegistroRapido" />
+        
+        <div class="header-right">
+          <ButtonGroup>
+            <Button icon="pi pi-chevron-left" severity="secondary" 
+                    @click="cambiarFecha(-1)" rounded />
+            <Button :label="hoyLabel" severity="info" 
+                    @click="irAHoy" outlined />
+            <Button icon="pi pi-chevron-right" severity="secondary" 
+                    @click="cambiarFecha(1)" :disabled="esHoy" rounded />
+          </ButtonGroup>
+          
+          <!-- Botones de acción en el header -->
+          <div class="action-buttons-header">
+            <Button icon="pi pi-calendar" @click="mostrarCalendario = !mostrarCalendario" 
+                    :class="{'p-button-outlined p-button-primary': mostrarCalendario}" rounded 
+                    tooltip="Mostrar calendario" />
+            <Button icon="pi pi-file-excel" severity="help" 
+                    @click="exportarExcel" rounded 
+                    tooltip="Exportar a Excel" />
+            <Button icon="pi pi-sync" @click="cargarAsistencias" 
+                    :loading="cargando" outlined rounded 
+                    tooltip="Refrescar datos" />
+          </div>
         </div>
       </div>
       
-      <!-- Calendario simplificado -->
-      <div v-if="mostrarCalendario" class="calendar-mini mt-3">
-        <Calendar v-model="fechaSeleccionada" dateFormat="dd/mm/yy" inline 
-                  :maxDate="hoy" @date-select="cargarAsistencias" />
+      <!-- CALENDARIO FLOTANTE -->
+      <div v-if="mostrarCalendario" class="calendar-floating">
+        <Calendar v-model="fechaSeleccionada" inline 
+                  :maxDate="hoy" dateFormat="dd/mm/yy"
+                  @date-select="cargarAsistencias" />
       </div>
     </div>
 
-    <!-- Tarjetas de resumen rápido -->
-    <div class="summary-cards mb-4">
+    <!-- RESUMEN EN CARDS MEJORADO -->
+    <div class="summary-section">
       <div class="grid">
-        <div class="col-6 md:col-3">
-          <div class="summary-card bg-green-50 border-green-200">
-            <i class="pi pi-check-circle text-green-500"></i>
-            <div>
-              <p class="m-0 text-500">Presentes</p>
-              <h3 class="m-0">{{ estadisticas.asistenciasHoy }}</h3>
-            </div>
-          </div>
+        <div class="col-12 md:col-3">
+          <Card class="summary-card present">
+            <template #content>
+              <div class="flex align-items-center justify-content-between">
+                <div>
+                  <span class="summary-label">Presentes</span>
+                  <h2 class="summary-value">{{ estadisticas.asistenciasHoy }}</h2>
+                </div>
+                <i class="pi pi-check-circle text-5xl opacity-30"></i>
+              </div>
+              <ProgressBar :value="porcentajePresentes" :showValue="false" 
+                          class="mt-3" style="height: 6px" />
+            </template>
+          </Card>
         </div>
-        <div class="col-6 md:col-3">
-          <div class="summary-card bg-red-50 border-red-200">
-            <i class="pi pi-times-circle text-red-500"></i>
-            <div>
-              <p class="m-0 text-500">Ausentes</p>
-              <h3 class="m-0">{{ estadisticas.faltasHoy }}</h3>
-            </div>
-          </div>
+        
+        <div class="col-12 md:col-3">
+          <Card class="summary-card absent">
+            <template #content>
+              <div class="flex align-items-center justify-content-between">
+                <div>
+                  <span class="summary-label">Ausentes</span>
+                  <h2 class="summary-value">{{ estadisticas.faltasHoy }}</h2>
+                </div>
+                <i class="pi pi-times-circle text-5xl opacity-30"></i>
+              </div>
+              <ProgressBar :value="porcentajeAusentes" :showValue="false" 
+                          class="mt-3" style="height: 6px" />
+            </template>
+          </Card>
         </div>
-        <div class="col-6 md:col-3">
-          <div class="summary-card bg-yellow-50 border-yellow-200">
-            <i class="pi pi-exclamation-triangle text-yellow-500"></i>
-            <div>
-              <p class="m-0 text-500">Justificados</p>
-              <h3 class="m-0">{{ estadisticas.permisosHoy }}</h3>
-            </div>
-          </div>
+        
+        <div class="col-12 md:col-3">
+          <Card class="summary-card justified">
+            <template #content>
+              <div class="flex align-items-center justify-content-between">
+                <div>
+                  <span class="summary-label">Justificados</span>
+                  <h2 class="summary-value">{{ estadisticas.permisosHoy }}</h2>
+                </div>
+                <i class="pi pi-exclamation-triangle text-5xl opacity-30"></i>
+              </div>
+              <ProgressBar :value="porcentajeJustificados" :showValue="false" 
+                          class="mt-3" style="height: 6px" />
+            </template>
+          </Card>
         </div>
-        <div class="col-6 md:col-3">
-          <div class="summary-card bg-blue-50 border-blue-200">
-            <i class="pi pi-users text-blue-500"></i>
-            <div>
-              <p class="m-0 text-500">Total</p>
-              <h3 class="m-0">{{ estadisticas.totalHoy }}</h3>
-            </div>
-          </div>
+        
+        <div class="col-12 md:col-3">
+          <Card class="summary-card total">
+            <template #content>
+              <div class="flex align-items-center justify-content-between">
+                <div>
+                  <span class="summary-label">Total Estudiantes</span>
+                  <h2 class="summary-value">{{ estadisticas.totalHoy }}</h2>
+                </div>
+                <i class="pi pi-users text-5xl opacity-30"></i>
+              </div>
+              <div class="mt-3">
+                <small class="text-500">% Asistencia: {{ porcentajeAsistencia }}%</small>
+              </div>
+            </template>
+          </Card>
         </div>
       </div>
     </div>
 
-    <!-- Selector de horarios -->
-    <div class="horario-selector mb-4">
-      <TabView v-model:activeIndex="horarioActivo" class="custom-tabview">
-        <TabPanel v-for="horario in horarios" :key="horario.id">
+    <!-- BARRA DE FILTROS -->
+    <div class="filters-section">
+      <div class="flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="flex flex-wrap gap-2">
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <InputText v-model="filtroBusqueda" placeholder="Buscar estudiante..." 
+                      @input="filtrarEstudiantes" />
+          </span>
+          
+          <Dropdown v-model="filtroEstado" :options="opcionesEstado" 
+                    optionLabel="label" optionValue="value"
+                    placeholder="Filtrar por estado" showClear
+                    @change="filtrarEstudiantes" />
+          
+          <Dropdown v-model="filtroHorario" :options="opcionesHorario" 
+                    optionLabel="label" optionValue="value"
+                    placeholder="Todos los horarios" showClear
+                    @change="filtrarEstudiantes" />
+        </div>
+        
+        
+      </div>
+    </div>
+
+    <!-- VISTA DE HORARIOS -->
+    <div v-if="cargando" class="loading-container">
+      <Card class="loading-card">
+        <template #content>
+          <div class="text-center py-6">
+            <ProgressSpinner style="width: 50px; height: 50px" />
+            <p class="mt-3 text-500">Cargando estudiantes...</p>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <div v-else-if="horariosFiltrados.length === 0" class="empty-container">
+      <Card class="empty-card">
+        <template #content>
+          <div class="text-center py-8">
+            <i class="pi pi-users text-400" style="font-size: 4rem"></i>
+            <h3 class="mt-4">No hay clases programadas</h3>
+            <p class="text-500 mb-4">No hay horarios activos para hoy</p>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- LISTA DE HORARIOS Y ESTUDIANTES -->
+    <div v-else class="horarios-container">
+      <Accordion :multiple="true" :activeIndex="[0]">
+        <AccordionTab v-for="(horario, index) in horariosFiltrados" :key="horario.id">
           <template #header>
-            <div class="flex align-items-center gap-2">
-              <i class="pi pi-clock"></i>
-              <span>{{ horario.hora_inicio }} - {{ horario.hora_fin }}</span>
-              <Badge :value="horario.estudiantes.length" severity="info" />
+            <div class="horario-header">
+              <div class="flex align-items-center gap-3">
+                <Badge :value="horario.estudiantesFiltrados?.length || 0" 
+                       severity="info" size="large" />
+                <div>
+                  <h4 class="m-0">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</h4>
+                  <small class="text-500">{{ getDiaCompleto(horario.dia_semana) }}</small>
+                </div>
+              </div>
+              <div class="horario-meta">
+                <Tag :value="horario.modalidad?.nombre || 'Clase'" severity="info" rounded />
+                <Tag :value="horario.entrenador?.nombres || 'Sin entrenador'" severity="secondary" rounded />
+                <Tag :value="horario.sucursal?.nombre || 'General'" severity="success" rounded />
+              </div>
             </div>
           </template>
-        </TabPanel>
-      </TabView>
-    </div>
-
-    <!-- Vista principal de asistencia -->
-    <div v-if="cargando" class="loading-state">
-      <ProgressSpinner />
-      <p>Cargando estudiantes...</p>
-    </div>
-
-    <div v-else-if="horarios.length === 0" class="empty-state">
-      <i class="pi pi-calendar-times text-400" style="font-size: 4rem"></i>
-      <h3>No hay clases programadas</h3>
-      <p>No hay horarios activos para hoy</p>
-    </div>
-
-    <!-- Lista de estudiantes con check rápido -->
-    <div v-else class="estudiantes-list">
-      <div v-for="horario in horarios" :key="horario.id" class="horario-section">
-        <div class="horario-header">
-          <h3>{{ horario.dia_semana }} - {{ horario.hora_inicio }} a {{ horario.hora_fin }}</h3>
-          <div class="flex gap-2">
-            <span class="chip">{{ horario.modalidad?.nombre || 'Clase' }}</span>
-            <span class="chip">{{ horario.entrenador?.nombres || 'Entrenador' }}</span>
-            <span class="chip">{{ horario.sucursal?.nombre || 'Sucursal' }}</span>
-          </div>
-        </div>
-
-        <div class="estudiantes-grid">
-          <div v-for="estudiante in horario.estudiantes" :key="estudiante.id" 
-               class="estudiante-item" @click="toggleAsistencia(estudiante, horario.id)">
-            <div class="estudiante-avatar">
-              <Avatar :label="getIniciales(estudiante)" size="large" 
-                      :class="getEstadoClass(estudiante)" />
-              <div class="estado-indicator" :class="getEstadoColor(estudiante)"></div>
-            </div>
-            
-            <div class="estudiante-info">
-              <h4>{{ estudiante.nombres }} {{ estudiante.apellidos }}</h4>
-              <p class="text-500 small">{{ estudiante.ci || 'Sin documento' }}</p>
-              
-              <div class="estudiante-stats">
-                <div class="stat">
-                  <i class="pi pi-calendar-check"></i>
-                  <span>{{ estudiante.clases_asistidas || 0 }}/{{ estudiante.clases_totales || 12 }}</span>
-                </div>
-                <div class="stat">
-                  <i class="pi pi-ticket"></i>
-                  <span>{{ estudiante.permisos_disponibles || 3 }} disp.</span>
+          
+          <div class="estudiantes-grid">
+            <div v-for="estudiante in horario.estudiantesFiltrados" :key="estudiante.id" 
+                 class="estudiante-card" :class="getCardClass(estudiante)">
+              <div class="estudiante-avatar-section">
+                <Avatar :label="getIniciales(estudiante)" size="xlarge" 
+                        :class="getAvatarClass(estudiante)" shape="circle" />
+                <div class="estado-badge" :class="getEstadoBadge(estudiante)">
+                  <i :class="getEstadoIcon(estudiante)"></i>
                 </div>
               </div>
-            </div>
-            
-            <div class="estudiante-actions">
-              <div class="toggle-buttons">
-                <Button icon="pi pi-check" 
-                        :class="{'p-button-success': estudiante.asistencia_estado === 'asistio'}"
-                        @click.stop="marcarAsistencia(estudiante, horario.id, 'asistio')" />
-                <Button icon="pi pi-times" 
-                        :class="{'p-button-danger': estudiante.asistencia_estado === 'falto'}"
-                        @click.stop="marcarAsistencia(estudiante, horario.id, 'falto')" />
-                <!-- En la parte del botón de justificación -->
-<Button icon="pi pi-exclamation-triangle" 
-        @click.stop="justificarRapido(estudiante, horario.id)" 
-        :disabled="(estudiante.permisos_disponibles || 0) <= 0" 
-        :severity="(estudiante.permisos_disponibles || 0) > 0 ? 'warning' : 'secondary'"
-        :class="{'opacity-50': (estudiante.permisos_disponibles || 0) <= 0}" />
+              
+              <div class="estudiante-info-section">
+                <div class="flex justify-content-between align-items-start">
+                  <div>
+                    <h4 class="m-0">{{ estudiante.nombres }} {{ estudiante.apellidos }}</h4>
+                    <small class="text-500">{{ estudiante.ci || 'Sin documento' }}</small>
+                  </div>
+                  <Tag :value="getEstadoLabel(estudiante.asistencia_estado)" 
+                       :severity="getEstadoSeverity(estudiante.asistencia_estado)" 
+                       rounded />
+                </div>
+                
+                <div class="estudiante-stats">
+                  <div class="stat-item">
+                    <i class="pi pi-calendar-check"></i>
+                    <span>Asistencias: {{ estudiante.clases_asistidas || 0 }}/{{ estudiante.clases_totales || 12 }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <i class="pi pi-ticket"></i>
+                    <span>Permisos: {{ estudiante.permisos_disponibles || 3 }} disponibles</span>
+                  </div>
+                  <div class="stat-item" v-if="estudiante.asistencia_hora">
+                    <i class="pi pi-clock"></i>
+                    <span>Registrado: {{ formatHora(estudiante.asistencia_hora) }}</span>
+                  </div>
+                </div>
               </div>
               
-              <div v-if="estudiante.asistencia_estado" class="estado-label">
-                <Tag :value="getEstadoLabel(estudiante.asistencia_estado)" 
-                     :severity="getEstadoSeverity(estudiante.asistencia_estado)" />
+              <div class="estudiante-actions-section">
+                <div class="action-buttons">
+                  <Button icon="pi pi-check" rounded 
+                          :class="{'p-button-success': estudiante.asistencia_estado === 'asistio'}"
+                          @click="marcarAsistencia(estudiante, horario.id, 'asistio')"
+                          tooltip="Marcar como presente" />
+                  
+                  <Button icon="pi pi-times" rounded 
+                          :class="{'p-button-danger': estudiante.asistencia_estado === 'falto'}"
+                          @click="marcarAsistencia(estudiante, horario.id, 'falto')"
+                          tooltip="Marcar como ausente" />
+                  
+                  <Button icon="pi pi-exclamation-triangle" rounded 
+                          :class="{'p-button-warning': estudiante.asistencia_estado === 'permiso'}"
+                          @click="justificarRapido(estudiante, horario.id)"
+                          :disabled="(estudiante.permisos_disponibles || 0) <= 0"
+                          tooltip="Justificar ausencia" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+          
+          <!-- RESUMEN DEL HORARIO -->
+          <div class="horario-summary">
+            <div class="flex justify-content-between align-items-center">
+              <div class="flex gap-3">
+                <span class="summary-item">
+                  <i class="pi pi-check-circle text-green-500"></i>
+                  <span>{{ contarPorEstado(horario, 'asistio') }} presentes</span>
+                </span>
+                <span class="summary-item">
+                  <i class="pi pi-times-circle text-red-500"></i>
+                  <span>{{ contarPorEstado(horario, 'falto') }} ausentes</span>
+                </span>
+                <span class="summary-item">
+                  <i class="pi pi-exclamation-triangle text-yellow-500"></i>
+                  <span>{{ contarPorEstado(horario, 'permiso') }} justificados</span>
+                </span>
+              </div>
+              <Button icon="pi pi-check" label="Marcar todos presentes" 
+                      severity="success" size="small" outlined
+                      @click="marcarTodosEnHorario(horario.id, 'asistio')" />
+            </div>
+          </div>
+        </AccordionTab>
+      </Accordion>
     </div>
 
-    <!-- Botón flotante para acciones rápidas -->
-    
-
-    <!-- Modal rápido para justificación -->
-    <Dialog v-model:visible="mostrarJustificacionRapida" header="Justificar Ausencia" 
-            :modal="true" :style="{ width: '400px' }" :closable="false">
+    <!-- MODAL DE JUSTIFICACIÓN MEJORADO -->
+    <Dialog v-model:visible="mostrarJustificacionRapida" modal 
+            :header="`Justificar ausencia - ${estudianteSeleccionado?.nombres}`"
+            :style="{ width: '450px' }">
       <div class="p-fluid">
-        <div class="mb-3">
-          <label class="font-bold">{{ estudianteSeleccionado?.nombres }} {{ estudianteSeleccionado?.apellidos }}</label>
-          <small class="block text-500">Permisos disponibles: {{ estudianteSeleccionado?.permisos_disponibles || 0 }}/3</small>
-        </div>
-        
-        <div class="mb-3">
-          <label>Motivo común:</label>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <Button v-for="motivo in motivosComunes" :key="motivo" 
-                    :label="motivo" severity="secondary" size="small"
-                    @click="motivoJustificacion = motivo" />
+        <div class="student-info mb-4 p-3 surface-50 border-round">
+          <div class="flex align-items-center gap-3">
+            <Avatar :label="getIniciales(estudianteSeleccionado)" size="large" />
+            <div>
+              <h4 class="m-0">{{ estudianteSeleccionado?.nombres }} {{ estudianteSeleccionado?.apellidos }}</h4>
+              <div class="flex align-items-center gap-2 mt-1">
+                <Tag :value="`${estudianteSeleccionado?.permisos_disponibles || 0}/3 permisos`" 
+                     :severity="(estudianteSeleccionado?.permisos_disponibles || 0) > 0 ? 'success' : 'danger'" />
+                <small class="text-500">Horario: {{ obtenerHorarioEstudiante() }}</small>
+              </div>
+            </div>
           </div>
         </div>
         
-        <Textarea v-model="motivoJustificacion" rows="2" placeholder="O escribe un motivo personalizado..." 
-                  class="w-full" />
+        <div class="mb-4">
+          <label class="font-bold block mb-2">Motivo de justificación</label>
+          <div class="quick-reasons">
+            <Button v-for="motivo in motivosComunes" :key="motivo" 
+                    :label="motivo" severity="secondary" size="small" outlined
+                    @click="seleccionarMotivo(motivo)" 
+                    :class="{'p-button-primary': motivoJustificacion === motivo}" />
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="font-bold block mb-2">Detalles adicionales</label>
+          <Textarea v-model="motivoJustificacion" rows="3" placeholder="Describe el motivo de la ausencia..."
+                    autoResize class="w-full" />
+        </div>
+        
+        <div class="mb-4" v-if="estudianteSeleccionado?.permisos_disponibles === 0">
+          <Message severity="warn" :closable="false">
+            <strong>⚠️ Sin permisos disponibles</strong>
+            <p>Este estudiante ha agotado sus permisos mensuales.</p>
+          </Message>
+        </div>
       </div>
       
       <template #footer>
         <Button label="Cancelar" severity="secondary" @click="cerrarJustificacion" />
-        <Button label="Justificar" severity="warning" @click="confirmarJustificacionRapida"
-                :disabled="!motivoJustificacion.trim()" />
+        <Button label="Justificar Ausencia" severity="warning" icon="pi pi-check"
+                @click="confirmarJustificacionRapida" :loading="procesandoJustificacion"
+                :disabled="!motivoJustificacion.trim() || (estudianteSeleccionado?.permisos_disponibles || 0) <= 0" />
       </template>
     </Dialog>
 
-    <!-- Modal de registro rápido -->
-    <Dialog v-model:visible="mostrarRegistroRapido" header="Agregar Estudiante" 
-            :modal="true" :style="{ width: '500px' }">
-      <div class="p-fluid">
-        <div class="mb-3">
-          <label>Buscar estudiante:</label>
-          <AutoComplete v-model="busquedaEstudiante" :suggestions="sugerenciasEstudiantes" 
-                        @complete="buscarEstudiantes" field="nombre_completo" 
-                        placeholder="Nombre, documento..." class="w-full" />
-        </div>
-        
-        <div v-if="estudianteSeleccionadoRegistro" class="selected-student mb-3">
-          <div class="flex align-items-center gap-3 p-3 border-round surface-50">
-            <Avatar :label="getIniciales(estudianteSeleccionadoRegistro)" size="large" />
-            <div>
-              <h4 class="m-0">{{ estudianteSeleccionadoRegistro.nombres }} {{ estudianteSeleccionadoRegistro.apellidos }}</h4>
-              <small class="text-500">{{ estudianteSeleccionadoRegistro.ci }}</small>
-            </div>
-          </div>
-        </div>
-        
-        <div class="grid">
-          <div class="col-12">
-            <label>Horario:</label>
-            <Dropdown v-model="horarioRegistroRapido" :options="horariosDisponiblesRegistro" 
-                      optionLabel="label" optionValue="value" class="w-full" />
-          </div>
-          <div class="col-12 mt-3">
-            <label>Estado:</label>
-            <div class="flex gap-2">
-              <Button v-for="estado in estadosAsistencia" :key="estado.value" 
-                      :label="estado.label" :severity="getButtonSeverity(estado.value)"
-                      @click="estadoRegistroRapido = estado.value"
-                      :class="{'p-button-outlined': estadoRegistroRapido !== estado.value}" />
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <template #footer>
-        <Button label="Cancelar" severity="secondary" @click="cerrarRegistroRapido" />
-        <Button label="Registrar" severity="success" @click="confirmarRegistroRapido"
-                :disabled="!estudianteSeleccionadoRegistro || !horarioRegistroRapido" />
-      </template>
-    </Dialog>
+    <!-- SNACKBAR PARA CONFIRMACIÓN -->
+    <Toast position="bottom-right" />
   </div>
- <Toast /> 
 </template>
 
 <script setup>
@@ -242,61 +338,143 @@ import { useToast } from 'primevue/usetoast'
 
 // Componentes PrimeVue
 import Button from 'primevue/button'
+import ButtonGroup from 'primevue/buttongroup'
 import Calendar from 'primevue/calendar'
+import Card from 'primevue/card'
+import ProgressBar from 'primevue/progressbar'
 import ProgressSpinner from 'primevue/progressspinner'
 import Dialog from 'primevue/dialog'
 import Textarea from 'primevue/textarea'
 import Dropdown from 'primevue/dropdown'
 import Avatar from 'primevue/avatar'
 import Tag from 'primevue/tag'
-import TabView from 'primevue/tabview'
-import TabPanel from 'primevue/tabpanel'
 import Badge from 'primevue/badge'
-import SpeedDial from 'primevue/speeddial'
-import AutoComplete from 'primevue/autocomplete'
+import InputText from 'primevue/inputtext'
+import Accordion from 'primevue/accordion'
+import AccordionTab from 'primevue/accordiontab'
+import Message from 'primevue/message'
+import Toast from 'primevue/toast'
 
 // Servicios
 import asistenciaService from '@/services/asistencia.service'
-import estudianteService from '@/services/estudiante.service'
 
 const toast = useToast()
 
-// Estados
+// Estados principales
 const fechaSeleccionada = ref(new Date())
 const hoy = ref(new Date())
 const mostrarCalendario = ref(false)
 const cargando = ref(false)
 const horarios = ref([])
-const horarioActivo = ref(0)
 
-// Modal justificación
+// Filtros
+const filtroBusqueda = ref('')
+const filtroEstado = ref(null)
+const filtroHorario = ref(null)
+
+// Estados modales
 const mostrarJustificacionRapida = ref(false)
 const estudianteSeleccionado = ref(null)
 const motivoJustificacion = ref('')
+const procesandoJustificacion = ref(false)
+
+// Datos estáticos
 const motivosComunes = ref([
-  'Enfermedad',
-  'Trabajo',
-  'Estudios',
-  'Viaje',
-  'Familiar',
-  'Lesión'
+  'Enfermedad', 'Consulta médica', 'Trabajo', 'Estudios', 
+  'Viaje', 'Familiar', 'Lesión deportiva', 'Clima', 'Personal'
 ])
 
-// Modal registro rápido
-const mostrarRegistroRapido = ref(false)
-const busquedaEstudiante = ref('')
-const sugerenciasEstudiantes = ref([])
-const estudianteSeleccionadoRegistro = ref(null)
-const horarioRegistroRapido = ref(null)
-const estadoRegistroRapido = ref('asistio')
-const horariosDisponiblesRegistro = ref([])
-
-// Estados para dropdown
-const estadosAsistencia = ref([
-  { label: 'Presente', value: 'asistio' },
-  { label: 'Ausente', value: 'falto' },
-  { label: 'Justificado', value: 'permiso' }
+const opcionesEstado = ref([
+  { label: 'Presentes', value: 'asistio' },
+  { label: 'Ausentes', value: 'falto' },
+  { label: 'Justificados', value: 'permiso' },
+  { label: 'Sin registrar', value: null }
 ])
+
+// Computed properties
+const fechaFormateada = computed(() => {
+  const fecha = new Date(fechaSeleccionada.value)
+  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+  return fecha.toLocaleDateString('es-ES', opciones).toUpperCase()
+})
+
+const esHoy = computed(() => {
+  const hoyStr = hoy.value.toDateString()
+  const seleccionadaStr = new Date(fechaSeleccionada.value).toDateString()
+  return hoyStr === seleccionadaStr
+})
+
+const hoyLabel = computed(() => esHoy.value ? 'HOY' : 'IR A HOY')
+
+const porcentajePresentes = computed(() => {
+  if (estadisticas.value.totalHoy === 0) return 0
+  return (estadisticas.value.asistenciasHoy / estadisticas.value.totalHoy) * 100
+})
+
+const porcentajeAusentes = computed(() => {
+  if (estadisticas.value.totalHoy === 0) return 0
+  return (estadisticas.value.faltasHoy / estadisticas.value.totalHoy) * 100
+})
+
+const porcentajeJustificados = computed(() => {
+  if (estadisticas.value.totalHoy === 0) return 0
+  return (estadisticas.value.permisosHoy / estadisticas.value.totalHoy) * 100
+})
+
+const porcentajeAsistencia = computed(() => {
+  if (estadisticas.value.totalHoy === 0) return 0
+  const totalRegistrados = estadisticas.value.asistenciasHoy + estadisticas.value.permisosHoy
+  return Math.round((totalRegistrados / estadisticas.value.totalHoy) * 100)
+})
+
+const totalEstudiantes = computed(() => {
+  return horarios.value.reduce((total, horario) => {
+    return total + (horario.estudiantes?.length || 0)
+  }, 0)
+})
+
+const opcionesHorario = computed(() => {
+  return horarios.value.map(horario => ({
+    label: `${horario.hora_inicio} - ${horario.hora_fin} (${horario.estudiantes?.length || 0})`,
+    value: horario.id
+  }))
+})
+
+const horariosFiltrados = computed(() => {
+  return horarios.value.map(horario => {
+    let estudiantesFiltrados = horario.estudiantes || []
+    
+    // Aplicar filtro de búsqueda
+    if (filtroBusqueda.value) {
+      const search = filtroBusqueda.value.toLowerCase()
+      estudiantesFiltrados = estudiantesFiltrados.filter(est => 
+        est.nombres.toLowerCase().includes(search) ||
+        est.apellidos.toLowerCase().includes(search) ||
+        (est.ci && est.ci.includes(search))
+      )
+    }
+    
+    // Aplicar filtro de estado
+    if (filtroEstado.value !== null) {
+      estudiantesFiltrados = estudiantesFiltrados.filter(est => 
+        est.asistencia_estado === filtroEstado.value
+      )
+    }
+    
+    // Aplicar filtro de horario (si se seleccionó uno específico)
+    if (filtroHorario.value && filtroHorario.value !== horario.id) {
+      estudiantesFiltrados = []
+    }
+    
+    return {
+      ...horario,
+      estudiantesFiltrados,
+      tieneEstudiantes: estudiantesFiltrados.length > 0
+    }
+  }).filter(horario => 
+    horario.tieneEstudiantes || (!filtroBusqueda.value && filtroEstado.value === null && !filtroHorario.value)
+  )
+})
 
 // Estadísticas
 const estadisticas = ref({
@@ -306,80 +484,214 @@ const estadisticas = ref({
   totalHoy: 0
 })
 
-// Acciones rápidas
-const accionesRapidas = ref([
-  {
-    label: 'Marcar todos presentes',
-    icon: 'pi pi-check',
-    command: () => marcarTodosPresentesRapido()
-  },
-  {
-    label: 'Exportar reporte',
-    icon: 'pi pi-file-excel',
-    command: () => exportarReporte()
-  },
-  {
-    label: 'Ver detalles',
-    icon: 'pi pi-chart-bar',
-    command: () => verDetalles()
+// ALMACENAMIENTO LOCAL MEJORADO - Guarda por fecha
+const guardarAsistenciaLocal = (fecha, estudianteId, horarioId, estado, datos) => {
+  const fechaKey = new Date(fecha).toISOString().split('T')[0] // Formato YYYY-MM-DD
+  const storageKey = `asistencia_${fechaKey}`
+  
+  let asistenciasDia = JSON.parse(localStorage.getItem(storageKey) || '{}')
+  
+  // Crear clave única: estudianteId + horarioId
+  const clave = `${estudianteId}_${horarioId}`
+  
+  asistenciasDia[clave] = {
+    estudianteId,
+    horarioId,
+    estado,
+    datos,
+    timestamp: new Date().toISOString()
   }
-])
+  
+  localStorage.setItem(storageKey, JSON.stringify(asistenciasDia))
+  console.log('💾 Asistencia guardada localmente:', { fecha: fechaKey, clave, estado })
+}
 
-// Computed
-const fechaFormateada = computed(() => {
-  const fecha = new Date(fechaSeleccionada.value)
-  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-  return fecha.toLocaleDateString('es-ES', opciones)
-})
+const cargarAsistenciasLocales = (fecha) => {
+  const fechaKey = new Date(fecha).toISOString().split('T')[0]
+  const storageKey = `asistencia_${fechaKey}`
+  const asistenciasDia = JSON.parse(localStorage.getItem(storageKey) || '{}')
+  
+  console.log('📂 Cargando asistencias locales para:', fechaKey, Object.keys(asistenciasDia).length, 'registros')
+  
+  return asistenciasDia
+}
+
+const aplicarAsistenciasLocales = (horariosData, fecha) => {
+  const asistenciasLocales = cargarAsistenciasLocales(fecha)
+  
+  if (Object.keys(asistenciasLocales).length === 0) {
+    console.log('📭 No hay asistencias locales guardadas para esta fecha')
+    return horariosData
+  }
+  
+  return horariosData.map(horario => {
+    const estudiantesActualizados = (horario.estudiantes || []).map(estudiante => {
+      const clave = `${estudiante.id}_${horario.id}`
+      const asistenciaLocal = asistenciasLocales[clave]
+      
+      if (asistenciaLocal) {
+        console.log(`🎯 Aplicando asistencia local para ${estudiante.nombres}:`, asistenciaLocal.estado)
+        return {
+          ...estudiante,
+          asistencia_estado: asistenciaLocal.estado,
+          asistencia_hora: asistenciaLocal.datos?.asistencia_hora || estudiante.asistencia_hora,
+          permisos_disponibles: asistenciaLocal.datos?.permisos_disponibles || estudiante.permisos_disponibles
+        }
+      }
+      
+      return estudiante
+    })
+    
+    return {
+      ...horario,
+      estudiantes: estudiantesActualizados
+    }
+  })
+}
 
 // Métodos principales
 async function cargarAsistencias() {
   cargando.value = true
   try {
-    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
-    const response = await asistenciaService.obtenerDia(fecha)
+    const fecha = new Date(fechaSeleccionada.value)
     
-    if (response.data?.horarios) {
-      // Asegúrate de que cada estudiante tenga los permisos de su inscripción
-      horarios.value = response.data.horarios.map(horario => ({
-        ...horario,
-        estudiantes: horario.estudiantes.map(est => {
-          // Si el objeto estudiante no tiene permisos_disponibles, 
-          // usar los de la inscripción que viene en la respuesta
-          const permisos = est.permisos_disponibles !== undefined 
-            ? est.permisos_disponibles 
-            : (est.inscripcion?.permisos_disponibles || 3);
-            
-          return {
-            ...est,
-            permisos_disponibles: permisos
-          };
-        })
-      }))
+    // Formato YYYY-MM-DD en horario LOCAL
+    const año = fecha.getFullYear()
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0')
+    const dia = String(fecha.getDate()).padStart(2, '0')
+    const fechaISO = `${año}-${mes}-${dia}`
+    
+    console.log('📅 Cargando asistencias para:', fechaISO)
+    
+    const response = await asistenciaService.obtenerDia(fechaISO)
+    
+    if (response.data?.success) {
+      console.log('✅ Datos cargados del servidor')
       
-      calcularEstadisticasRapidas()
+      if (response.data.horarios && response.data.horarios.length > 0) {
+        // PROCESAR HORARIOS Y ESTUDIANTES DESDE EL SERVIDOR
+        let horariosProcesados = response.data.horarios.map(horario => {
+          const estudiantes = horario.estudiantes || []
+          
+          const estudiantesMapeados = estudiantes.map(est => {
+            let asistenciaEstado = null
+            let asistenciaHora = null
+            
+            // Verificar en asistencias del horario
+            if (horario.asistencias && horario.asistencias.length > 0) {
+              const asistencia = horario.asistencias.find(a => 
+                a.inscripcion_id === est.inscripcion_id
+              )
+              if (asistencia) {
+                asistenciaEstado = asistencia.estado
+                asistenciaHora = asistencia.created_at
+              }
+            }
+            
+            // Verificar en datos de inscripción
+            if (est.inscripcion?.asistencias && est.inscripcion.asistencias.length > 0) {
+              const asistencia = est.inscripcion.asistencias.find(a => {
+                const fechaAsistencia = new Date(a.fecha).toISOString().split('T')[0]
+                return fechaAsistencia === fechaISO
+              })
+              if (asistencia) {
+                asistenciaEstado = asistencia.estado
+                asistenciaHora = asistencia.created_at
+              }
+            }
+            
+            return {
+              ...est,
+              asistencia_estado: asistenciaEstado,
+              asistencia_hora: asistenciaHora,
+              permisos_disponibles: est.permisos_disponibles !== undefined 
+                ? est.permisos_disponibles 
+                : (est.inscripcion?.permisos_disponibles || 3),
+              inscripcion_id: est.inscripcion_id || est.inscripcion?.id
+            }
+          })
+          
+          return {
+            ...horario,
+            estudiantes: estudiantesMapeados
+          }
+        })
+        
+        // APLICAR ASISTENCIAS GUARDADAS LOCALMENTE (sobreescriben las del servidor)
+        horariosProcesados = aplicarAsistenciasLocales(horariosProcesados, fechaSeleccionada.value)
+        
+        horarios.value = horariosProcesados
+        calcularEstadisticas()
+        resetearFiltros()
+        
+        toast.add({
+          severity: 'success',
+          summary: 'Datos actualizados',
+          detail: `Asistencias cargadas para ${fecha.toLocaleDateString('es-ES')}`,
+          life: 3000
+        })
+        
+      } else {
+        console.warn('⚠️ Sin horarios para esta fecha')
+        
+        // Cargar solo asistencias locales si no hay datos del servidor
+        const horariosLocales = aplicarAsistenciasLocales([], fechaSeleccionada.value)
+        
+        if (horariosLocales.length > 0) {
+          horarios.value = horariosLocales
+          toast.add({
+            severity: 'info',
+            summary: 'Datos locales',
+            detail: 'Mostrando datos guardados localmente',
+            life: 3000
+          })
+        } else {
+          horarios.value = []
+        }
+        
+        calcularEstadisticas()
+      }
     }
+    
   } catch (error) {
-    console.error('Error:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudieron cargar las asistencias',
-      life: 3000
-    })
+    console.error('❌ Error cargando asistencias:', error)
+    
+    // Intentar cargar datos locales en caso de error
+    const horariosLocales = aplicarAsistenciasLocales([], fechaSeleccionada.value)
+    
+    if (horariosLocales.length > 0) {
+      horarios.value = horariosLocales
+      calcularEstadisticas()
+      toast.add({
+        severity: 'info',
+        summary: 'Datos locales',
+        detail: 'Mostrando datos guardados localmente (error de conexión)',
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudieron cargar las asistencias',
+        life: 3000
+      })
+      
+      horarios.value = []
+      calcularEstadisticas()
+    }
   } finally {
     cargando.value = false
   }
 }
 
-function calcularEstadisticasRapidas() {
+function calcularEstadisticas() {
   let asistencias = 0
   let faltas = 0
   let permisos = 0
   let total = 0
   
   horarios.value.forEach(horario => {
-    horario.estudiantes.forEach(est => {
+    horario.estudiantes?.forEach(est => {
       total++
       if (est.asistencia_estado === 'asistio') asistencias++
       if (est.asistencia_estado === 'falto') faltas++
@@ -395,194 +707,169 @@ function calcularEstadisticasRapidas() {
   }
 }
 
+function resetearFiltros() {
+  filtroBusqueda.value = ''
+  filtroEstado.value = null
+  filtroHorario.value = null
+}
+
 async function marcarAsistencia(estudiante, horarioId, estado) {
   try {
+    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
     const data = {
       inscripcion_id: estudiante.inscripcion_id,
       horario_id: horarioId,
-      fecha: fechaSeleccionada.value.toISOString().split('T')[0],
+      fecha: fecha,
       estado: estado
-    };
-    
-    console.log('📤 Enviando datos:', data);
-    
-    // IMPORTANTE: Para 'permiso', usar justificar() en lugar de marcar()
-    if (estado === 'permiso') {
-      // Abre el modal de justificación en lugar de marcar directamente
-      justificarRapido(estudiante, horarioId);
-      return; // No continuar con marcar()
     }
     
-    // Para 'asistio' y 'falto', usar marcar() normalmente
-    await asistenciaService.marcar(data);
+    console.log('📤 Marcando asistencia:', data)
     
-    // Actualizar UI inmediatamente
-    estudiante.asistencia_estado = estado;
+    if (estado === 'permiso') {
+      justificarRapido(estudiante, horarioId)
+      return
+    }
+    
+    // Guardar localmente INMEDIATAMENTE
+    guardarAsistenciaLocal(
+      fechaSeleccionada.value,
+      estudiante.id,
+      horarioId,
+      estado,
+      {
+        asistencia_hora: new Date().toISOString(),
+        permisos_disponibles: estudiante.permisos_disponibles
+      }
+    )
+    
+    // Actualizar UI localmente
+    const horario = horarios.value.find(h => h.id === horarioId)
+    if (horario) {
+      const estIndex = horario.estudiantes.findIndex(e => e.id === estudiante.id)
+      if (estIndex !== -1) {
+        horario.estudiantes[estIndex].asistencia_estado = estado
+        horario.estudiantes[estIndex].asistencia_hora = new Date().toISOString()
+      }
+    }
+    
+    calcularEstadisticas()
+    
+    // Intentar enviar al servidor (en segundo plano)
+    try {
+      await asistenciaService.marcar(data)
+      console.log('✅ Asistencia guardada en servidor')
+    } catch (serverError) {
+      console.warn('⚠️ No se pudo enviar al servidor, pero se guardó localmente:', serverError)
+    }
     
     toast.add({
       severity: 'success',
       summary: 'Registrado',
       detail: `${estudiante.nombres} marcado como ${getEstadoLabel(estado)}`,
       life: 2000
-    });
-    
-    calcularEstadisticasRapidas();
+    })
     
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error marcando asistencia:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: 'No se pudo registrar la asistencia',
       life: 3000
-    });
-  }
-}
-
-function toggleAsistencia(estudiante, horarioId) {
-  if (!estudiante.asistencia_estado) {
-    marcarAsistencia(estudiante, horarioId, 'asistio')
-  } else if (estudiante.asistencia_estado === 'asistio') {
-    marcarAsistencia(estudiante, horarioId, 'falto')
-  } else {
-    marcarAsistencia(estudiante, horarioId, 'asistio')
+    })
   }
 }
 
 function justificarRapido(estudiante, horarioId) {
-  console.log('🎯 Datos recibidos:', {
-    estudiante: estudiante.nombres,
-    horarioId: horarioId,
-    inscripcionId: estudiante.inscripcion_id
-  });
-  
-  // GUARDA EL HORARIO_ID EN EL OBJETO
   estudianteSeleccionado.value = {
     ...estudiante,
-    horario_id: horarioId  // ← ¡IMPORTANTE!
-  };
+    horario_id: horarioId
+  }
   
-  motivoJustificacion.value = '';
-  mostrarJustificacionRapida.value = true;
+  motivoJustificacion.value = ''
+  mostrarJustificacionRapida.value = true
 }
 
 async function confirmarJustificacionRapida() {
+  if (!estudianteSeleccionado.value?.horario_id) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo obtener el horario',
+      life: 3000
+    })
+    return
+  }
+
+  procesandoJustificacion.value = true
+
   try {
-    if (!estudianteSeleccionado.value?.horario_id) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: '❌ No se pudo obtener el horario.',
-        life: 3000
-      });
-      return;
-    }
-
-    // Mostrar loading mientras se procesa
-   
-
+    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
     const data = {
       inscripcion_id: estudianteSeleccionado.value.inscripcion_id,
       horario_id: estudianteSeleccionado.value.horario_id,
-      fecha: fechaSeleccionada.value.toISOString().split('T')[0],
+      fecha: fecha,
       motivo: motivoJustificacion.value
-    };
-    
-    console.log('📤 Enviando justificación:', data);
+    }
 
-    const response = await asistenciaService.justificar(data);
+    // Guardar localmente primero
+    const nuevosPermisos = (estudianteSeleccionado.value.permisos_disponibles || 3) - 1
     
-    // Cerrar toast de loading con un pequeño delay para evitar parpadeo
-    setTimeout(() => {
-      toast.remove(loadingToast);
-    }, 100);
-    
-    if (response.data.success) {
-      // Actualizar UI con los datos del servidor
-      const { asistencia, permisos_restantes } = response.data.data;
-      
-      console.log('✅ Respuesta del servidor:', response.data.data);
-      
-      // Actualizar el estudiante en la lista
-      let estudianteActualizado = null;
-      horarios.value.forEach(horario => {
-        const estudiante = horario.estudiantes.find(
-          e => e.inscripcion_id === asistencia.inscripcion_id
-        );
-        if (estudiante) {
-          estudiante.asistencia_estado = 'permiso';
-          estudiante.permisos_disponibles = permisos_restantes;
-          estudianteActualizado = estudiante;
-          
-          if (estudiante.inscripcion) {
-            estudiante.inscripcion.permisos_disponibles = permisos_restantes;
-          }
-        }
-      });
-      
-      // Mensaje de éxito CORREGIDO
-      toast.add({
-        severity: 'success',
-        summary: '✅ Justificación Guardada',
-        detail: `Justificación registrada para ${estudianteSeleccionado.value.nombres}. Permisos restantes: ${permisos_restantes}/3`,
-        life: 4000,
-        icon: 'pi pi-check-circle'
-      });
-      
-      cerrarJustificacion();
-      calcularEstadisticasRapidas();
-      
-      // Debug: verificar que se actualizó
-      console.log('📝 Estudiante actualizado:', estudianteActualizado);
-      
-    } else {
-      // Mensaje de error del servidor
-      toast.add({
-        severity: 'error',
-        summary: '❌ No se pudo guardar',
-        detail: response.data.message || 'Error al procesar la justificación',
-        life: 4000,
-        icon: 'pi pi-exclamation-triangle'
-      });
-    }
-    
-  } catch (error) {
-    console.error('💥 Error completo:', error);
-    
-    // Asegurarnos de cerrar el loading toast en caso de error
-    toast.removeAll();
-    
-    let errorMessage = 'Error al guardar la justificación';
-    let errorDetail = '';
-    
-    // Mensajes de error específicos
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-      
-      // Mensajes personalizados para errores comunes
-      if (errorMessage.includes('permisos disponibles')) {
-        errorDetail = '❌ El estudiante ha agotado sus permisos mensuales.';
-      } else if (errorMessage.includes('ya fue justificada')) {
-        errorDetail = '⚠️ Esta falta ya tiene una justificación registrada.';
-      } else if (errorMessage.includes('Inscripción no encontrada')) {
-        errorDetail = '🔍 No se encontró la inscripción del estudiante.';
-      } else {
-        errorDetail = errorMessage;
+    guardarAsistenciaLocal(
+      fechaSeleccionada.value,
+      estudianteSeleccionado.value.id,
+      estudianteSeleccionado.value.horario_id,
+      'permiso',
+      {
+        asistencia_hora: new Date().toISOString(),
+        permisos_disponibles: nuevosPermisos
       }
-    } else if (error.code === 'ERR_NETWORK') {
-      errorMessage = '🔌 Error de conexión';
-      errorDetail = 'No se pudo conectar con el servidor. Verifica tu conexión.';
-    } else if (error.message) {
-      errorDetail = error.message;
+    )
+
+    // Actualizar UI localmente
+    const horario = horarios.value.find(h => h.id === estudianteSeleccionado.value.horario_id)
+    if (horario) {
+      const estudianteIndex = horario.estudiantes.findIndex(
+        e => e.inscripcion_id === estudianteSeleccionado.value.inscripcion_id
+      )
+      if (estudianteIndex !== -1) {
+        horario.estudiantes[estudianteIndex].asistencia_estado = 'permiso'
+        horario.estudiantes[estudianteIndex].permisos_disponibles = nuevosPermisos
+        horario.estudiantes[estudianteIndex].asistencia_hora = new Date().toISOString()
+      }
     }
+
+    calcularEstadisticas()
     
     toast.add({
+      severity: 'success',
+      summary: '✅ Justificación guardada',
+      detail: `Permisos restantes: ${nuevosPermisos}/3`,
+      life: 3000
+    })
+
+    cerrarJustificacion()
+
+    // Intentar enviar al servidor en segundo plano
+    try {
+      const response = await asistenciaService.justificar(data)
+      if (response.data.success) {
+        console.log('✅ Justificación guardada en servidor')
+      }
+    } catch (serverError) {
+      console.warn('⚠️ No se pudo enviar justificación al servidor, pero se guardó localmente:', serverError)
+    }
+
+  } catch (error) {
+    console.error('Error justificando:', error)
+    toast.add({
       severity: 'error',
-      summary: errorMessage,
-      detail: errorDetail || 'Por favor, inténtalo de nuevo.',
-      life: 5000,
-      icon: 'pi pi-times-circle'
-    });
+      summary: 'Error',
+      detail: error.response?.data?.message || 'No se pudo guardar la justificación',
+      life: 3000
+    })
+  } finally {
+    procesandoJustificacion.value = false
   }
 }
 
@@ -590,77 +877,6 @@ function cerrarJustificacion() {
   mostrarJustificacionRapida.value = false
   estudianteSeleccionado.value = null
   motivoJustificacion.value = ''
-}
-
-// Registro rápido
-async function abrirRegistroRapido() {
-  await cargarHorariosDisponibles()
-  mostrarRegistroRapido.value = true
-}
-
-async function cargarHorariosDisponibles() {
-  try {
-    const response = await asistenciaService.obtenerHorariosDisponibles()
-    horariosDisponiblesRegistro.value = response.data?.map(h => ({
-      label: `${h.dia_semana} ${h.hora_inicio} - ${h.hora_fin} (${h.modalidad})`,
-      value: h.id
-    })) || []
-  } catch (error) {
-    console.error('Error cargando horarios:', error)
-  }
-}
-
-async function buscarEstudiantes(event) {
-  try {
-    const response = await estudianteService.buscar(event.query)
-    sugerenciasEstudiantes.value = response.data?.map(est => ({
-      ...est,
-      nombre_completo: `${est.nombres} ${est.apellidos}`
-    })) || []
-  } catch (error) {
-    console.error('Error buscando estudiantes:', error)
-  }
-}
-
-async function confirmarRegistroRapido() {
-  try {
-    const data = {
-      estudiante_id: estudianteSeleccionadoRegistro.value.id,
-      horario_id: horarioRegistroRapido.value,
-      fecha: fechaSeleccionada.value.toISOString().split('T')[0],
-      estado: estadoRegistroRapido.value
-    }
-    
-    await asistenciaService.registrarManual(data)
-    
-    toast.add({
-      severity: 'success',
-      summary: 'Agregado',
-      detail: 'Estudiante agregado a la clase',
-      life: 3000
-    })
-    
-    cerrarRegistroRapido()
-    cargarAsistencias()
-    
-  } catch (error) {
-    console.error('Error:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudo agregar el estudiante',
-      life: 3000
-    })
-  }
-}
-
-function cerrarRegistroRapido() {
-  mostrarRegistroRapido.value = false
-  busquedaEstudiante.value = ''
-  sugerenciasEstudiantes.value = []
-  estudianteSeleccionadoRegistro.value = null
-  horarioRegistroRapido.value = null
-  estadoRegistroRapido.value = 'asistio'
 }
 
 // Funciones de ayuda
@@ -673,22 +889,39 @@ function getIniciales(estudiante) {
   return (inicial1 + inicial2).toUpperCase()
 }
 
-function getEstadoClass(estudiante) {
+function getAvatarClass(estudiante) {
   const estado = estudiante.asistencia_estado
-  if (!estado) return 'bg-blue-100 text-blue-800'
-  if (estado === 'asistio') return 'bg-green-100 text-green-800'
-  if (estado === 'falto') return 'bg-red-100 text-red-800'
-  if (estado === 'permiso') return 'bg-yellow-100 text-yellow-800'
+  if (!estado) return 'bg-blue-100 text-blue-800 border-2 border-blue-200'
+  if (estado === 'asistio') return 'bg-green-100 text-green-800 border-2 border-green-200'
+  if (estado === 'falto') return 'bg-red-100 text-red-800 border-2 border-red-200'
+  if (estado === 'permiso') return 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200'
   return 'bg-blue-100 text-blue-800'
 }
 
-function getEstadoColor(estudiante) {
+function getCardClass(estudiante) {
   const estado = estudiante.asistencia_estado
-  if (!estado) return 'bg-blue-500'
-  if (estado === 'asistio') return 'bg-green-500'
-  if (estado === 'falto') return 'bg-red-500'
-  if (estado === 'permiso') return 'bg-yellow-500'
-  return 'bg-blue-500'
+  if (estado === 'asistio') return 'card-present'
+  if (estado === 'falto') return 'card-absent'
+  if (estado === 'permiso') return 'card-justified'
+  return 'card-pending'
+}
+
+function getEstadoBadge(estudiante) {
+  const estado = estudiante.asistencia_estado
+  if (!estado) return 'badge-pending'
+  if (estado === 'asistio') return 'badge-present'
+  if (estado === 'falto') return 'badge-absent'
+  if (estado === 'permiso') return 'badge-justified'
+  return 'badge-pending'
+}
+
+function getEstadoIcon(estudiante) {
+  const estado = estudiante.asistencia_estado
+  if (!estado) return 'pi pi-clock'
+  if (estado === 'asistio') return 'pi pi-check'
+  if (estado === 'falto') return 'pi pi-times'
+  if (estado === 'permiso') return 'pi pi-exclamation-triangle'
+  return 'pi pi-clock'
 }
 
 function getEstadoLabel(estado) {
@@ -709,317 +942,503 @@ function getEstadoSeverity(estado) {
   return map[estado] || 'info'
 }
 
-function getButtonSeverity(estado) {
-  const map = {
-    'asistio': 'success',
-    'falto': 'danger',
-    'permiso': 'warning'
+function getDiaCompleto(dia) {
+  const dias = {
+    'monday': 'Lunes',
+    'tuesday': 'Martes',
+    'wednesday': 'Miércoles',
+    'thursday': 'Jueves',
+    'friday': 'Viernes',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo'
   }
-  return map[estado] || 'secondary'
+  return dias[dia?.toLowerCase()] || dia
 }
 
-// Funciones de acción masiva
-async function marcarTodosPresentesRapido() {
-  const horarioActual = horarios.value[horarioActivo.value]
-  if (!horarioActual) return
-  
-  const sinRegistro = horarioActual.estudiantes.filter(e => !e.asistencia_estado)
-  
-  for (const estudiante of sinRegistro) {
-    await marcarAsistencia(estudiante, horarioActual.id, 'asistio')
-  }
+function formatHora(hora) {
+  if (!hora) return '--:--'
+  const date = new Date(hora)
+  return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
 
-function abrirFiltros() {
-  // Implementar filtros simples si es necesario
-  toast.add({
-    severity: 'info',
-    summary: 'Filtros',
-    detail: 'Funcionalidad de filtros próximamente',
-    life: 3000
+function contarPorEstado(horario, estado) {
+  return (horario.estudiantes || []).filter(e => e.asistencia_estado === estado).length
+}
+
+function obtenerHorarioEstudiante() {
+  if (!estudianteSeleccionado.value?.horario_id) return ''
+  const horario = horarios.value.find(h => h.id === estudianteSeleccionado.value.horario_id)
+  return horario ? `${horario.hora_inicio} - ${horario.hora_fin}` : ''
+}
+
+// Funciones de acción
+function cambiarFecha(dias) {
+  const nuevaFecha = new Date(fechaSeleccionada.value)
+  nuevaFecha.setDate(nuevaFecha.getDate() + dias)
+  fechaSeleccionada.value = nuevaFecha
+  cargarAsistencias()
+}
+
+function irAHoy() {
+  fechaSeleccionada.value = new Date()
+  cargarAsistencias()
+}
+
+function seleccionarMotivo(motivo) {
+  motivoJustificacion.value = motivo
+}
+
+function marcarTodosEnHorario(horarioId, estado) {
+  const horario = horarios.value.find(h => h.id === horarioId)
+  if (!horario) return
+  
+  const sinRegistrar = horario.estudiantes.filter(e => !e.asistencia_estado)
+  sinRegistrar.forEach(est => {
+    marcarAsistencia(est, horarioId, estado)
   })
 }
 
-function toggleCalendar() {
-  mostrarCalendario.value = !mostrarCalendario.value
+function marcarTodosPresentes() {
+  horarios.value.forEach(horario => {
+    marcarTodosEnHorario(horario.id, 'asistio')
+  })
 }
 
-async function exportarReporte() {
+async function exportarExcel() {
   try {
     const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
     window.open(`/api/asistencias/exportar/${fecha}`, '_blank')
+    toast.add({
+      severity: 'success',
+      summary: 'Exportando',
+      detail: 'El reporte se descargará en breve',
+      life: 3000
+    })
   } catch (error) {
-    console.error('Error exportando:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo exportar el reporte',
+      life: 3000
+    })
   }
 }
 
-function verDetalles() {
-  // Redirigir o mostrar estadísticas detalladas
+function abrirRegistroRapido() {
   toast.add({
     severity: 'info',
-    summary: 'Detalles',
-    detail: 'Vista de detalles próximamente',
+    summary: 'Agregar estudiante',
+    detail: 'Funcionalidad de agregar estudiante',
     life: 3000
   })
 }
 
 // Inicialización
 onMounted(() => {
+  console.log('🚀 Módulo de Asistencias iniciando...')
+  
+  const fechaActual = new Date()
+  const hoyLocal = new Date(
+    fechaActual.getFullYear(),
+    fechaActual.getMonth(),
+    fechaActual.getDate()
+  )
+  
+  fechaSeleccionada.value = hoyLocal
+  hoy.value = hoyLocal
+  
   cargarAsistencias()
 })
 </script>
 
 <style scoped>
-.asistencias-simple-container {
+.asistencia-container {
   padding: 1.5rem;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
 }
 
-.header-section {
-  background: white;
+/* HEADER ESTILO GLASSMORPHISM */
+.header-glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+  position: relative;
 }
 
-.calendar-mini {
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.summary-cards {
-  .summary-card {
-    padding: 1rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    border: 2px solid;
-    
-    i {
-      font-size: 2rem;
-    }
-    
-    h3 {
-      font-size: 1.75rem;
-    }
-  }
-}
-
-.horario-selector {
-  :deep(.p-tabview-nav) {
-    background: transparent;
-    border: none;
-    
-    .p-tabview-nav-link {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      margin-right: 0.5rem;
-      
-      &:hover {
-        background: #f3f4f6;
-      }
-    }
-    
-    .p-highlight .p-tabview-nav-link {
-      background: #3b82f6;
-      color: white;
-      border-color: #3b82f6;
-    }
-  }
-}
-
-.estudiantes-list {
-  .horario-section {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .horario-header {
-    margin-bottom: 1.5rem;
-    
-    h3 {
-      margin: 0 0 0.5rem 0;
-    }
-    
-    .chip {
-      background: #f3f4f6;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      color: #6b7280;
-    }
-  }
-}
-
-.estudiantes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 1rem;
 }
 
-.estudiante-item {
+.header-left .date-display {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
+}
+
+.date-display i {
+  font-size: 2.5rem;
+  color: #3b82f6;
+}
+
+.header-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.action-buttons-header {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar-floating {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
   background: white;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  
-  .estudiante-avatar {
-    position: relative;
-    
-    .estado-indicator {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid white;
-    }
-  }
-  
-  .estudiante-info {
-    flex: 1;
-    
-    h4 {
-      margin: 0 0 0.25rem 0;
-      font-size: 1rem;
-    }
-    
-    .small {
-      font-size: 0.875rem;
-    }
-    
-    .estudiante-stats {
-      display: flex;
-      gap: 1rem;
-      margin-top: 0.5rem;
-      
-      .stat {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.875rem;
-        color: #6b7280;
-        
-        i {
-          font-size: 0.875rem;
-        }
-      }
-    }
-  }
-  
-  .estudiante-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    
-    .toggle-buttons {
-      display: flex;
-      gap: 0.25rem;
-      
-      button {
-        padding: 0.5rem;
-        
-        &:not(.p-button-success):not(.p-button-danger):not(.p-button-warning) {
-          background: #f3f4f6;
-          border-color: #f3f4f6;
-          color: #6b7280;
-        }
-      }
-    }
-    
-    .estado-label {
-      margin-top: 0.25rem;
-    }
-  }
-}
-
-.loading-state {
-  text-align: center;
-  padding: 4rem;
-  
-  p {
-    margin-top: 1rem;
-    color: #6b7280;
-  }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem;
-  
-  h3 {
-    margin: 1rem 0 0.5rem 0;
-  }
-  
-  p {
-    color: #6b7280;
-  }
-}
-
-.speed-dial-bottom-right {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
   z-index: 1000;
+  border: 1px solid #e5e7eb;
 }
 
-.selected-student {
-  animation: fadeIn 0.3s;
+/* SUMMARY CARDS MEJORADAS */
+.summary-section {
+  margin-bottom: 2rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+.summary-card {
+  border-radius: 12px;
+  border: none;
+  transition: all 0.3s ease;
+  height: 100%;
 }
 
+.summary-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.summary-card.present {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-left: 4px solid #10b981;
+}
+
+.summary-card.absent {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left: 4px solid #ef4444;
+}
+
+.summary-card.justified {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+}
+
+.summary-card.total {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #1f2937;
+}
+
+/* FILTERS SECTION */
+.filters-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* HORARIOS CONTAINER */
+.horarios-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+:deep(.p-accordion .p-accordion-header) {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:deep(.p-accordion .p-accordion-header:hover) {
+  background: #f1f5f9 !important;
+}
+
+.horario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+.horario-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ESTUDIANTE CARD */
+.estudiantes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.estudiante-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  background: white;
+  position: relative;
+}
+
+.estudiante-card:hover {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+  border-color: #3b82f6;
+}
+
+.card-present {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(to right, #f0fdf4, white);
+}
+
+.card-absent {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(to right, #fef2f2, white);
+}
+
+.card-justified {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(to right, #fffbeb, white);
+}
+
+.card-pending {
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(to right, #eff6ff, white);
+}
+
+.estudiante-avatar-section {
+  position: relative;
+}
+
+.estado-badge {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+
+.badge-present {
+  background: #10b981;
+  color: white;
+}
+
+.badge-absent {
+  background: #ef4444;
+  color: white;
+}
+
+.badge-justified {
+  background: #f59e0b;
+  color: white;
+}
+
+.badge-pending {
+  background: #3b82f6;
+  color: white;
+}
+
+.estudiante-info-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.estudiante-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.stat-item i {
+  font-size: 0.875rem;
+}
+
+.estudiante-actions-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* HORARIO SUMMARY */
+.horario-summary {
+  padding: 1rem;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* QUICK REASONS */
+.quick-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* LOADING & EMPTY STATES */
+.loading-container, .empty-container {
+  padding: 2rem;
+}
+
+.loading-card, .empty-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* RESPONSIVE */
 @media (max-width: 768px) {
-  .asistencias-simple-container {
+  .asistencia-container {
     padding: 1rem;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
   }
   
   .estudiantes-grid {
     grid-template-columns: 1fr;
+    padding: 1rem;
   }
   
-  .estudiante-item {
+  .estudiante-card {
     flex-direction: column;
     text-align: center;
-    
-    .estudiante-info {
-      width: 100%;
-    }
-    
-    .estudiante-actions {
-      width: 100%;
-      flex-direction: row;
-      justify-content: space-between;
-    }
+    gap: 1rem;
   }
   
-  .summary-cards .summary-card {
+  .estudiante-actions-section {
+    width: 100%;
+  }
+  
+  .horario-header {
     flex-direction: column;
-    text-align: center;
+    align-items: flex-start;
     gap: 0.5rem;
   }
+  
+  .horario-meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 576px) {
+  .summary-section .col-12 {
+    margin-bottom: 1rem;
+  }
+  
+  .filters-section .flex-wrap {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .header-right {
+    flex-wrap: wrap;
+  }
+}
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.estudiante-card {
+  animation: fadeIn 0.3s ease-out;
 }
 </style>
