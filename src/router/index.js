@@ -21,8 +21,9 @@ import Disciplinas from '../views/admin/Disciplina.vue'
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: HomeView
+    //name: 'Home',
+    // component: HomeView
+    redirect: '/login'
   },
   {
     path: '/login',
