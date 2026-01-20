@@ -2,14 +2,13 @@
     <div class="layout-topbar">
         <!-- Logo y título -->
         <router-link to="/" class="layout-topbar-logo">
-            <div class="logo-container">
-                <i class="pi pi-shopping-cart logo-icon"></i>
-                <div class="logo-text">
-                    <span class="logo-title">Sistema de Control</span>
-                    
-                </div>
-            </div>
-        </router-link>
+    <div class="logo-container">
+        <img src="/public/demo/images/logo1.jpeg" alt="Logo" class="logo-image">
+        <div class="logo-text">
+            <span class="logo-title">Sistema de Control</span>
+        </div>
+    </div>
+</router-link>
 
         <!-- Botón del menú lateral -->
         <button class="menu-toggle-btn" @click="onMenuToggle()">

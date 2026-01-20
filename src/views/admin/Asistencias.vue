@@ -15,37 +15,31 @@
             </div>
           </div>
         </div>
-        
+
         <div class="header-right">
           <ButtonGroup>
-            <Button icon="pi pi-chevron-left" severity="secondary" 
-                    @click="cambiarFecha(-1)" rounded />
-            <Button :label="hoyLabel" severity="info" 
-                    @click="irAHoy" outlined />
-            <Button icon="pi pi-chevron-right" severity="secondary" 
-                    @click="cambiarFecha(1)" :disabled="esHoy" rounded />
+            <Button icon="pi pi-chevron-left" severity="secondary" @click="cambiarFecha(-1)" rounded />
+            <Button :label="hoyLabel" severity="info" @click="irAHoy" outlined />
+            <Button icon="pi pi-chevron-right" severity="secondary" @click="cambiarFecha(1)" :disabled="esHoy"
+              rounded />
           </ButtonGroup>
-          
+
           <!-- Botones de acción en el header -->
           <div class="action-buttons-header">
-            <Button icon="pi pi-calendar" @click="mostrarCalendario = !mostrarCalendario" 
-                    :class="{'p-button-outlined p-button-primary': mostrarCalendario}" rounded 
-                    tooltip="Mostrar calendario" />
-            <Button icon="pi pi-file-excel" severity="help" 
-                    @click="exportarExcel" rounded 
-                    tooltip="Exportar a Excel" />
-            <Button icon="pi pi-sync" @click="cargarAsistencias" 
-                    :loading="cargando" outlined rounded 
-                    tooltip="Refrescar datos" />
+            <Button icon="pi pi-calendar" @click="mostrarCalendario = !mostrarCalendario"
+              :class="{ 'p-button-outlined p-button-primary': mostrarCalendario }" rounded
+              tooltip="Mostrar calendario" />
+            <Button icon="pi pi-file-excel" severity="help" @click="exportarExcel" rounded tooltip="Exportar a Excel" />
+            <Button icon="pi pi-sync" @click="cargarAsistencias" :loading="cargando" outlined rounded
+              tooltip="Refrescar datos" />
           </div>
         </div>
       </div>
-      
+
       <!-- CALENDARIO FLOTANTE -->
       <div v-if="mostrarCalendario" class="calendar-floating">
-        <Calendar v-model="fechaSeleccionada" inline 
-                  :maxDate="hoy" dateFormat="dd/mm/yy"
-                  @date-select="cargarAsistencias" />
+        <Calendar v-model="fechaSeleccionada" inline :maxDate="hoy" dateFormat="dd/mm/yy"
+          @date-select="cargarAsistencias" />
       </div>
     </div>
 
@@ -62,12 +56,11 @@
                 </div>
                 <i class="pi pi-check-circle text-5xl opacity-30"></i>
               </div>
-              <ProgressBar :value="porcentajePresentes" :showValue="false" 
-                          class="mt-3" style="height: 6px" />
+              <ProgressBar :value="porcentajePresentes" :showValue="false" class="mt-3" style="height: 6px" />
             </template>
           </Card>
         </div>
-        
+
         <div class="col-12 md:col-3">
           <Card class="summary-card absent">
             <template #content>
@@ -78,12 +71,11 @@
                 </div>
                 <i class="pi pi-times-circle text-5xl opacity-30"></i>
               </div>
-              <ProgressBar :value="porcentajeAusentes" :showValue="false" 
-                          class="mt-3" style="height: 6px" />
+              <ProgressBar :value="porcentajeAusentes" :showValue="false" class="mt-3" style="height: 6px" />
             </template>
           </Card>
         </div>
-        
+
         <div class="col-12 md:col-3">
           <Card class="summary-card justified">
             <template #content>
@@ -94,12 +86,11 @@
                 </div>
                 <i class="pi pi-exclamation-triangle text-5xl opacity-30"></i>
               </div>
-              <ProgressBar :value="porcentajeJustificados" :showValue="false" 
-                          class="mt-3" style="height: 6px" />
+              <ProgressBar :value="porcentajeJustificados" :showValue="false" class="mt-3" style="height: 6px" />
             </template>
           </Card>
         </div>
-        
+
         <div class="col-12 md:col-3">
           <Card class="summary-card total">
             <template #content>
@@ -125,22 +116,17 @@
         <div class="flex flex-wrap gap-2">
           <span class="p-input-icon-left">
             <i class="pi pi-search"></i>
-            <InputText v-model="filtroBusqueda" placeholder="Buscar estudiante..." 
-                      @input="filtrarEstudiantes" />
+            <InputText v-model="filtroBusqueda" placeholder="Buscar estudiante..." @input="filtrarEstudiantes" />
           </span>
-          
-          <Dropdown v-model="filtroEstado" :options="opcionesEstado" 
-                    optionLabel="label" optionValue="value"
-                    placeholder="Filtrar por estado" showClear
-                    @change="filtrarEstudiantes" />
-          
-          <Dropdown v-model="filtroHorario" :options="opcionesHorario" 
-                    optionLabel="label" optionValue="value"
-                    placeholder="Todos los horarios" showClear
-                    @change="filtrarEstudiantes" />
+
+          <Dropdown v-model="filtroEstado" :options="opcionesEstado" optionLabel="label" optionValue="value"
+            placeholder="Filtrar por estado" showClear @change="filtrarEstudiantes" />
+
+          <Dropdown v-model="filtroHorario" :options="opcionesHorario" optionLabel="label" optionValue="value"
+            placeholder="Todos los horarios" showClear @change="filtrarEstudiantes" />
         </div>
-        
-        
+
+
       </div>
     </div>
 
@@ -175,8 +161,7 @@
           <template #header>
             <div class="horario-header">
               <div class="flex align-items-center gap-3">
-                <Badge :value="horario.estudiantesFiltrados?.length || 0" 
-                       severity="info" size="large" />
+                <Badge :value="horario.estudiantesFiltrados?.length || 0" severity="info" size="large" />
                 <div>
                   <h4 class="m-0">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</h4>
                   <small class="text-500">{{ getDiaCompleto(horario.dia_semana) }}</small>
@@ -189,33 +174,34 @@
               </div>
             </div>
           </template>
-          
+
           <div class="estudiantes-grid">
-            <div v-for="estudiante in horario.estudiantesFiltrados" :key="estudiante.id" 
-                 class="estudiante-card" :class="getCardClass(estudiante)">
+            <div v-for="estudiante in horario.estudiantesFiltrados" :key="estudiante.id" class="estudiante-card"
+              :class="getCardClass(estudiante)">
               <div class="estudiante-avatar-section">
-                <Avatar :label="getIniciales(estudiante)" size="xlarge" 
-                        :class="getAvatarClass(estudiante)" shape="circle" />
+                <Avatar :label="getIniciales(estudiante)" size="xlarge" :class="getAvatarClass(estudiante)"
+                  shape="circle" />
                 <div class="estado-badge" :class="getEstadoBadge(estudiante)">
                   <i :class="getEstadoIcon(estudiante)"></i>
                 </div>
               </div>
-              
+
               <div class="estudiante-info-section">
                 <div class="flex justify-content-between align-items-start">
                   <div>
                     <h4 class="m-0">{{ estudiante.nombres }} {{ estudiante.apellidos }}</h4>
                     <small class="text-500">{{ estudiante.ci || 'Sin documento' }}</small>
                   </div>
-                  <Tag :value="getEstadoLabel(estudiante.asistencia_estado)" 
-                       :severity="getEstadoSeverity(estudiante.asistencia_estado)" 
-                       rounded />
+                  <Tag v-if="estudiante.asistencia_estado" :value="getEstadoLabel(estudiante.asistencia_estado)"
+                    :severity="getEstadoSeverity(estudiante.asistencia_estado)" rounded />
+                  <span v-else class="text-500">Sin marcar</span>
                 </div>
-                
+
                 <div class="estudiante-stats">
                   <div class="stat-item">
                     <i class="pi pi-calendar-check"></i>
-                    <span>Asistencias: {{ estudiante.clases_asistidas || 0 }}/{{ estudiante.clases_totales || 12 }}</span>
+                    <span>Asistencias: {{ estudiante.clases_asistidas || 0 }}/{{ estudiante.clases_totales || 12
+                    }}</span>
                   </div>
                   <div class="stat-item">
                     <i class="pi pi-ticket"></i>
@@ -227,29 +213,27 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="estudiante-actions-section">
                 <div class="action-buttons">
-                  <Button icon="pi pi-check" rounded 
-                          :class="{'p-button-success': estudiante.asistencia_estado === 'asistio'}"
-                          @click="marcarAsistencia(estudiante, horario.id, 'asistio')"
-                          tooltip="Marcar como presente" />
-                  
-                  <Button icon="pi pi-times" rounded 
-                          :class="{'p-button-danger': estudiante.asistencia_estado === 'falto'}"
-                          @click="marcarAsistencia(estudiante, horario.id, 'falto')"
-                          tooltip="Marcar como ausente" />
-                  
-                  <Button icon="pi pi-exclamation-triangle" rounded 
-                          :class="{'p-button-warning': estudiante.asistencia_estado === 'permiso'}"
-                          @click="justificarRapido(estudiante, horario.id)"
-                          :disabled="(estudiante.permisos_disponibles || 0) <= 0"
-                          tooltip="Justificar ausencia" />
+                  <!-- Botón ASISTIO - siempre mismo color hasta que se marque -->
+                  <Button icon="pi pi-check" rounded class="p-button-success p-button-outlined"
+                    @click="marcarAsistencia(estudiante, horario.id, 'asistio')" tooltip="Marcar como presente" />
+
+                  <!-- Botón FALTO - siempre mismo color hasta que se marque -->
+                  <Button icon="pi pi-times" rounded class="p-button-danger p-button-outlined"
+                    @click="marcarAsistencia(estudiante, horario.id, 'falto')" tooltip="Marcar como ausente" />
+
+                  <!-- Botón JUSTIFICAR - solo activo si tiene permisos -->
+                  <!-- Botón JUSTIFICAR - abre modal SIEMPRE que tenga permisos -->
+                  <Button icon="pi pi-exclamation-triangle" rounded class="p-button-warning p-button-outlined"       
+                    @click="abrirModalJustificacion(estudiante, horario.id)"
+                    :disabled="(estudiante.permisos_disponibles || 0) <= 0" tooltip="Justificar ausencia" />
                 </div>
               </div>
             </div>
           </div>
-          
+
           <!-- RESUMEN DEL HORARIO -->
           <div class="horario-summary">
             <div class="flex justify-content-between align-items-center">
@@ -267,9 +251,8 @@
                   <span>{{ contarPorEstado(horario, 'permiso') }} justificados</span>
                 </span>
               </div>
-              <Button icon="pi pi-check" label="Marcar todos presentes" 
-                      severity="success" size="small" outlined
-                      @click="marcarTodosEnHorario(horario.id, 'asistio')" />
+              <Button icon="pi pi-check" label="Marcar todos presentes" severity="success" size="small" outlined
+                @click="marcarTodosEnHorario(horario.id, 'asistio')" />
             </div>
           </div>
         </AccordionTab>
@@ -277,9 +260,8 @@
     </div>
 
     <!-- MODAL DE JUSTIFICACIÓN MEJORADO -->
-    <Dialog v-model:visible="mostrarJustificacionRapida" modal 
-            :header="`Justificar ausencia - ${estudianteSeleccionado?.nombres}`"
-            :style="{ width: '450px' }">
+    <Dialog v-model:visible="mostrarJustificacionRapida" modal
+      :header="`Justificar ausencia - ${estudianteSeleccionado?.nombres}`" :style="{ width: '450px' }">
       <div class="p-fluid">
         <div class="student-info mb-4 p-3 surface-50 border-round">
           <div class="flex align-items-center gap-3">
@@ -287,30 +269,29 @@
             <div>
               <h4 class="m-0">{{ estudianteSeleccionado?.nombres }} {{ estudianteSeleccionado?.apellidos }}</h4>
               <div class="flex align-items-center gap-2 mt-1">
-                <Tag :value="`${estudianteSeleccionado?.permisos_disponibles || 0}/3 permisos`" 
-                     :severity="(estudianteSeleccionado?.permisos_disponibles || 0) > 0 ? 'success' : 'danger'" />
+                <Tag :value="`${estudianteSeleccionado?.permisos_disponibles || 0}/3 permisos`"
+                  :severity="(estudianteSeleccionado?.permisos_disponibles || 0) > 0 ? 'success' : 'danger'" />
                 <small class="text-500">Horario: {{ obtenerHorarioEstudiante() }}</small>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div class="mb-4">
           <label class="font-bold block mb-2">Motivo de justificación</label>
           <div class="quick-reasons">
-            <Button v-for="motivo in motivosComunes" :key="motivo" 
-                    :label="motivo" severity="secondary" size="small" outlined
-                    @click="seleccionarMotivo(motivo)" 
-                    :class="{'p-button-primary': motivoJustificacion === motivo}" />
+            <Button v-for="motivo in motivosComunes" :key="motivo" :label="motivo" severity="secondary" size="small"
+              outlined @click="seleccionarMotivo(motivo)"
+              :class="{ 'p-button-primary': motivoJustificacion === motivo }" />
           </div>
         </div>
-        
+
         <div class="mb-4">
           <label class="font-bold block mb-2">Detalles adicionales</label>
-          <Textarea v-model="motivoJustificacion" rows="3" placeholder="Describe el motivo de la ausencia..."
-                    autoResize class="w-full" />
+          <Textarea v-model="motivoJustificacion" rows="3" placeholder="Describe el motivo de la ausencia..." autoResize
+            class="w-full" />
         </div>
-        
+
         <div class="mb-4" v-if="estudianteSeleccionado?.permisos_disponibles === 0">
           <Message severity="warn" :closable="false">
             <strong>⚠️ Sin permisos disponibles</strong>
@@ -318,12 +299,12 @@
           </Message>
         </div>
       </div>
-      
+
       <template #footer>
         <Button label="Cancelar" severity="secondary" @click="cerrarJustificacion" />
-        <Button label="Justificar Ausencia" severity="warning" icon="pi pi-check"
-                @click="confirmarJustificacionRapida" :loading="procesandoJustificacion"
-                :disabled="!motivoJustificacion.trim() || (estudianteSeleccionado?.permisos_disponibles || 0) <= 0" />
+        <Button label="Justificar Ausencia" severity="warning" icon="pi pi-check" @click="confirmarJustificacionRapida"
+          :loading="procesandoJustificacion"
+          :disabled="!motivoJustificacion.trim() || (estudianteSeleccionado?.permisos_disponibles || 0) <= 0" />
       </template>
     </Dialog>
 
@@ -380,7 +361,7 @@ const procesandoJustificacion = ref(false)
 
 // Datos estáticos
 const motivosComunes = ref([
-  'Enfermedad', 'Consulta médica', 'Trabajo', 'Estudios', 
+  'Enfermedad', 'Consulta médica', 'Trabajo', 'Estudios',
   'Viaje', 'Familiar', 'Lesión deportiva', 'Clima', 'Personal'
 ])
 
@@ -443,35 +424,35 @@ const opcionesHorario = computed(() => {
 const horariosFiltrados = computed(() => {
   return horarios.value.map(horario => {
     let estudiantesFiltrados = horario.estudiantes || []
-    
+
     // Aplicar filtro de búsqueda
     if (filtroBusqueda.value) {
       const search = filtroBusqueda.value.toLowerCase()
-      estudiantesFiltrados = estudiantesFiltrados.filter(est => 
+      estudiantesFiltrados = estudiantesFiltrados.filter(est =>
         est.nombres.toLowerCase().includes(search) ||
         est.apellidos.toLowerCase().includes(search) ||
         (est.ci && est.ci.includes(search))
       )
     }
-    
+
     // Aplicar filtro de estado
     if (filtroEstado.value !== null) {
-      estudiantesFiltrados = estudiantesFiltrados.filter(est => 
+      estudiantesFiltrados = estudiantesFiltrados.filter(est =>
         est.asistencia_estado === filtroEstado.value
       )
     }
-    
+
     // Aplicar filtro de horario (si se seleccionó uno específico)
     if (filtroHorario.value && filtroHorario.value !== horario.id) {
       estudiantesFiltrados = []
     }
-    
+
     return {
       ...horario,
       estudiantesFiltrados,
       tieneEstudiantes: estudiantesFiltrados.length > 0
     }
-  }).filter(horario => 
+  }).filter(horario =>
     horario.tieneEstudiantes || (!filtroBusqueda.value && filtroEstado.value === null && !filtroHorario.value)
   )
 })
@@ -484,64 +465,78 @@ const estadisticas = ref({
   totalHoy: 0
 })
 
-// ALMACENAMIENTO LOCAL MEJORADO - Guarda por fecha
+// ========== FUNCIÓN FILTRAR ESTUDIANTES (QUE FALTABA) ==========
+function filtrarEstudiantes() {
+  // Esta función es llamada por los filtros en el template
+  // No necesita hacer nada porque los computed properties ya filtran
+  console.log('🔍 Filtros aplicados:', {
+    busqueda: filtroBusqueda.value,
+    estado: filtroEstado.value,
+    horario: filtroHorario.value
+  });
+}
+
+// ALMACENAMIENTO LOCAL
 const guardarAsistenciaLocal = (fecha, estudianteId, horarioId, estado, datos) => {
-  const fechaKey = new Date(fecha).toISOString().split('T')[0] // Formato YYYY-MM-DD
+  const fechaKey = new Date(fecha).toISOString().split('T')[0]
   const storageKey = `asistencia_${fechaKey}`
-  
+
   let asistenciasDia = JSON.parse(localStorage.getItem(storageKey) || '{}')
-  
-  // Crear clave única: estudianteId + horarioId
   const clave = `${estudianteId}_${horarioId}`
-  
-  asistenciasDia[clave] = {
-    estudianteId,
-    horarioId,
-    estado,
-    datos,
-    timestamp: new Date().toISOString()
+
+  if (estado) {
+    asistenciasDia[clave] = {
+      estudianteId,
+      horarioId,
+      clase_programada_id: datos.clase_programada_id,
+      estado,
+      datos,
+      timestamp: new Date().toISOString()
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(asistenciasDia))
+    console.log('💾 Guardado en localStorage:', clave, estado)
   }
-  
-  localStorage.setItem(storageKey, JSON.stringify(asistenciasDia))
-  console.log('💾 Asistencia guardada localmente:', { fecha: fechaKey, clave, estado })
 }
 
 const cargarAsistenciasLocales = (fecha) => {
   const fechaKey = new Date(fecha).toISOString().split('T')[0]
   const storageKey = `asistencia_${fechaKey}`
-  const asistenciasDia = JSON.parse(localStorage.getItem(storageKey) || '{}')
-  
-  console.log('📂 Cargando asistencias locales para:', fechaKey, Object.keys(asistenciasDia).length, 'registros')
-  
-  return asistenciasDia
+  return JSON.parse(localStorage.getItem(storageKey) || '{}')
 }
 
 const aplicarAsistenciasLocales = (horariosData, fecha) => {
   const asistenciasLocales = cargarAsistenciasLocales(fecha)
-  
+
   if (Object.keys(asistenciasLocales).length === 0) {
-    console.log('📭 No hay asistencias locales guardadas para esta fecha')
     return horariosData
   }
-  
+
+  const ahora = new Date()
+
   return horariosData.map(horario => {
     const estudiantesActualizados = (horario.estudiantes || []).map(estudiante => {
       const clave = `${estudiante.id}_${horario.id}`
       const asistenciaLocal = asistenciasLocales[clave]
-      
+
       if (asistenciaLocal) {
-        console.log(`🎯 Aplicando asistencia local para ${estudiante.nombres}:`, asistenciaLocal.estado)
-        return {
-          ...estudiante,
-          asistencia_estado: asistenciaLocal.estado,
-          asistencia_hora: asistenciaLocal.datos?.asistencia_hora || estudiante.asistencia_hora,
-          permisos_disponibles: asistenciaLocal.datos?.permisos_disponibles || estudiante.permisos_disponibles
+        const timestamp = new Date(asistenciaLocal.timestamp)
+        const diferenciaHoras = (ahora - timestamp) / (1000 * 60 * 60)
+
+        if (diferenciaHoras < 24) {
+          return {
+            ...estudiante,
+            asistencia_estado: asistenciaLocal.estado,
+            asistencia_hora: asistenciaLocal.datos?.asistencia_hora || estudiante.asistencia_hora,
+            permisos_disponibles: asistenciaLocal.datos?.permisos_disponibles || estudiante.permisos_disponibles,
+            clases_asistidas: asistenciaLocal.datos?.clases_asistidas || estudiante.clases_asistidas
+          }
         }
       }
-      
+
       return estudiante
     })
-    
+
     return {
       ...horario,
       estudiantes: estudiantesActualizados
@@ -549,138 +544,87 @@ const aplicarAsistenciasLocales = (horariosData, fecha) => {
   })
 }
 
-// Métodos principales
-async function cargarAsistencias() {
-  cargando.value = true
-  try {
-    const fecha = new Date(fechaSeleccionada.value)
-    
-    // Formato YYYY-MM-DD en horario LOCAL
-    const año = fecha.getFullYear()
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0')
-    const dia = String(fecha.getDate()).padStart(2, '0')
-    const fechaISO = `${año}-${mes}-${dia}`
-    
-    console.log('📅 Cargando asistencias para:', fechaISO)
-    
-    const response = await asistenciaService.obtenerDia(fechaISO)
-    
-    if (response.data?.success) {
-      console.log('✅ Datos cargados del servidor')
-      
-      if (response.data.horarios && response.data.horarios.length > 0) {
-        // PROCESAR HORARIOS Y ESTUDIANTES DESDE EL SERVIDOR
-        let horariosProcesados = response.data.horarios.map(horario => {
-          const estudiantes = horario.estudiantes || []
-          
-          const estudiantesMapeados = estudiantes.map(est => {
-            let asistenciaEstado = null
-            let asistenciaHora = null
-            
-            // Verificar en asistencias del horario
-            if (horario.asistencias && horario.asistencias.length > 0) {
-              const asistencia = horario.asistencias.find(a => 
-                a.inscripcion_id === est.inscripcion_id
-              )
-              if (asistencia) {
-                asistenciaEstado = asistencia.estado
-                asistenciaHora = asistencia.created_at
-              }
-            }
-            
-            // Verificar en datos de inscripción
-            if (est.inscripcion?.asistencias && est.inscripcion.asistencias.length > 0) {
-              const asistencia = est.inscripcion.asistencias.find(a => {
-                const fechaAsistencia = new Date(a.fecha).toISOString().split('T')[0]
-                return fechaAsistencia === fechaISO
-              })
-              if (asistencia) {
-                asistenciaEstado = asistencia.estado
-                asistenciaHora = asistencia.created_at
-              }
-            }
-            
-            return {
-              ...est,
-              asistencia_estado: asistenciaEstado,
-              asistencia_hora: asistenciaHora,
-              permisos_disponibles: est.permisos_disponibles !== undefined 
-                ? est.permisos_disponibles 
-                : (est.inscripcion?.permisos_disponibles || 3),
-              inscripcion_id: est.inscripcion_id || est.inscripcion?.id
-            }
-          })
-          
-          return {
-            ...horario,
-            estudiantes: estudiantesMapeados
-          }
-        })
-        
-        // APLICAR ASISTENCIAS GUARDADAS LOCALMENTE (sobreescriben las del servidor)
-        horariosProcesados = aplicarAsistenciasLocales(horariosProcesados, fechaSeleccionada.value)
-        
-        horarios.value = horariosProcesados
-        calcularEstadisticas()
-        resetearFiltros()
-        
-        toast.add({
-          severity: 'success',
-          summary: 'Datos actualizados',
-          detail: `Asistencias cargadas para ${fecha.toLocaleDateString('es-ES')}`,
-          life: 3000
-        })
-        
-      } else {
-        console.warn('⚠️ Sin horarios para esta fecha')
-        
-        // Cargar solo asistencias locales si no hay datos del servidor
-        const horariosLocales = aplicarAsistenciasLocales([], fechaSeleccionada.value)
-        
-        if (horariosLocales.length > 0) {
-          horarios.value = horariosLocales
-          toast.add({
-            severity: 'info',
-            summary: 'Datos locales',
-            detail: 'Mostrando datos guardados localmente',
-            life: 3000
-          })
-        } else {
-          horarios.value = []
-        }
-        
-        calcularEstadisticas()
+function limpiarCacheAntiguo() {
+  const hoy = new Date().toISOString().split('T')[0]
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key.startsWith('asistencia_')) {
+      const fechaKey = key.replace('asistencia_', '')
+      if (fechaKey !== hoy) {
+        localStorage.removeItem(key)
       }
     }
-    
-  } catch (error) {
-    console.error('❌ Error cargando asistencias:', error)
-    
-    // Intentar cargar datos locales en caso de error
-    const horariosLocales = aplicarAsistenciasLocales([], fechaSeleccionada.value)
-    
-    if (horariosLocales.length > 0) {
-      horarios.value = horariosLocales
-      calcularEstadisticas()
-      toast.add({
-        severity: 'info',
-        summary: 'Datos locales',
-        detail: 'Mostrando datos guardados localmente (error de conexión)',
-        life: 3000
-      })
+  }
+}
+
+// ========== FUNCIONES PRINCIPALES ==========
+
+onMounted(() => {
+  console.log('🚀 Módulo de Asistencias iniciando...')
+  const fechaActual = new Date()
+  const hoyLocal = new Date(
+    fechaActual.getFullYear(),
+    fechaActual.getMonth(),
+    fechaActual.getDate()
+  )
+
+  fechaSeleccionada.value = hoyLocal
+  hoy.value = hoyLocal
+  limpiarCacheAntiguo()
+  cargarAsistencias()
+})
+
+async function cargarAsistencias() {
+  cargando.value = true;
+  try {
+    const fecha = new Date(fechaSeleccionada.value);
+    const fechaISO = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+    const hoyStr = new Date().toISOString().split('T')[0];
+
+    console.log('📅 Cargando asistencias para:', fechaISO);
+
+    const response = await asistenciaService.obtenerDia(fechaISO);
+
+    if (response.data?.success && response.data.horarios) {
+      let horariosProcesados = response.data.horarios.map(horario => ({
+        id: horario.id,
+        hora_inicio: horario.hora_inicio,
+        hora_fin: horario.hora_fin,
+        dia_semana: horario.dia_semana,
+        modalidad: horario.modalidad,
+        entrenador: horario.entrenador,
+        sucursal: horario.sucursal,
+        estudiantes: (horario.estudiantes || []).map(est => ({
+          ...est,
+          clase_programada_id: null,
+          clases_asistidas: est.clases_asistidas || 0,
+          clases_totales: est.clases_totales || 0,
+          permisos_disponibles: est.permisos_disponibles || 0
+        }))
+      }));
+
+      if (fechaISO === hoyStr) {
+        horariosProcesados = aplicarAsistenciasLocales(horariosProcesados, fechaSeleccionada.value);
+      }
+
+      horarios.value = horariosProcesados;
+      calcularEstadisticas();
+      resetearFiltros();
     } else {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudieron cargar las asistencias',
-        life: 3000
-      })
-      
-      horarios.value = []
-      calcularEstadisticas()
+      console.warn('⚠️ No hay asistencias para esta fecha');
+      horarios.value = [];
     }
+  } catch (error) {
+    console.error('❌ Error cargando asistencias:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudieron cargar las asistencias',
+      life: 3000
+    });
+    horarios.value = [];
   } finally {
-    cargando.value = false
+    cargando.value = false;
   }
 }
 
@@ -689,7 +633,7 @@ function calcularEstadisticas() {
   let faltas = 0
   let permisos = 0
   let total = 0
-  
+
   horarios.value.forEach(horario => {
     horario.estudiantes?.forEach(est => {
       total++
@@ -698,7 +642,7 @@ function calcularEstadisticas() {
       if (est.asistencia_estado === 'permiso') permisos++
     })
   })
-  
+
   estadisticas.value = {
     asistenciasHoy: asistencias,
     faltasHoy: faltas,
@@ -713,81 +657,449 @@ function resetearFiltros() {
   filtroHorario.value = null
 }
 
+// ========== FUNCIÓN PRINCIPAL CORREGIDA ==========
+
 async function marcarAsistencia(estudiante, horarioId, estado) {
   try {
-    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
-    const data = {
-      inscripcion_id: estudiante.inscripcion_id,
-      horario_id: horarioId,
-      fecha: fecha,
-      estado: estado
-    }
+    console.log('📋 Marcando asistencia para:', estudiante.nombres, estado);
     
-    console.log('📤 Marcando asistencia:', data)
-    
+    const fecha = fechaSeleccionada.value;
+    const fechaISO = new Date(fecha).toISOString().split('T')[0];
+
+    // Si es justificación, abrir modal
     if (estado === 'permiso') {
-      justificarRapido(estudiante, horarioId)
-      return
+      const claseProgramadaId = await buscarClaseProgramada(estudiante.id, horarioId, fechaISO);
+      justificarRapido(estudiante, horarioId, claseProgramadaId);
+      return;
     }
-    
-    // Guardar localmente INMEDIATAMENTE
-    guardarAsistenciaLocal(
-      fechaSeleccionada.value,
-      estudiante.id,
-      horarioId,
-      estado,
-      {
-        asistencia_hora: new Date().toISOString(),
-        permisos_disponibles: estudiante.permisos_disponibles
-      }
-    )
-    
-    // Actualizar UI localmente
-    const horario = horarios.value.find(h => h.id === horarioId)
-    if (horario) {
-      const estIndex = horario.estudiantes.findIndex(e => e.id === estudiante.id)
-      if (estIndex !== -1) {
-        horario.estudiantes[estIndex].asistencia_estado = estado
-        horario.estudiantes[estIndex].asistencia_hora = new Date().toISOString()
-      }
-    }
-    
-    calcularEstadisticas()
-    
-    // Intentar enviar al servidor (en segundo plano)
-    try {
-      await asistenciaService.marcar(data)
-      console.log('✅ Asistencia guardada en servidor')
-    } catch (serverError) {
-      console.warn('⚠️ No se pudo enviar al servidor, pero se guardó localmente:', serverError)
-    }
-    
-    toast.add({
-      severity: 'success',
-      summary: 'Registrado',
-      detail: `${estudiante.nombres} marcado como ${getEstadoLabel(estado)}`,
-      life: 2000
-    })
-    
+
+    // Procesar asistencia normal
+    await procesarAsistenciaCompleta(estudiante, horarioId, estado, fechaISO);
+
   } catch (error) {
-    console.error('Error marcando asistencia:', error)
+    console.error('❌ Error en marcarAsistencia:', error);
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: 'No se pudo registrar la asistencia',
       life: 3000
-    })
+    });
   }
 }
 
-function justificarRapido(estudiante, horarioId) {
-  estudianteSeleccionado.value = {
-    ...estudiante,
-    horario_id: horarioId
+async function buscarClaseProgramada(estudianteId, horarioId, fecha) {
+  try {
+    const response = await fetch(
+      `/api/clases-programadas/buscar?estudiante_id=${estudianteId}&horario_id=${horarioId}&fecha=${fecha}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.success ? data.data?.id : null;
+    }
+    return null;
+  } catch (error) {
+    console.warn('⚠️ Error buscando clase programada:', error);
+    return null;
+  }
+}
+
+async function procesarAsistenciaCompleta(estudiante, horarioId, estado, fechaISO) {
+  console.log('🚀 PROCESANDO ASISTENCIA COMPLETA');
+  
+  // 1. Buscar clase programada
+  const claseProgramadaId = await buscarClaseProgramada(estudiante.id, horarioId, fechaISO);
+  console.log('🔍 Clase programada ID:', claseProgramadaId);
+  
+  // 2. Actualizar inscripción principal SI ES ASISTENCIA
+  let datosActualizados = null;
+  if (estado === 'asistio' && estudiante.inscripcion_id) {
+    console.log('🔄 Actualizando inscripción principal...');
+    datosActualizados = await actualizarInscripcionPrincipal(estudiante, fechaISO, horarioId, claseProgramadaId);
+    
+    // También intentar actualizar inscripciones_horarios
+    if (datosActualizados && estudiante.inscripcion_id && horarioId) {
+      await actualizarInscripcionHorarioSimple(estudiante.inscripcion_id, horarioId);
+    }
   }
   
-  motivoJustificacion.value = ''
-  mostrarJustificacionRapida.value = true
+  // 3. Si es justificación, actualizar permisos (esto se maneja en el modal)
+  if (estado === 'permiso' && estudiante.inscripcion_id) {
+    console.log('📝 Es justificación, se maneja en modal');
+  }
+  
+  // 4. Actualizar clase programada si existe
+  if (claseProgramadaId) {
+    await actualizarClaseProgramada(claseProgramadaId, estado, fechaISO, estudiante, horarioId);
+  }
+  
+  // 5. Preparar datos para localStorage
+  const datosParaGuardar = {
+    clase_programada_id: claseProgramadaId,
+    asistencia_hora: new Date().toISOString(),
+    permisos_disponibles: datosActualizados?.permisos_disponibles || estudiante.permisos_disponibles || 0,
+    clases_asistidas: datosActualizados?.clases_asistidas || 
+                      (estudiante.clases_asistidas || 0) + (estado === 'asistio' ? 1 : 0),
+    clases_totales: datosActualizados?.clases_totales || estudiante.clases_totales || 0,
+    estado: estado
+  };
+  
+  // 6. Guardar en localStorage
+  guardarAsistenciaLocal(
+    fechaSeleccionada.value,
+    estudiante.id,
+    horarioId,
+    estado,
+    datosParaGuardar
+  );
+  
+  // 7. Actualizar UI
+  actualizarEstudianteEnUI(
+    estudiante.id, 
+    horarioId, 
+    estado, 
+    claseProgramadaId,
+    datosActualizados
+  );
+  
+  // 8. Recalcular estadísticas
+  calcularEstadisticas();
+  
+  // 9. Mostrar notificación
+  toast.add({
+    severity: 'success',
+    summary: '✅ Registrado',
+    detail: `${estudiante.nombres} marcado como ${getEstadoLabel(estado)}`,
+    life: 2000
+  });
+  
+  // 10. Enviar al servidor asíncrono
+  enviarAlServidorAsync(estudiante, horarioId, estado, fechaISO, claseProgramadaId, datosActualizados);
+}
+
+// ========== FUNCIÓN CORREGIDA PARA ACTUALIZAR INSCRIPCIÓN ==========
+
+
+async function registrarAsistencia(asistencia) {
+  try {
+    const response = await fetch('/api/asistencias/marcar', {
+      method: 'POST',
+      credentials: 'include', // 🔹 muy importante para Sanctum
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(asistencia)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Error desconocido');
+    }
+
+    const data = await response.json();
+    console.log('✅ Asistencia registrada', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error registrar asistencia:', error.message);
+  }
+}
+
+
+
+
+
+async function actualizarInscripcionPrincipal(estudiante, fechaISO, horarioId, claseProgramadaId) {
+  try {
+    console.log('🚀 INICIANDO REGISTRO DE ASISTENCIA');
+    
+    const asistenciaData = {
+      inscripcion_id: estudiante.inscripcion_id,
+      horario_id: horarioId,
+      fecha: fechaISO,
+      estado: 'asistio' // <- IMPORTANTE: siempre 'asistio' aquí
+    };
+
+    console.log('📦 Datos enviados:', asistenciaData);
+
+    // LLAMA DIRECTAMENTE AL SERVICIO
+    const response = await asistenciaService.marcar(asistenciaData);
+    
+    console.log('✅ ÉXITO - Respuesta completa:', response);
+    
+    if (response.data?.success) {
+      return {
+        clases_asistidas: (estudiante.clases_asistidas || 0) + 1,
+        clases_totales: estudiante.clases_totales || 0,
+        permisos_disponibles: estudiante.permisos_disponibles || 0
+      };
+    }
+    
+    return null;
+    
+  } catch (error) {
+    console.error('💥 ERROR CRÍTICO:', error);
+    
+    // SI FALLA, AL MENOS DEVUELVE EL INCREMENTO LOCAL
+    return {
+      clases_asistidas: (estudiante.clases_asistidas || 0) + 1,
+      clases_totales: estudiante.clases_totales || 0,
+      permisos_disponibles: estudiante.permisos_disponibles || 0
+    };
+  }
+}
+// Función para actualizar inscripción directamente
+async function actualizarInscripcionDirectamente(inscripcionId) {
+  try {
+    console.log('🔄 Actualizando inscripción directamente...');
+    
+    // 1. Obtener datos actuales
+    const responseGet = await fetch(`/api/inscripciones/${inscripcionId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (responseGet.ok) {
+      const result = await responseGet.json();
+      
+      // Verificar si la respuesta es válida
+      if (result && (result.data || result.clases_asistidas !== undefined)) {
+        const inscripcion = result.data || result;
+        console.log('📄 Datos de inscripción:', inscripcion);
+        
+        const nuevasClasesAsistidas = (inscripcion.clases_asistidas || 0) + 1;
+        
+        // 2. Actualizar directamente
+        const responseUpdate = await fetch(`/api/inscripciones/${inscripcionId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            clases_asistidas: nuevasClasesAsistidas
+          })
+        });
+
+        if (responseUpdate.ok) {
+          const updateResult = await responseUpdate.json();
+          console.log('✅ Inscripción actualizada directamente');
+          
+          return {
+            clases_asistidas: nuevasClasesAsistidas,
+            clases_totales: inscripcion.clases_totales || 0,
+            permisos_disponibles: inscripcion.permisos_disponibles || 0
+          };
+        }
+      } else {
+        console.warn('⚠️ Formato de respuesta inesperado:', result);
+      }
+    } else {
+      console.warn('⚠️ No se pudo obtener datos de inscripción');
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('⚠️ Error en actualización directa:', error);
+    return null;
+  }
+}
+
+// ========== FUNCIÓN PARA ACTUALIZAR INSCRIPCIONES_HORARIOS ==========
+
+async function actualizarInscripcionHorarioSimple(inscripcionId, horarioId) {
+  console.log('📝 Función actualizarInscripcionHorarioSimple desactivada temporalmente');
+  return; // Simplemente retorna sin hacer nada
+}
+
+// ========== FUNCIÓN PARA ACTUALIZAR CLASE PROGRAMADA ==========
+
+async function actualizarClaseProgramada(claseProgramadaId, estado, fechaISO, estudiante, horarioId) {
+  try {
+    console.log('🔄 Actualizando clase programada:', claseProgramadaId);
+    
+    const estadoClaseMap = {
+      'asistio': 'realizada',
+      'falto': 'ausente',
+      'permiso': 'justificada'
+    };
+    
+    const estadoClase = estadoClaseMap[estado] || 'programada';
+    
+    const updateData = {
+      estado_clase: estadoClase,
+      fecha: fechaISO,
+      estudiante_id: estudiante.id,
+      horario_id: horarioId,
+      inscripcion_id: estudiante.inscripcion_id
+    };
+    
+    const updateUrl = `/api/clases-programadas/${claseProgramadaId}/marcar-asistencia`;
+    
+    const response = await fetch(updateUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updateData)
+    });
+
+    if (response.ok) {
+      console.log('✅ Clase programada actualizada');
+    } else {
+      console.warn('⚠️ No se pudo actualizar clase programada');
+    }
+  } catch (error) {
+    console.warn('⚠️ Error actualizando clase programada:', error);
+  }
+}
+
+// ========== FUNCIONES DE APOYO ==========
+
+async function enviarAlServidorAsync(estudiante, horarioId, estado, fechaISO, claseProgramadaId, datosActualizados) {
+  try {
+    const data = {
+      clase_programada_id: claseProgramadaId,
+      inscripcion_id: estudiante.inscripcion_id,
+      estudiante_id: estudiante.id,
+      horario_id: horarioId,
+      fecha: fechaISO,
+      estado: estado,
+      hora_registro: new Date().toISOString()
+    };
+    
+    const response = await asistenciaService.marcar(data);
+    
+    if (response.data?.success) {
+      console.log('✅ Asistencia guardada en servidor');
+    }
+  } catch (error) {
+    console.warn('⚠️ Error enviando al servidor:', error);
+  }
+}
+
+function actualizarEstudianteEnUI(estudianteId, horarioId, estado, claseProgramadaId, datosActualizados = null) {
+  const horarioIndex = horarios.value.findIndex(h => h.id === horarioId);
+  if (horarioIndex === -1) {
+    console.warn('⚠️ Horario no encontrado:', horarioId);
+    return;
+  }
+  
+  const estIndex = horarios.value[horarioIndex].estudiantes.findIndex(e => e.id === estudianteId);
+  if (estIndex === -1) {
+    console.warn('⚠️ Estudiante no encontrado en horario:', estudianteId);
+    return;
+  }
+  
+  const estudianteActual = horarios.value[horarioIndex].estudiantes[estIndex];
+  
+  const estudianteActualizado = {
+    ...estudianteActual,
+    asistencia_estado: estado,
+    clase_programada_id: claseProgramadaId,
+    asistencia_hora: new Date().toISOString()
+  };
+  
+  if (datosActualizados) {
+    estudianteActualizado.clases_asistidas = datosActualizados.clases_asistidas;
+    estudianteActualizado.clases_totales = datosActualizados.clases_totales;
+    estudianteActualizado.permisos_disponibles = datosActualizados.permisos_disponibles;
+  } else if (estado === 'asistio') {
+    // Si no hay datos actualizados, incrementar localmente
+    estudianteActualizado.clases_asistidas = (estudianteActual.clases_asistidas || 0) + 1;
+  }
+  
+  // Actualizar en el array
+  horarios.value[horarioIndex].estudiantes[estIndex] = estudianteActualizado;
+  
+  // Forzar reactividad
+  horarios.value = [...horarios.value];
+}
+
+async function enviarNotificacionClasesBajas(estudiante, inscripcion, clasesRestantes) {
+  try {
+    const estudianteEmail = estudiante.email || estudiante.correo;
+    
+    if (!estudianteEmail) {
+      console.warn('⚠️ No se puede notificar: estudiante sin email');
+      return;
+    }
+
+    const response = await fetch('/api/notificaciones/clases-bajas', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        estudiante_id: estudiante.id,
+        estudiante_email: estudianteEmail,
+        estudiante_nombre: `${estudiante.nombres} ${estudiante.apellidos}`,
+        inscripcion_id: estudiante.inscripcion_id,
+        clases_restantes: clasesRestantes,
+        clases_totales: inscripcion.clases_totales,
+        clases_asistidas: inscripcion.clases_asistidas,
+        modalidad: estudiante.modalidad?.nombre || 'Sin modalidad',
+        sucursal: estudiante.sucursal?.nombre || 'Sin sucursal'
+      })
+    });
+
+    if (response.ok) {
+      console.log(`📧 Notificación enviada - ${clasesRestantes} clases restantes`);
+      toast.add({
+        severity: 'warn',
+        summary: 'Notificación enviada',
+        detail: `Se notificó a ${estudiante.nombres} sobre sus ${clasesRestantes} clases restantes`,
+        life: 4000
+      });
+    }
+  } catch (error) {
+    console.error('Error enviando notificación:', error);
+  }
+}
+
+async function marcarInscripcionCompletada(inscripcionId) {
+  try {
+    const response = await fetch(`/api/inscripciones/${inscripcionId}/completar`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      console.log('✅ Inscripción marcada como completada');
+      toast.add({
+        severity: 'success',
+        summary: '¡Felicidades!',
+        detail: 'El estudiante ha completado todas sus clases',
+        life: 4000
+      });
+    }
+  } catch (error) {
+    console.error('Error marcando inscripción como completada:', error);
+  }
+}
+
+// ========== FUNCIONES DE JUSTIFICACIÓN ==========
+
+function justificarRapido(estudiante, horarioId, claseProgramadaId = null) {
+  estudianteSeleccionado.value = {
+    ...estudiante,
+    horario_id: horarioId,
+    clase_programada_id: claseProgramadaId
+  };
+  motivoJustificacion.value = '';
+  mostrarJustificacionRapida.value = true;
 }
 
 async function confirmarJustificacionRapida() {
@@ -797,131 +1109,187 @@ async function confirmarJustificacionRapida() {
       summary: 'Error',
       detail: 'No se pudo obtener el horario',
       life: 3000
-    })
-    return
+    });
+    return;
   }
 
-  procesandoJustificacion.value = true
+  procesandoJustificacion.value = true;
 
   try {
-    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
-    const data = {
-      inscripcion_id: estudianteSeleccionado.value.inscripcion_id,
-      horario_id: estudianteSeleccionado.value.horario_id,
-      fecha: fecha,
-      motivo: motivoJustificacion.value
+    const fecha = new Date(fechaSeleccionada.value).toISOString().split('T')[0];
+    const estudiante = estudianteSeleccionado.value;
+    
+    // 1. Actualizar permisos en la inscripción
+    if (estudiante.inscripcion_id) {
+      try {
+        // Obtener datos actuales
+        const responseGet = await fetch(`/api/inscripciones/${estudiante.inscripcion_id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (responseGet.ok) {
+          const result = await responseGet.json();
+          const inscripcion = result.data || result;
+          
+          const nuevosPermisosUsados = (inscripcion.permisos_usados || 0) + 1;
+          const nuevosPermisosDisponibles = Math.max(0, (inscripcion.permisos_disponibles || 0) - 1);
+
+          // Actualizar
+          await fetch(`/api/inscripciones/${estudiante.inscripcion_id}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              permisos_usados: nuevosPermisosUsados,
+              permisos_disponibles: nuevosPermisosDisponibles
+            })
+          });
+
+          // Guardar en localStorage
+          guardarAsistenciaLocal(
+            fechaSeleccionada.value,
+            estudiante.id,
+            estudiante.horario_id,
+            'permiso',
+            {
+              asistencia_hora: new Date().toISOString(),
+              permisos_disponibles: nuevosPermisosDisponibles,
+              permisos_usados: nuevosPermisosUsados
+            }
+          );
+        }
+      } catch (inscError) {
+        console.warn('⚠️ No se pudo actualizar permisos:', inscError);
+      }
     }
 
-    // Guardar localmente primero
-    const nuevosPermisos = (estudianteSeleccionado.value.permisos_disponibles || 3) - 1
-    
-    guardarAsistenciaLocal(
-      fechaSeleccionada.value,
-      estudianteSeleccionado.value.id,
-      estudianteSeleccionado.value.horario_id,
-      'permiso',
-      {
-        asistencia_hora: new Date().toISOString(),
-        permisos_disponibles: nuevosPermisos
-      }
-    )
-
-    // Actualizar UI localmente
-    const horario = horarios.value.find(h => h.id === estudianteSeleccionado.value.horario_id)
+    // 2. Actualizar UI
+    const horario = horarios.value.find(h => h.id === estudiante.horario_id);
     if (horario) {
       const estudianteIndex = horario.estudiantes.findIndex(
-        e => e.inscripcion_id === estudianteSeleccionado.value.inscripcion_id
-      )
+        e => e.id === estudiante.id
+      );
       if (estudianteIndex !== -1) {
-        horario.estudiantes[estudianteIndex].asistencia_estado = 'permiso'
-        horario.estudiantes[estudianteIndex].permisos_disponibles = nuevosPermisos
-        horario.estudiantes[estudianteIndex].asistencia_hora = new Date().toISOString()
+        horario.estudiantes[estudianteIndex].asistencia_estado = 'permiso';
+        horario.estudiantes[estudianteIndex].permisos_disponibles = 
+          Math.max(0, (horario.estudiantes[estudianteIndex].permisos_disponibles || 0) - 1);
+        horario.estudiantes[estudianteIndex].asistencia_hora = new Date().toISOString();
       }
     }
 
-    calcularEstadisticas()
-    
+    // 3. Actualizar estadísticas
+    calcularEstadisticas();
+
+    // 4. Mostrar notificación
     toast.add({
       severity: 'success',
       summary: '✅ Justificación guardada',
-      detail: `Permisos restantes: ${nuevosPermisos}/3`,
+      detail: `Permisos restantes: ${(estudiante.permisos_disponibles || 0) - 1}/3`,
       life: 3000
-    })
+    });
 
-    cerrarJustificacion()
+    cerrarJustificacion();
 
-    // Intentar enviar al servidor en segundo plano
+    // 5. Enviar al servidor
     try {
-      const response = await asistenciaService.justificar(data)
+      const data = {
+        inscripcion_id: estudiante.inscripcion_id,
+        horario_id: estudiante.horario_id,
+        fecha: fecha,
+        motivo: motivoJustificacion.value
+      };
+      const response = await asistenciaService.justificar(data);
       if (response.data.success) {
-        console.log('✅ Justificación guardada en servidor')
+        console.log('✅ Justificación guardada en servidor');
       }
     } catch (serverError) {
-      console.warn('⚠️ No se pudo enviar justificación al servidor, pero se guardó localmente:', serverError)
+      console.warn('⚠️ No se pudo enviar justificación al servidor:', serverError);
     }
 
   } catch (error) {
-    console.error('Error justificando:', error)
+    console.error('Error justificando:', error);
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: error.response?.data?.message || 'No se pudo guardar la justificación',
+      detail: 'No se pudo guardar la justificación',
       life: 3000
-    })
+    });
   } finally {
-    procesandoJustificacion.value = false
+    procesandoJustificacion.value = false;
   }
 }
 
 function cerrarJustificacion() {
-  mostrarJustificacionRapida.value = false
-  estudianteSeleccionado.value = null
-  motivoJustificacion.value = ''
+  mostrarJustificacionRapida.value = false;
+  estudianteSeleccionado.value = null;
+  motivoJustificacion.value = '';
 }
 
-// Funciones de ayuda
+function abrirModalJustificacion(estudiante, horarioId) {
+  if (estudiante.asistencia_estado === 'permiso') {
+    if (confirm(`${estudiante.nombres} ya está justificado.\n¿Quieres cambiar a otro estado o modificar la justificación?`)) {
+      estudianteSeleccionado.value = {
+        ...estudiante,
+        horario_id: horarioId,
+        ya_justificado: true
+      };
+      motivoJustificacion.value = '';
+      mostrarJustificacionRapida.value = true;
+    }
+  } else {
+    justificarRapido(estudiante, horarioId);
+  }
+}
+
+// ========== FUNCIONES DE AYUDA ==========
+
 function getIniciales(estudiante) {
-  if (!estudiante) return '?'
-  const nombres = (estudiante.nombres || '').split(' ')
-  const apellidos = (estudiante.apellidos || '').split(' ')
-  const inicial1 = nombres[0]?.[0] || ''
-  const inicial2 = apellidos[0]?.[0] || ''
-  return (inicial1 + inicial2).toUpperCase()
+  if (!estudiante) return '?';
+  const nombres = (estudiante.nombres || '').split(' ');
+  const apellidos = (estudiante.apellidos || '').split(' ');
+  const inicial1 = nombres[0]?.[0] || '';
+  const inicial2 = apellidos[0]?.[0] || '';
+  return (inicial1 + inicial2).toUpperCase();
 }
 
 function getAvatarClass(estudiante) {
-  const estado = estudiante.asistencia_estado
-  if (!estado) return 'bg-blue-100 text-blue-800 border-2 border-blue-200'
-  if (estado === 'asistio') return 'bg-green-100 text-green-800 border-2 border-green-200'
-  if (estado === 'falto') return 'bg-red-100 text-red-800 border-2 border-red-200'
-  if (estado === 'permiso') return 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200'
-  return 'bg-blue-100 text-blue-800'
+  const estado = estudiante.asistencia_estado;
+  if (!estado) return 'bg-blue-100 text-blue-800 border-2 border-blue-200';
+  if (estado === 'asistio') return 'bg-green-100 text-green-800 border-2 border-green-200';
+  if (estado === 'falto') return 'bg-red-100 text-red-800 border-2 border-red-200';
+  if (estado === 'permiso') return 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200';
+  return 'bg-blue-100 text-blue-800';
 }
 
 function getCardClass(estudiante) {
-  const estado = estudiante.asistencia_estado
-  if (estado === 'asistio') return 'card-present'
-  if (estado === 'falto') return 'card-absent'
-  if (estado === 'permiso') return 'card-justified'
-  return 'card-pending'
+  const estado = estudiante.asistencia_estado;
+  if (estado === 'asistio') return 'card-present';
+  if (estado === 'falto') return 'card-absent';
+  if (estado === 'permiso') return 'card-justified';
+  return 'card-pending';
 }
 
 function getEstadoBadge(estudiante) {
-  const estado = estudiante.asistencia_estado
-  if (!estado) return 'badge-pending'
-  if (estado === 'asistio') return 'badge-present'
-  if (estado === 'falto') return 'badge-absent'
-  if (estado === 'permiso') return 'badge-justified'
-  return 'badge-pending'
+  const estado = estudiante.asistencia_estado;
+  if (!estado) return 'badge-pending';
+  if (estado === 'asistio') return 'badge-present';
+  if (estado === 'falto') return 'badge-absent';
+  if (estado === 'permiso') return 'badge-justified';
+  return 'badge-pending';
 }
 
 function getEstadoIcon(estudiante) {
-  const estado = estudiante.asistencia_estado
-  if (!estado) return 'pi pi-clock'
-  if (estado === 'asistio') return 'pi pi-check'
-  if (estado === 'falto') return 'pi pi-times'
-  if (estado === 'permiso') return 'pi pi-exclamation-triangle'
-  return 'pi pi-clock'
+  const estado = estudiante.asistencia_estado;
+  if (!estado) return 'pi pi-clock';
+  if (estado === 'asistio') return 'pi pi-check';
+  if (estado === 'falto') return 'pi pi-times';
+  if (estado === 'permiso') return 'pi pi-exclamation-triangle';
+  return 'pi pi-clock';
 }
 
 function getEstadoLabel(estado) {
@@ -929,8 +1297,8 @@ function getEstadoLabel(estado) {
     'asistio': 'Presente',
     'falto': 'Ausente',
     'permiso': 'Justificado'
-  }
-  return map[estado] || 'Sin registro'
+  };
+  return map[estado] || 'Sin registro';
 }
 
 function getEstadoSeverity(estado) {
@@ -938,8 +1306,8 @@ function getEstadoSeverity(estado) {
     'asistio': 'success',
     'falto': 'danger',
     'permiso': 'warning'
-  }
-  return map[estado] || 'info'
+  };
+  return map[estado] || 'info';
 }
 
 function getDiaCompleto(dia) {
@@ -951,104 +1319,91 @@ function getDiaCompleto(dia) {
     'friday': 'Viernes',
     'saturday': 'Sábado',
     'sunday': 'Domingo'
-  }
-  return dias[dia?.toLowerCase()] || dia
+  };
+  return dias[dia?.toLowerCase()] || dia;
 }
 
 function formatHora(hora) {
-  if (!hora) return '--:--'
-  const date = new Date(hora)
-  return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  if (!hora) return '--:--';
+  const date = new Date(hora);
+  return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
 function contarPorEstado(horario, estado) {
-  return (horario.estudiantes || []).filter(e => e.asistencia_estado === estado).length
+  return (horario.estudiantes || []).filter(e => e.asistencia_estado === estado).length;
 }
 
 function obtenerHorarioEstudiante() {
-  if (!estudianteSeleccionado.value?.horario_id) return ''
-  const horario = horarios.value.find(h => h.id === estudianteSeleccionado.value.horario_id)
-  return horario ? `${horario.hora_inicio} - ${horario.hora_fin}` : ''
+  if (!estudianteSeleccionado.value?.horario_id) return '';
+  const horario = horarios.value.find(h => h.id === estudianteSeleccionado.value.horario_id);
+  return horario ? `${horario.hora_inicio} - ${horario.hora_fin}` : '';
 }
 
-// Funciones de acción
+// ========== FUNCIONES DE ACCIÓN ==========
+
 function cambiarFecha(dias) {
-  const nuevaFecha = new Date(fechaSeleccionada.value)
-  nuevaFecha.setDate(nuevaFecha.getDate() + dias)
-  fechaSeleccionada.value = nuevaFecha
-  cargarAsistencias()
+  const nuevaFecha = new Date(fechaSeleccionada.value);
+  nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+  fechaSeleccionada.value = nuevaFecha;
+  cargarAsistencias();
 }
 
 function irAHoy() {
-  fechaSeleccionada.value = new Date()
-  cargarAsistencias()
+  fechaSeleccionada.value = new Date();
+  cargarAsistencias();
 }
 
 function seleccionarMotivo(motivo) {
-  motivoJustificacion.value = motivo
+  motivoJustificacion.value = motivo;
 }
 
 function marcarTodosEnHorario(horarioId, estado) {
-  const horario = horarios.value.find(h => h.id === horarioId)
-  if (!horario) return
-  
-  const sinRegistrar = horario.estudiantes.filter(e => !e.asistencia_estado)
+  const horario = horarios.value.find(h => h.id === horarioId);
+  if (!horario) return;
+
+  const sinRegistrar = horario.estudiantes.filter(e => !e.asistencia_estado);
   sinRegistrar.forEach(est => {
-    marcarAsistencia(est, horarioId, estado)
-  })
+    marcarAsistencia(est, horarioId, estado);
+  });
 }
 
 function marcarTodosPresentes() {
   horarios.value.forEach(horario => {
-    marcarTodosEnHorario(horario.id, 'asistio')
-  })
+    marcarTodosEnHorario(horario.id, 'asistio');
+  });
 }
 
 async function exportarExcel() {
   try {
-    const fecha = fechaSeleccionada.value.toISOString().split('T')[0]
-    window.open(`/api/asistencias/exportar/${fecha}`, '_blank')
+    const fecha = new Date(fechaSeleccionada.value).toISOString().split('T')[0];
+    const response = await asistenciaService.exportarReporte(fecha);
+
+    if (response.data) {
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `asistencias_${fecha}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
     toast.add({
       severity: 'success',
       summary: 'Exportando',
       detail: 'El reporte se descargará en breve',
       life: 3000
-    })
+    });
   } catch (error) {
+    console.error('Error exportando:', error);
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: 'No se pudo exportar el reporte',
       life: 3000
-    })
+    });
   }
 }
-
-function abrirRegistroRapido() {
-  toast.add({
-    severity: 'info',
-    summary: 'Agregar estudiante',
-    detail: 'Funcionalidad de agregar estudiante',
-    life: 3000
-  })
-}
-
-// Inicialización
-onMounted(() => {
-  console.log('🚀 Módulo de Asistencias iniciando...')
-  
-  const fechaActual = new Date()
-  const hoyLocal = new Date(
-    fechaActual.getFullYear(),
-    fechaActual.getMonth(),
-    fechaActual.getDate()
-  )
-  
-  fechaSeleccionada.value = hoyLocal
-  hoy.value = hoyLocal
-  
-  cargarAsistencias()
-})
 </script>
 
 <style scoped>
@@ -1108,7 +1463,7 @@ onMounted(() => {
   margin-top: 0.5rem;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   border: 1px solid #e5e7eb;
 }
@@ -1127,7 +1482,7 @@ onMounted(() => {
 
 .summary-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .summary-card.present {
@@ -1171,7 +1526,7 @@ onMounted(() => {
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* HORARIOS CONTAINER */
@@ -1179,7 +1534,7 @@ onMounted(() => {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 :deep(.p-accordion .p-accordion-header) {
@@ -1226,7 +1581,7 @@ onMounted(() => {
 }
 
 .estudiante-card:hover {
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   transform: translateY(-3px);
   border-color: #3b82f6;
 }
@@ -1352,14 +1707,16 @@ onMounted(() => {
 }
 
 /* LOADING & EMPTY STATES */
-.loading-container, .empty-container {
+.loading-container,
+.empty-container {
   padding: 2rem;
 }
 
-.loading-card, .empty-card {
+.loading-card,
+.empty-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* RESPONSIVE */
@@ -1367,39 +1724,39 @@ onMounted(() => {
   .asistencia-container {
     padding: 1rem;
   }
-  
+
   .header-content {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
   }
-  
+
   .header-right {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .estudiantes-grid {
     grid-template-columns: 1fr;
     padding: 1rem;
   }
-  
+
   .estudiante-card {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
   }
-  
+
   .estudiante-actions-section {
     width: 100%;
   }
-  
+
   .horario-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .horario-meta {
     width: 100%;
     justify-content: flex-start;
@@ -1410,17 +1767,17 @@ onMounted(() => {
   .summary-section .col-12 {
     margin-bottom: 1rem;
   }
-  
+
   .filters-section .flex-wrap {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .action-buttons {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .header-right {
     flex-wrap: wrap;
   }
@@ -1432,6 +1789,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

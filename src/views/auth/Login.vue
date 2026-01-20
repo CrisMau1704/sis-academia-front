@@ -16,7 +16,7 @@
                     <!-- Logo circular con borde inspirado en dojo -->
                     <div class="logo-wrapper">
                         <img 
-                            src="/public/demo/images/logo-king.jpg"
+                            src="/public/demo/images/logo1.jpeg"
                             alt="King Boxi Academy"
                             class="academy-logo"
                         />

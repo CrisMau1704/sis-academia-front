@@ -11,9 +11,19 @@ export default {
         return Api().post("/inscripciones", datos);
     },
 
-    // Obtener una inscripción por ID
+    // Obtener una inscripción por ID (con relaciones básicas)
     show(id) {
         return Api().get(`/inscripciones/${id}`);
+    },
+    
+    // Obtener inscripción con TODAS las relaciones (incluyendo horarios)
+    getConRelaciones(id) {
+        return Api().get(`/inscripciones/${id}?with=estudiante,modalidad,horarios,inscripcion_horarios,sucursal,entrenador`);
+    },
+    
+    // Obtener solo los horarios de una inscripción
+    getHorarios(id) {
+        return Api().get(`/inscripciones/${id}/horarios`);
     },
 
     // Actualizar inscripción
@@ -31,13 +41,12 @@ export default {
         return Api().post(`/inscripciones/${id}/renovar`, datos);
     },
 
-     obtenerActivaPorEstudiante(estudianteId) {
+    // Obtener inscripción activa por estudiante
+    obtenerActivaPorEstudiante(estudianteId) {
         return Api().get(`/inscripciones/estudiante/${estudianteId}/activa`);
     },
     
-    // También podrías agregar estos si los necesitas:
-    
-    // Obtener inscripciones por estudiante (todas)
+    // Obtener todas las inscripciones de un estudiante
     obtenerPorEstudiante(estudianteId) {
         return Api().get(`/inscripciones/estudiante/${estudianteId}`);
     },
@@ -47,3 +56,4 @@ export default {
         return Api().get(`/inscripciones/estado/${estado}`);
     }
 };
+// ¡NO agregues nada después de esta línea! El export ya terminó

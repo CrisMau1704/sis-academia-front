@@ -21,6 +21,7 @@ import Disciplinas from '../views/admin/Disciplina.vue'
 const routes = [
   {
     path: '/',
+    // este codigo se activa si se quiere apuntar a una landing page 
     //name: 'Home',
     // component: HomeView
     redirect: '/login'
