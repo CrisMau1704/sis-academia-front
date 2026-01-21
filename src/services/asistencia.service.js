@@ -3,6 +3,22 @@ import { Api } from "./Api.services";
 
 const asistenciaService = {
     // =========== PRINCIPALES ===========
+
+    // En asistencia.service.js, agrega este método:
+getAll(filtros = {}) {
+    return Api().get('/asistencias', { params: filtros });
+},
+
+// O si prefieres mantener tu convención:
+index(page = 1, perPage = 100, search = '', filters = {}) {
+    const params = {
+        page,
+        per_page: perPage,
+        search,
+        ...filters
+    };
+    return Api().get('/asistencias', { params });
+},
     
     // ESTE MÉTODO DEBE LLAMARSE obtenerDia (sin "Por")
     obtenerDia(fecha) {

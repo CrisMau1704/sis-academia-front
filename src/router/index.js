@@ -16,6 +16,10 @@ import Usuario from '@/views/admin/Usuario.vue'
 import Sucursales from '../views/admin/Sucursales.vue'
 import Entrenadores from '../views/admin/Entrenadores.vue'
 import Disciplinas from '../views/admin/Disciplina.vue'
+import HistorialPago from '../views/admin/HistorialPago.vue'
+import AsistenciasMensuales from '../views/admin/AsistenciasMensuales.vue'
+import ClasesRestantes from '../views/admin/ClasesRestantes.vue'
+
 
 
 const routes = [
@@ -72,11 +76,23 @@ const routes = [
         name: 'Asistencias',
         component: Asistencias
       },
+
+      {
+        path: 'historialpagos',
+        name: 'HistorialPago',
+        component: HistorialPago
+      },
+
      
       {
-        path: 'reportes',
-        name: 'Reportes',
-        component: Reportes
+        path: 'clasesrestantes',
+        name: 'ClasesRestantes',
+        component: ClasesRestantes
+      },
+       {
+        path: 'asistenciasmensuales',
+        name: 'AsistenciasMensuales',
+        component: AsistenciasMensuales
       },
       {
                 path: 'usuario',

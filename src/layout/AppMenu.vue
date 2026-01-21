@@ -57,8 +57,8 @@ if (rol === 'super_admin') {
             label: 'Pagos y Mensualidades',
             items: [
                
-                { label: 'Historial de Pagos', icon: 'pi pi-fw pi-history', to: '/admin/pagos' },
-                { label: 'Vencimientos', icon: 'pi pi-fw pi-calendar-times', to: '/admin/vencimientos' }
+                { label: 'Historial de Pagos', icon: 'pi pi-fw pi-history', to: '/admin/historialpagos' }
+               
             ]
         },
         {
@@ -67,25 +67,15 @@ if (rol === 'super_admin') {
                 { 
                     label: 'Clases Restantes', 
                     icon: 'pi pi-fw pi-chart-line', 
-                    to: '/admin/reportes/clases-restantes',
+                    to: '/admin/clasesrestantes',
                     description: 'Ver cuántas clases le quedan a cada estudiante'
                 },
                 { 
                     label: 'Asistencia Mensual', 
                     icon: 'pi pi-fw pi-chart-bar', 
-                    to: '/admin/reportes/asistencia' 
-                },
-                { 
-                    label: 'Permisos Utilizados', 
-                    icon: 'pi pi-fw pi-exclamation-circle', 
-                    to: '/admin/reportes/permisos' 
-                },
-                { 
-                    label: 'Estudiantes por Vencer', 
-                    icon: 'pi pi-fw pi-bell', 
-                    to: '/admin/reportes/por-vencer',
-                    badge: 'URGENTE'
+                    to: '/admin/asistenciasmensuales' 
                 }
+                
             ]
         },
         {

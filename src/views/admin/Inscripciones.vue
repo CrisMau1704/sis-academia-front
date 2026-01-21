@@ -125,22 +125,51 @@
                 :severity="obtenerSeveridadEstado(slotProps.data.estado, slotProps.data.fecha_fin)" />
             </template>
           </Column>
-          <Column header="Acciones" style="width: 120px">
-            <template #body="slotProps">
-              <div class="flex gap-1">
-                <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
-                  @click="verDetalles(slotProps.data)" v-tooltip="'Ver detalles'" />
+          <!-- Columna para Ver Detalles -->
+<Column header="Detalles" style="width: 60px">
+  <template #body="slotProps">
+    <Button 
+      icon="pi pi-eye" 
+      class="p-button-rounded p-button-text p-button-sm"
+      @click="verDetalles(slotProps.data)" 
+      v-tooltip="'Ver detalles'"
+      style="color: #3b82f6;"
+    />
+  </template>
+</Column>
 
-                <Button icon="pi pi-refresh" class="p-button-rounded p-button-text p-button-sm"
-                  @click="renovarInscripcion(slotProps.data)" v-tooltip="'Renovar'"
-                  :disabled="!puedeRenovar(slotProps.data)" :class="{
-                    'opacity-50': !puedeRenovar(slotProps.data),
-                    'text-green-500': puedeRenovar(slotProps.data),
-                    'text-gray-400': !puedeRenovar(slotProps.data)
-                  }" />
-              </div>
-            </template>
-          </Column>
+<!-- Columna para Renovar -->
+<!-- En tu columna de Renovar -->
+<Column header="Renovar" style="width: 80px">
+  <template #body="slotProps">
+    <div class="flex align-items-center gap-1">
+      <Button 
+        icon="pi pi-refresh" 
+        class="p-button-rounded p-button-text p-button-sm"
+        @click="renovarInscripcion(slotProps.data)" 
+        v-tooltip="getTooltipRenovacion(slotProps.data)"
+        :class="{
+          'text-blue-500 hover:text-blue-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
+          'text-green-500 hover:text-green-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
+          'text-orange-500 hover:text-orange-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) < 0,
+          'text-gray-400 hover:text-gray-500 cursor-not-allowed': !puedeRenovar(slotProps.data)
+        }"
+        :disabled="!puedeRenovar(slotProps.data)"
+      />
+      
+      <!-- Indicador de estado -->
+      <div v-if="puedeRenovar(slotProps.data)" 
+        class="w-2 h-2 rounded-full"
+        :class="{
+          'bg-blue-500': calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
+          'bg-green-500 animate-pulse': calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
+          'bg-orange-500': calcularDiasRestantes(slotProps.data.fecha_fin) < 0
+        }"
+        v-tooltip="getEstadoRenovacion(slotProps.data)"
+      ></div>
+    </div>
+  </template>
+</Column>
         </DataTable>
       </TabPanel>
 
@@ -362,7 +391,7 @@
                       <Tag :value="`${modalidadSeleccionada.clases_mensuales} clases/mes`" severity="info" />
                       <Tag :value="`$${modalidadSeleccionada.precio_mensual}`" severity="success" />
                       <Tag :value="`${modalidadSeleccionada.permisos_maximos} permisos`" severity="warning" />
-                      <small class="text-500">Máximo {{ maxHorariosPorModalidad }} horarios</small>
+                      <small class="text-500">Selecciona los horarios que necesites</small>
                     </div>
                   </div>
                   <Button label="Cambiar" severity="secondary" text @click="pasoActual = 1;"
@@ -374,7 +403,7 @@
               <div class="mb-4 p-3 border-round bg-green-50 flex justify-content-between align-items-center">
                 <div>
                   <i class="pi pi-info-circle text-primary mr-2"></i>
-                  <span>Haz clic en los horarios que deseas (máximo {{ maxHorariosPorModalidad }})</span>
+                  <span>Haz clic en los horarios que deseas seleccionar</span>
                 </div>
                 <div class="flex align-items-center gap-2">
                   <Tag :value="`${horariosSeleccionados.length} seleccionados`" severity="info" />
@@ -462,9 +491,7 @@
               <!-- Horarios seleccionados -->
               <div v-if="horariosSeleccionados.length > 0" class="mt-4 p-3 border-round bg-green-50">
                 <div class="flex justify-content-between align-items-center mb-3">
-                  <h5 class="mt-0 mb-0">✅ Horarios seleccionados ({{ horariosSeleccionados.length }}/{{
-                    maxHorariosPorModalidad
-                  }})</h5>
+                  <h5 class="mt-0 mb-0">✅ Horarios seleccionados ({{ horariosSeleccionados.length }})</h5>>
                   <div class="text-lg font-bold text-green-600">Total: ${{ getPrecioTotal() }}</div>
                 </div>
 
@@ -871,98 +898,7 @@
           </div>
 
           <!-- En el diálogo de detalles, dentro del grid -->
-          <div class="col-12">
-            <Card class="mb-3">
-              <template #title>
-                <div class="flex align-items-center gap-2">
-                  <i class="pi pi-calendar-clock text-primary"></i>
-                  <span>Clases Programadas</span>
-                  <Tag :value="`${inscripcionSeleccionada?.clases_programadas?.length || 0} total`" severity="info" />
-                  <Tag
-                    :value="`${inscripcionSeleccionada?.clases_programadas?.filter(c => c.estado_clase === 'realizada').length || 0} realizadas`"
-                    severity="success" />
-                </div>
-              </template>
-              <template #content>
-                <div v-if="inscripcionSeleccionada?.clases_programadas?.length > 0">
-                  <DataTable :value="inscripcionSeleccionada.clases_programadas" :paginator="true" :rows="5"
-                    class="p-datatable-sm">
-                    <Column field="fecha" header="Fecha" :sortable="true">
-                      <template #body="slotProps">
-                        {{ formatFecha(slotProps.data.fecha) }}
-                      </template>
-                    </Column>
-                    <Column header="Horario">
-                      <template #body="slotProps">
-                        {{ slotProps.data.hora_inicio }} - {{ slotProps.data.hora_fin }}
-                      </template>
-                    </Column>
-                    <Column field="estado_clase" header="Estado" :sortable="true">
-                      <template #body="slotProps">
-                        <Tag :value="getEstadoClaseLabel(slotProps.data.estado_clase)"
-                          :severity="getEstadoClaseSeverity(slotProps.data.estado_clase)" />
-                      </template>
-                    </Column>
-                    <Column header="Asistencia">
-                      <template #body="slotProps">
-                        <div v-if="slotProps.data.asistencia">
-                          <i class="pi pi-check-circle text-green-500 mr-1"></i>
-                          {{ formatHora(slotProps.data.asistencia.created_at) }}
-                        </div>
-                        <span v-else class="text-500">--</span>
-                      </template>
-                    </Column>
-                  </DataTable>
 
-                  <!-- Estadísticas rápidas -->
-                  <div class="mt-3 p-3 border-round bg-blue-50">
-                    <div class="grid">
-                      <div class="col-6 md:col-3 text-center">
-                        <div class="text-500 text-sm">Programadas</div>
-                        <div class="font-bold text-xl">
-                          {{inscripcionSeleccionada?.clases_programadas?.filter(c => c.estado_clase ===
-                            'programada').length ||
-                            0}}
-                        </div>
-                      </div>
-                      <div class="col-6 md:col-3 text-center">
-                        <div class="text-500 text-sm">Realizadas</div>
-                        <div class="font-bold text-xl text-green-600">
-                          {{inscripcionSeleccionada?.clases_programadas?.filter(c => c.estado_clase ===
-                            'realizada').length ||
-                            0}}
-                        </div>
-                      </div>
-                      <div class="col-6 md:col-3 text-center">
-                        <div class="text-500 text-sm">Ausentes</div>
-                        <div class="font-bold text-xl text-red-500">
-                          {{inscripcionSeleccionada?.clases_programadas?.filter(c => c.estado_clase ===
-                            'ausente').length || 0
-                          }}
-                        </div>
-                      </div>
-                      <div class="col-6 md:col-3 text-center">
-                        <div class="text-500 text-sm">Justificadas</div>
-                        <div class="font-bold text-xl text-yellow-500">
-                          {{inscripcionSeleccionada?.clases_programadas?.filter(c => c.estado_clase ===
-                            'justificada').length
-                            || 0}}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div v-else class="text-center p-4">
-                  <i class="pi pi-calendar-times text-400" style="font-size: 3rem"></i>
-                  <p class="text-500 mt-2">No hay clases programadas</p>
-                  <Button label="Generar Clases" severity="info" size="small" class="mt-2"
-                    @click="generarClasesParaInscripcion(inscripcionSeleccionada.id)"
-                    v-if="inscripcionSeleccionada?.estado === 'activo'" />
-                </div>
-              </template>
-            </Card>
-          </div>
 
           <!-- Información de Pago y Estado -->
           <div class="col-12 md:col-6">
@@ -1431,7 +1367,7 @@ const inscripcionesActivasEstudiante = computed(() => {
 
 // Variables reactivas nuevas
 const modalidadSeleccionada = ref(null);
-const maxHorariosPorModalidad = 4; // o lo que definas
+const maxHorariosPorModalidad = null; // o lo que definas
 
 // Funciones nuevas
 function seleccionarModalidad(modalidad) {
@@ -1446,10 +1382,171 @@ function calcularClasesSemanales(clasesMensuales) {
   return Math.round(clasesMensuales / 4.33);
 }
 
+async function renovacionCompleta(inscripcionId, datosRenovacion) {
+  // DATOS DE ENTRADA
+  const { 
+    fecha_inicio: fechaInicioNueva, 
+    fecha_fin: fechaFinNueva, 
+    motivo 
+  } = datosRenovacion;
+
+  // 1. OBTENER INSCRIPCIÓN ACTUAL CON SUS RELACIONES
+  const inscripcionActual = await Inscripcion
+    .with(['estudiante', 'modalidad', 'inscripcion_horarios.horario'])
+    .find(inscripcionId);
+
+  if (!inscripcionActual) {
+    throw new Error('Inscripción no encontrada');
+  }
+
+  // 2. CREAR NUEVA INSCRIPCIÓN (NUEVO REGISTRO)
+  const nuevaInscripcion = await Inscripcion.create({
+    // Datos del estudiante y modalidad (copiados)
+    estudiante_id: inscripcionActual.estudiante_id,
+    modalidad_id: inscripcionActual.modalidad_id,
+    sucursal_id: inscripcionActual.sucursal_id,
+    entrenador_id: inscripcionActual.entrenador_id,
+    
+    // Nuevas fechas del período renovado
+    fecha_inicio: fechaInicioNueva,
+    fecha_fin: fechaFinNueva,
+    
+    // Clases COMPLETAMENTE NUEVAS según modalidad
+    clases_totales: inscripcionActual.modalidad.clases_mensuales,
+    clases_asistidas: 0, // ¡CERO porque es NUEVA!
+    permisos_usados: 0,  // ¡CERO porque es NUEVA!
+    permisos_disponibles: inscripcionActual.modalidad.permisos_maximos,
+    
+    // Precio
+    monto_mensual: inscripcionActual.modalidad.precio_mensual,
+    
+    // Estado
+    estado: 'activo',
+    
+    // Relación con inscripción anterior (opcional, para historial)
+    // Nota: Tu tabla no tiene estos campos, puedes agregarlos o usar un campo "observaciones"
+    observaciones: `Renovación de inscripción #${inscripcionId}. Motivo: ${motivo}`
+  });
+
+  // 3. COPIAR HORARIOS DE LA INSCRIPCIÓN ANTERIOR
+  for (const inscripcionHorario of inscripcionActual.inscripcion_horarios) {
+    // Crear NUEVO registro en inscripcion_horarios
+    const nuevoInscripcionHorario = await InscripcionHorario.create({
+      inscripcion_id: nuevaInscripcion.id,
+      horario_id: inscripcionHorario.horario_id,
+      
+      // Clases TOTALMENTE NUEVAS (basadas en modalidad)
+      clases_totales: Math.floor(
+        inscripcionActual.modalidad.clases_mensuales / 
+        inscripcionActual.inscripcion_horarios.length
+      ),
+      clases_asistidas: 0,  // ¡CERO!
+      clases_restantes: Math.floor(
+        inscripcionActual.modalidad.clases_mensuales / 
+        inscripcionActual.inscripcion_horarios.length
+      ),
+      
+      permisos_usados: 0,  // ¡CERO!
+      fecha_inicio: fechaInicioNueva,
+      fecha_fin: fechaFinNueva,
+      estado: 'activo'
+    });
+
+    // 4. GENERAR NUEVAS CLASES PROGRAMADAS para este horario
+    await generarClasesProgramadasParaHorario(
+      nuevaInscripcion.id,
+      nuevoInscripcionHorario.id,
+      inscripcionHorario.horario_id,
+      inscripcionActual.estudiante_id,
+      fechaInicioNueva,
+      fechaFinNueva,
+      inscripcionHorario.horario
+    );
+  }
+
+  // 5. ACTUALIZAR INSCRIPCIÓN ANTERIOR (NO eliminar, solo marcar)
+  await Inscripcion.update(inscripcionId, {
+    estado: 'renovado',  // Cambiar de 'activo' a 'renovado'
+    // Puedes agregar: fecha_renovacion: new Date(),
+    observaciones: `Renovada el ${new Date().toISOString().split('T')[0]}. Nueva inscripción: #${nuevaInscripcion.id}`
+  });
+
+  // 6. REGISTRAR NUEVO PAGO (OBLIGATORIO - NUEVO REGISTRO)
+  const mesesDuracion = calcularMesesDuracion(fechaInicioNueva, fechaFinNueva);
+  const nuevoPago = await Pago.create({
+    inscripcion_id: nuevaInscripcion.id,
+    estudiante_id: inscripcionActual.estudiante_id,
+    monto: inscripcionActual.modalidad.precio_mensual * mesesDuracion,
+    metodo_pago: datosRenovacion.metodo_pago || 'efectivo',
+    fecha_pago: new Date(),
+    observacion: `Pago por renovación de inscripción #${inscripcionId} a #${nuevaInscripcion.id}. Período: ${fechaInicioNueva} al ${fechaFinNueva}`,
+    estado: 'pagado',
+    referencia: `REN-${inscripcionId}-${nuevaInscripcion.id}-${Date.now()}`
+  });
+
+  return {
+    success: true,
+    mensaje: '✅ Renovación completada exitosamente',
+    datos: {
+      inscripcion_anterior_id: inscripcionId,
+      nueva_inscripcion_id: nuevaInscripcion.id,
+      nuevo_pago_id: nuevoPago.id,
+      fecha_inicio_nueva: fechaInicioNueva,
+      fecha_fin_nueva: fechaFinNueva,
+      monto_pagado: nuevoPago.monto,
+      clases_generadas: inscripcionActual.modalidad.clases_mensuales,
+      horarios_mantenidos: inscripcionActual.inscripcion_horarios.length
+    }
+  };
+}
 
 
+async function generarClasesProgramadasParaHorario(
+  inscripcionId,
+  inscripcionHorarioId,
+  horarioId,
+  estudianteId,
+  fechaInicio,
+  fechaFin,
+  horario
+) {
+  const clasesGeneradas = [];
+  let fechaActual = new Date(fechaInicio);
+  const fechaFinDate = new Date(fechaFin);
 
+  // Mapeo de días de la semana
+  const diasMap = {
+    'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4,
+    'viernes': 5, 'sábado': 6, 'domingo': 0
+  };
+  
+  const diaSemanaHorario = diasMap[horario.dia_semana.toLowerCase()];
 
+  // Generar clases para cada día del período
+  while (fechaActual <= fechaFinDate) {
+    if (fechaActual.getDay() === diaSemanaHorario) {
+      const claseProgramada = await ClaseProgramada.create({
+        inscripcion_horario_id: inscripcionHorarioId,
+        horario_id: horarioId,
+        inscripcion_id: inscripcionId,
+        estudiante_id: estudianteId,
+        fecha: fechaActual.toISOString().split('T')[0],
+        hora_inicio: horario.hora_inicio,
+        hora_fin: horario.hora_fin,
+        estado_clase: 'programada',
+        es_recuperacion: false,
+        cuenta_para_asistencia: true
+      });
+      
+      clasesGeneradas.push(claseProgramada);
+    }
+    
+    // Siguiente día
+    fechaActual.setDate(fechaActual.getDate() + 1);
+  }
+
+  return clasesGeneradas;
+}
 
 
 
@@ -1615,9 +1712,24 @@ async function cargarDatos() {
     }
 
     console.log(`Datos extraídos: ${datosInscripciones.length} inscripciones`);
+    
+    // DEBUG: Mostrar algunas inscripciones
+    if (datosInscripciones.length > 0) {
+      console.log('Primera inscripción para debug:', {
+        id: datosInscripciones[0].id,
+        estado: datosInscripciones[0].estado,
+        fecha_fin: datosInscripciones[0].fecha_fin,
+        clases_restantes: datosInscripciones[0].clases_restantes,
+        clases_restantes_calculadas: datosInscripciones[0].clases_restantes_calculadas
+      });
+    }
 
     // Procesar datos
     inscripciones.value = procesarInscripciones(datosInscripciones);
+    
+    // DEBUG: Ver cuántas pueden renovarse
+    const puedenRenovar = inscripciones.value.filter(i => puedeRenovar(i)).length;
+    console.log(`📊 ${puedenRenovar}/${inscripciones.value.length} inscripciones pueden renovarse`);
 
     // Calcular estadísticas
     calcularEstadisticas();
@@ -1636,39 +1748,75 @@ async function cargarDatos() {
 }
 
 async function verDetalles(inscripcion) {
-  console.log('🔍 Viendo detalles de inscripción:', inscripcion.id);
-
   try {
     cargando.value = true;
 
-    // Cargar inscripción completa
+    // Limpiar selección previa
+    inscripcionSeleccionada.value = null;
+
+    // Mostrar mensaje de carga
+    toast.add({
+      severity: 'info',
+      summary: 'Cargando...',
+      detail: 'Obteniendo detalles de la inscripción',
+      life: 2000
+    });
+
+    // Cargar datos completos de la inscripción
     const response = await inscripcionService.show(inscripcion.id);
 
     let datosCompletos = null;
 
-    // ... procesamiento existente de datos de inscripción ...
-
-    // ========== NUEVO: Cargar clases programadas ==========
-    if (datosCompletos) {
-      datosCompletos.clases_programadas = await verClasesProgramadas(inscripcion.id);
-      console.log('📅 Clases programadas cargadas:', datosCompletos.clases_programadas?.length || 0);
+    // Procesar la respuesta según tu API
+    if (response.data) {
+      if (response.data.success && response.data.data) {
+        datosCompletos = response.data.data;
+      } else if (response.data.data) {
+        datosCompletos = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        datosCompletos = response.data[0];
+      } else {
+        datosCompletos = response.data;
+      }
     }
 
-    // Procesar datos para la vista
-    inscripcionSeleccionada.value = procesarInscripcionParaDetalles(datosCompletos);
+    if (!datosCompletos) {
+      throw new Error('No se obtuvieron datos de la inscripción');
+    }
 
-    // Configurar título con estadísticas de clases
-    const totalClases = inscripcionSeleccionada.value.clases_programadas?.length || 0;
-    const realizadas = inscripcionSeleccionada.value.clases_programadas?.filter(c => c.estado_clase === 'realizada').length || 0;
+    // Procesar los datos para la vista
+    datosCompletos = procesarInscripcionParaDetalles(datosCompletos);
 
-    tituloDetalles.value = `Inscripción #${inscripcion.id} - ${totalClases} clases (${realizadas} realizadas)`;
+    // Asegurar que tenga los campos necesarios
+    if (!datosCompletos.dias_restantes) {
+      datosCompletos.dias_restantes = calcularDiasRestantes(datosCompletos.fecha_fin);
+    }
 
-    // Mostrar diálogo
+    // Asignar los datos procesados
+    inscripcionSeleccionada.value = datosCompletos;
+
+    // Configurar título
+    tituloDetalles.value = `Inscripción #${inscripcion.id} - ${datosCompletos.estudiante?.nombres || 'Estudiante'}`;
+
+    // Abrir diálogo
     dialogoDetalles.value = true;
 
+    console.log('✅ Detalles cargados:', datosCompletos);
+
   } catch (error) {
-    console.error('❌ Error cargando detalles:', error);
-    // ... manejo de errores existente ...
+    console.error('❌ Error al ver detalles:', error);
+
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `No se pudieron cargar los detalles: ${error.message}`,
+      life: 4000
+    });
+
+    // Fallback: usar datos básicos si hay error
+    inscripcionSeleccionada.value = procesarInscripcionParaDetalles(inscripcion);
+    tituloDetalles.value = `Inscripción #${inscripcion.id}`;
+    dialogoDetalles.value = true;
   } finally {
     cargando.value = false;
   }
@@ -2289,87 +2437,155 @@ function calcularMesesDuracionRenovacion() {
   return Math.max(1, diffMeses);
 }
 
+// En tu función confirmarRenovacion()
 async function confirmarRenovacion() {
-  // Validaciones básicas
-  if (!renovacionForm.value.fecha_inicio || !renovacionForm.value.fecha_fin) {
-    toast.add({
-      severity: 'error',
-      summary: 'Fechas requeridas',
-      detail: 'Debe seleccionar fecha de inicio y fin',
-      life: 3000
-    });
-    return;
-  }
-
-  const fechaInicio = new Date(renovacionForm.value.fecha_inicio);
-  const fechaFin = new Date(renovacionForm.value.fecha_fin);
-
-  if (fechaFin <= fechaInicio) {
-    toast.add({
-      severity: 'error',
-      summary: 'Fecha inválida',
-      detail: 'La fecha de fin debe ser posterior a la fecha de inicio',
-      life: 3000
-    });
-    return;
-  }
-
   renovando.value = true;
 
   try {
+    // Preparar datos COMPLETOS para la renovación
     const datosRenovacion = {
-      fecha_inicio: fechaInicio.toISOString().split('T')[0],
-      fecha_fin: fechaFin.toISOString().split('T')[0],
+      fecha_inicio: formatDateToYMD(renovacionForm.value.fecha_inicio),
+      fecha_fin: formatDateToYMD(renovacionForm.value.fecha_fin),
       motivo: renovacionForm.value.motivo || 'Renovación mensual',
-      accion: 'renovar'
+      metodo_pago: 'efectivo', // O agrega un campo en el formulario
+      monto_pago: calcularTotalRenovacion(),
+      // Incluir IDs importantes
+      modalidad_id: inscripcionARenovar.value.modalidad_id || 
+                   inscripcionARenovar.value.modalidad?.id,
+      estudiante_id: inscripcionARenovar.value.estudiante_id || 
+                    inscripcionARenovar.value.estudiante?.id
     };
 
-    console.log('📤 Enviando renovación:', datosRenovacion);
+    console.log('📤 Enviando renovación completa:', datosRenovacion);
 
-    const response = await inscripcionService.renovar(inscripcionARenovar.value.id, datosRenovacion);
+    const response = await inscripcionService.renovar(
+      inscripcionARenovar.value.id, 
+      datosRenovacion
+    );
 
     if (response.data.success) {
-      // ========== NUEVO: Generar clases programadas para la renovación ==========
-      try {
-        await axios.post(
-          `/api/inscripciones/${inscripcionARenovar.value.id}/generar-clases-programadas`,
-          {},
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-        );
-        console.log('✅ Clases programadas generadas para renovación');
-      } catch (clasesError) {
-        console.warn('⚠️ No se pudieron generar clases programadas:', clasesError);
-      }
-
       toast.add({
         severity: 'success',
-        summary: '✅ Renovación exitosa',
-        detail: `Inscripción renovada hasta ${formatFecha(fechaFin)} con clases programadas`,
-        life: 4000
+        summary: '✅ Renovación Completa Exitosa',
+        detail: `Nueva inscripción #${response.data.data.nueva_inscripcion_id} creada con ${response.data.data.clases_generadas} clases programadas y pago registrado.`,
+        life: 6000
       });
-
-      // Cerrar diálogo
+      
       dialogoRenovacion.value = false;
-      resetearRenovacion();
-
+      
       // Recargar datos
-      setTimeout(() => {
-        cargarDatos();
-      }, 1000);
-
-    } else {
-      throw new Error(response.data.message || 'Error en la renovación');
+      setTimeout(() => cargarDatos(), 1000);
     }
 
   } catch (error) {
-    // ... manejo de errores existente ...
+    console.error('❌ Error:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error en Renovación',
+      detail: error.response?.data?.message || error.message || 'Error al renovar',
+      life: 5000
+    });
   } finally {
     renovando.value = false;
   }
 }
 
+// Función de fallback para crear renovación manualmente
+async function crearRenovacionManual(datosRenovacion) {
+  try {
+    console.log('🔄 Creando renovación manualmente...');
+    
+    // 1. Crear nueva inscripción
+    const nuevaInscripcionData = {
+      estudiante_id: inscripcionARenovar.value.estudiante_id || inscripcionARenovar.value.estudiante?.id,
+      modalidad_id: inscripcionARenovar.value.modalidad_id || inscripcionARenovar.value.modalidad?.id,
+      fecha_inicio: datosRenovacion.fecha_inicio,
+      fecha_fin: datosRenovacion.fecha_fin,
+      monto_mensual: inscripcionARenovar.value.monto_mensual || inscripcionARenovar.value.modalidad?.precio_mensual,
+      clases_totales: inscripcionARenovar.value.modalidad?.clases_mensuales || 12,
+      clases_asistidas: 0,
+      permisos_usados: 0,
+      permisos_disponibles: inscripcionARenovar.value.modalidad?.permisos_maximos || 3,
+      estado: 'activo',
+      observaciones: `Renovación de inscripción #${inscripcionARenovar.value.id}. ${datosRenovacion.motivo}`
+    };
+
+    const response = await inscripcionService.store(nuevaInscripcionData);
+    
+    if (!response.data) {
+      throw new Error('No se recibió respuesta del servidor');
+    }
+
+    const nuevaInscripcionId = response.data.id || response.data.data?.id || response.data.inscripcion_id;
+
+    if (!nuevaInscripcionId) {
+      throw new Error('No se pudo obtener el ID de la nueva inscripción');
+    }
+
+    console.log('✅ Nueva inscripción creada:', nuevaInscripcionId);
+
+    // 2. Actualizar inscripción anterior (marcar como renovada)
+    try {
+      await inscripcionService.update(inscripcionARenovar.value.id, {
+        estado: 'renovado',
+        observaciones: `Renovada el ${new Date().toISOString().split('T')[0]}. Nueva inscripción: #${nuevaInscripcionId}`
+      });
+    } catch (updateError) {
+      console.warn('⚠️ No se pudo actualizar la inscripción anterior:', updateError.message);
+      // Continuar aunque falle esta parte
+    }
+
+    // 3. Registrar pago (opcional)
+    try {
+      const pagoData = {
+        inscripcion_id: nuevaInscripcionId,
+        estudiante_id: nuevaInscripcionData.estudiante_id,
+        monto: nuevaInscripcionData.monto_mensual * calcularMesesDuracionRenovacion(),
+        metodo_pago: datosRenovacion.metodo_pago || 'efectivo',
+        fecha_pago: formatDateToYMD(new Date()),
+        observacion: `Pago por renovación de inscripción #${inscripcionARenovar.value.id} a #${nuevaInscripcionId}`,
+        estado: 'pagado',
+        referencia: `REN-${inscripcionARenovar.value.id}-${nuevaInscripcionId}`
+      };
+
+      await pagoService.store(pagoData);
+      console.log('✅ Pago registrado');
+    } catch (pagoError) {
+      console.warn('⚠️ No se pudo registrar el pago:', pagoError.message);
+      // El pago se puede registrar manualmente después
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: '✅ Renovación Manual Exitosa',
+      detail: `Nueva inscripción #${nuevaInscripcionId} creada exitosamente`,
+      life: 5000
+    });
+
+  } catch (error) {
+    console.error('❌ Error en renovación manual:', error);
+    throw error; // Re-lanzar para manejar en la función principal
+  }
+}
+
+// Función auxiliar para formatear fecha (si no la tienes)
+function formatDateToYMD(date) {
+  if (!date) return null;
+  
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
 
 function toggleHorarioSeleccionado(horario) {
+  console.log('🔄 Toggle horario:', horario.id, horario.dia_semana);
+  
   // Verificar si el estudiante ya está inscrito en este horario
   if (estudianteSeleccionado.value) {
     const horariosEstudiante = obtenerHorariosEstudiante(estudianteSeleccionado.value.id);
@@ -2400,28 +2616,22 @@ function toggleHorarioSeleccionado(horario) {
     return;
   }
 
-  // Resto de la lógica original...
+  // ========== ELIMINAR LÍMITE ==========
   const index = horariosSeleccionados.value.indexOf(horario.id);
 
   if (index === -1) {
-    if (horariosSeleccionados.value.length < 4) {
-      horariosSeleccionados.value = [...horariosSeleccionados.value, horario.id];
-      horariosSeleccionadosDetalles.value = [...horariosSeleccionadosDetalles.value, horario];
-      toast.add({
-        severity: 'success',
-        summary: 'Horario agregado',
-        detail: `${horario.dia_semana} ${horario.hora_inicio} seleccionado`,
-        life: 1500
-      });
-    } else {
-      toast.add({
-        severity: 'warn',
-        summary: 'Límite alcanzado',
-        detail: 'Máximo 4 horarios por inscripción',
-        life: 3000
-      });
-    }
+    // SIN LÍMITE - siempre permitir agregar
+    horariosSeleccionados.value = [...horariosSeleccionados.value, horario.id];
+    horariosSeleccionadosDetalles.value = [...horariosSeleccionadosDetalles.value, horario];
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Horario agregado',
+      detail: `${horario.dia_semana} ${horario.hora_inicio} seleccionado`,
+      life: 1500
+    });
   } else {
+    // Remover horario si ya está seleccionado
     horariosSeleccionados.value = horariosSeleccionados.value.filter(id => id !== horario.id);
     horariosSeleccionadosDetalles.value = horariosSeleccionadosDetalles.value.filter(h => h.id !== horario.id);
     toast.add({
@@ -2556,34 +2766,88 @@ function resetearRenovacion() {
 
 // Actualiza la función renovarInscripcion para usar fechas más realistas
 function renovarInscripcion(inscripcion) {
+  console.log('🔄 Intentando renovar inscripción:', inscripcion.id);
+
   // Verificar si puede renovar
   if (!puedeRenovar(inscripcion)) {
+    const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
+    const clasesRestantes = parseInt(inscripcion.clases_restantes_calculadas) ||
+      parseInt(inscripcion.clases_restantes) ||
+      0;
+
+    let mensaje = 'No se puede renovar todavía. ';
+
+    if (diasRestantes > 7) {
+      mensaje += `Faltan ${diasRestantes} días para el vencimiento. `;
+    }
+
+    if (clasesRestantes > 5) {
+      mensaje += `Aún quedan ${clasesRestantes} clases. `;
+    }
+
+    mensaje += 'Puede renovar cuando falten 7 días o menos, o cuando queden 5 clases o menos.';
+
     toast.add({
-      severity: 'error',
-      summary: 'No renovable',
-      detail: 'Esta inscripción no puede ser renovada',
-      life: 3000
+      severity: 'info',
+      summary: 'Renovación no disponible',
+      detail: mensaje,
+      life: 5000
     });
+
     return;
   }
 
+  // Si puede renovar, proceder
   inscripcionARenovar.value = inscripcion;
 
-  // Establecer fechas por defecto para renovación
+  // Calcular fechas inteligentes
   const hoy = new Date();
-  const fechaFinActual = new Date(inscripcion.fecha_fin);
+  hoy.setHours(0, 0, 0, 0);
 
-  // Si ya venció, empezar hoy. Si no, empezar al día siguiente de que venza
-  const fechaInicio = fechaFinActual > hoy ? fechaFinActual : hoy;
+  const fechaFinActual = inscripcion.fecha_fin ? new Date(inscripcion.fecha_fin) : hoy;
+  fechaFinActual.setHours(0, 0, 0, 0);
+
+  let fechaInicio = hoy;
+
+  // Si la fecha actual de fin es futura, empezar al día siguiente
+  if (fechaFinActual > hoy) {
+    fechaInicio = new Date(fechaFinActual);
+    fechaInicio.setDate(fechaInicio.getDate() + 1);
+  }
+
+  // Calcular fecha de fin (1 mes después por defecto)
   const fechaFin = new Date(fechaInicio);
-  fechaFin.setMonth(fechaFin.getMonth() + 1); // 1 mes por defecto
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
 
+  // Obtener información para el motivo
+  const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
+  const clasesRestantes = parseInt(inscripcion.clases_restantes_calculadas) ||
+    parseInt(inscripcion.clases_restantes) ||
+    0;
+
+  let motivo = 'Renovación mensual';
+
+  if (diasRestantes <= 7 && diasRestantes >= 0) {
+    motivo = `Renovación por vencimiento (${diasRestantes} días restantes)`;
+  } else if (clasesRestantes <= 5) {
+    motivo = `Renovación por agotamiento de clases (${clasesRestantes} clases restantes)`;
+  }
+
+  // Configurar formulario
   renovacionForm.value = {
     fecha_inicio: fechaInicio,
     fecha_fin: fechaFin,
-    motivo: 'Renovación mensual'
+    motivo: motivo
   };
 
+  console.log('📅 Renovación configurada:', {
+    inscripcion: inscripcion.id,
+    inicio: fechaInicio.toISOString().split('T')[0],
+    fin: fechaFin.toISOString().split('T')[0],
+    motivo: motivo
+  });
+
+  // Abrir diálogo
   dialogoRenovacion.value = true;
 }
 
@@ -3257,6 +3521,26 @@ async function guardarInscripcionYpago() {
   }
 }
 
+// Agrega esta función en tu sección de funciones, cerca de getTooltipRenovacion
+function getEstadoRenovacion(inscripcion) {
+  if (!inscripcion) return 'Sin información';
+  
+  // Si no puede renovar
+  if (!puedeRenovar(inscripcion)) {
+    return 'No puede renovar';
+  }
+  
+  const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
+  
+  if (diasRestantes > 7) {
+    return 'Renovación disponible';
+  } else if (diasRestantes >= 0) {
+    return '¡Pronto a vencer!';
+  } else {
+    return `Vencida hace ${Math.abs(diasRestantes)} días`;
+  }
+}
+
 // ========== FUNCIONES AUXILIARES NECESARIAS ==========
 
 // Función para validar que el período sea suficiente
@@ -3319,7 +3603,7 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
     'sábado': 6,
     'sabado': 6,
     'domingo': 0,
-    
+
     // Con mayúscula inicial
     'Lunes': 1,
     'Martes': 2,
@@ -3330,7 +3614,7 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
     'Sábado': 6,
     'Sabado': 6,
     'Domingo': 0,
-    
+
     // Todo mayúsculas
     'LUNES': 1,
     'MARTES': 2,
@@ -3350,7 +3634,7 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
   console.log('📊 DEBUG del período:');
   console.log(`  Inicio: ${inicio.toLocaleDateString('es-ES')}`);
   console.log(`  Fin: ${fin.toLocaleDateString('es-ES')}`);
-  
+
   const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
   console.log(`  Días totales: ${diasTotales}`);
 
@@ -3360,7 +3644,7 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
   for (let i = 0; i < diasTotales; i++) {
     const diaNum = fechaDebug.getDay();
     const diaNombre = fechaDebug.toLocaleDateString('es-ES', { weekday: 'long' });
-    console.log(`  ${i+1}. ${diaNombre} (${diaNum}): ${fechaDebug.toLocaleDateString('es-ES')}`);
+    console.log(`  ${i + 1}. ${diaNombre} (${diaNum}): ${fechaDebug.toLocaleDateString('es-ES')}`);
     fechaDebug.setDate(fechaDebug.getDate() + 1);
   }
 
@@ -3368,11 +3652,11 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
   const distribucionCalculada = horarios.map(horario => {
     const diaOriginal = horario.dia_semana;
     const diaLower = diaOriginal?.toLowerCase() || '';
-    
+
     // Buscar en el mapa
-    let diaHorario = diasSemanaMap[diaOriginal] || 
-                     diasSemanaMap[diaLower] || 
-                     -1;
+    let diaHorario = diasSemanaMap[diaOriginal] ||
+      diasSemanaMap[diaLower] ||
+      -1;
 
     console.log(`\n📊 Analizando horario ${horario.id}:`);
     console.log(`  Día original: "${diaOriginal}"`);
@@ -3388,7 +3672,7 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
       else if (diaLower.includes('miercoles') || diaLower.includes('miércoles')) diaHorario = 3;
       else if (diaLower.includes('martes')) diaHorario = 2;
       else if (diaLower.includes('lunes')) diaHorario = 1;
-      
+
       if (diaHorario !== -1) {
         console.log(`  🔍 Encontrado por búsqueda parcial: ${diaHorario}`);
       }
@@ -3402,12 +3686,12 @@ function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
     while (fechaActual <= fin) {
       const diaActual = fechaActual.getDay();
       const fechaStr = fechaActual.toLocaleDateString('es-ES');
-      
+
       if (diaHorario === diaActual) {
         clases++;
         diasCoincidentes.push(fechaStr);
       }
-      
+
       fechaActual.setDate(fechaActual.getDate() + 1);
     }
 
@@ -3622,30 +3906,43 @@ function procesarInscripciones(data) {
   }
 
   return data.map(insc => {
+    // Calcular días restantes en el procesamiento
     const diasRestantes = calcularDiasRestantes(insc.fecha_fin);
-    let montoMensual = insc.monto_mensual;
+    
+    // Asegurar que tenga clases_restantes_calculadas
+    let clasesRestantesCalculadas = insc.clases_restantes_calculadas || 
+                                   insc.clases_restantes || 
+                                   0;
+    
+    // Si no tiene, calcular basado en modalidad
+    if (!insc.clases_restantes_calculadas && !insc.clases_restantes) {
+      if (insc.modalidad?.clases_mensuales) {
+        const meses = calcularMesesDuracionInscripcion(insc);
+        clasesRestantesCalculadas = insc.modalidad.clases_mensuales * meses;
+      } else {
+        clasesRestantesCalculadas = 12; // Default
+      }
+    }
 
+    let montoMensual = insc.monto_mensual;
     if (typeof montoMensual === 'string') {
       montoMensual = parseFloat(montoMensual);
     }
-
     if (isNaN(montoMensual)) {
       montoMensual = 0;
     }
-
-    // Calcular progreso una sola vez
-    const progreso = getClasesProgreso(insc);
-    const porcentaje = calcularProgresoClases(insc);
 
     return {
       ...insc,
       dias_restantes: diasRestantes,
       monto_mensual: montoMensual,
-      clases_restantes_calculadas: insc.clases_restantes_calculadas ||
-        insc.clases_restantes ||
-        0,
-      clases_progreso: progreso, // ← Nuevo
-      progreso_porcentaje: porcentaje // ← Nuevo
+      clases_restantes_calculadas: clasesRestantesCalculadas,
+      // Asegurar que el estado sea string
+      estado: String(insc.estado || 'desconocido').toLowerCase(),
+      // Asegurar otros campos críticos
+      fecha_fin: insc.fecha_fin || null,
+      estudiante: insc.estudiante || { nombres: 'Desconocido', apellidos: '', ci: '' },
+      modalidad: insc.modalidad || { nombre: 'Sin modalidad', clases_mensuales: 12, precio_mensual: 0 }
     };
   });
 }
@@ -3934,78 +4231,147 @@ function calcularMesesDuracionInscripcion(inscripcion) {
 }
 
 function puedeRenovar(inscripcion) {
-  console.log('🔍 Verificando si puede renovar inscripción:', inscripcion.id);
-  console.log('Estado:', inscripcion.estado);
-  console.log('Fecha fin:', inscripcion.fecha_fin);
-
-  if (inscripcion.estado !== 'activo') {
-    console.log('❌ No puede renovar: estado no es activo');
+  console.log('🔍 VERIFICANDO RENOVACIÓN para inscripción:', inscripcion.id);
+  
+  // 1. Validar datos básicos
+  if (!inscripcion || !inscripcion.id) {
+    console.log('❌ Inscripción no válida');
     return false;
   }
-
+  
+  // 2. Solo permitir renovar inscripciones ACTIVAS
+  if (inscripcion.estado !== 'activo') {
+    console.log('❌ No puede renovar - Estado:', inscripcion.estado);
+    return false;
+  }
+  
+  // 3. Verificar que no esté ya vencida (opcional, puedes quitarlo si quieres permitir renovar vencidas)
   const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
-  console.log('Días restantes:', diasRestantes);
+  const yaVencida = diasRestantes < 0;
+  
+  if (yaVencida) {
+    console.log('⚠️ Inscripción vencida hace', Math.abs(diasRestantes), 'días');
+    // Puedes decidir si permitir renovar vencidas o no
+    // return false; // Si NO quieres permitir renovar vencidas
+  }
+  
+  // 4. SIEMPRE permitir renovar si está activa
+  console.log('✅ SIEMPRE ACTIVO - Puede renovar');
+  return true;
+}
 
-  const puede = diasRestantes <= 7;
-  console.log('¿Puede renovar?', puede);
 
-  return puede;
+function getTooltipRenovacion(inscripcion) {
+  if (!inscripcion) return 'Información no disponible';
+  
+  const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
+  const clasesRestantes = parseInt(inscripcion.clases_restantes_calculadas) || 
+                         parseInt(inscripcion.clases_restantes) || 
+                         0;
+  
+  if (inscripcion.estado !== 'activo') {
+    return `No puede renovar - Estado: ${inscripcion.estado}`;
+  }
+  
+  let mensaje = '🔄 Renovar inscripción';
+  
+  // Mostrar información pero sin bloquear
+  if (diasRestantes > 0) {
+    mensaje += `\nVence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}`;
+  } else if (diasRestantes === 0) {
+    mensaje += '\nVence hoy';
+  } else {
+    mensaje += `\nVencida hace ${Math.abs(diasRestantes)} días`;
+  }
+  
+  if (clasesRestantes > 0) {
+    mensaje += `\n${clasesRestantes} clase${clasesRestantes !== 1 ? 's' : ''} restante${clasesRestantes !== 1 ? 's' : ''}`;
+  }
+  
+  return mensaje;
 }
 
 function calcularDiasRestantes(fechaFin) {
+  console.log('📅 calcularDiasRestantes - Entrada:', fechaFin);
+  
   if (!fechaFin) {
-    console.log('⚠️ Fecha fin no definida');
-    return 0;
+    console.log('❌ No hay fecha fin');
+    return 999; // Valor alto para que no active la renovación
   }
-
-  const hoy = new Date();
-  const fin = new Date(fechaFin);
-
-  // Verificar si la fecha es válida
-  if (isNaN(fin.getTime())) {
-    console.log('⚠️ Fecha fin inválida:', fechaFin);
-    return 0;
+  
+  try {
+    // Crear fecha de hoy (sin horas)
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    // Convertir fechaFin a Date
+    let fin;
+    
+    // DEBUG: Ver formato exacto
+    console.log('📅 Tipo de fechaFin:', typeof fechaFin);
+    console.log('📅 Valor fechaFin:', fechaFin);
+    
+    if (typeof fechaFin === 'string') {
+      // Si ya es una fecha en formato YYYY-MM-DD
+      if (fechaFin.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = fechaFin.split('-').map(Number);
+        fin = new Date(year, month - 1, day);
+        console.log('📅 Parseado como YYYY-MM-DD:', fin);
+      }
+      // Si tiene formato ISO con T
+      else if (fechaFin.includes('T')) {
+        fin = new Date(fechaFin);
+        console.log('📅 Parseado como ISO:', fin);
+      }
+      // Si tiene formato DD/MM/YYYY
+      else if (fechaFin.includes('/')) {
+        const [day, month, year] = fechaFin.split('/').map(Number);
+        fin = new Date(year, month - 1, day);
+        console.log('📅 Parseado como DD/MM/YYYY:', fin);
+      }
+      else {
+        // Intentar parsear como fecha directa
+        fin = new Date(fechaFin);
+        console.log('📅 Parseado directo:', fin);
+      }
+    } else if (fechaFin instanceof Date) {
+      fin = new Date(fechaFin);
+      console.log('📅 Ya es Date:', fin);
+    } else {
+      console.log('❌ Formato de fecha no reconocido:', typeof fechaFin, fechaFin);
+      return 999;
+    }
+    
+    // Verificar si la fecha es válida
+    if (isNaN(fin.getTime())) {
+      console.log('❌ Fecha inválida después de parsear:', fechaFin);
+      return 999;
+    }
+    
+    // Establecer horas a 0 para comparar solo fechas
+    fin.setHours(0, 0, 0, 0);
+    
+    // Calcular diferencia en días
+    const diffMs = fin.getTime() - hoy.getTime();
+    const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    
+    console.log('📅 Cálculo completo:', {
+      hoy: hoy.toISOString().split('T')[0],
+      fin: fin.toISOString().split('T')[0],
+      diffMs: diffMs,
+      dias: dias
+    });
+    
+    return dias;
+  } catch (error) {
+    console.error('❌ Error en calcularDiasRestantes:', error);
+    return 999;
   }
-
-  // Ajustar horas para comparar solo fechas
-  hoy.setHours(0, 0, 0, 0);
-  fin.setHours(0, 0, 0, 0);
-
-  const diffTime = fin - hoy;
-  const dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  console.log('📅 Cálculo días restantes:', {
-    hoy: hoy.toISOString(),
-    fin: fin.toISOString(),
-    diffMs: diffTime,
-    dias: dias
-  });
-
-  return dias;
 }
 
 // Función para formatear fecha en formato más legible
-function formatFechaCompleta(fecha) {
-  if (!fecha) return '--';
-  const date = new Date(fecha);
-  return date.toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-}
 
-// Función para calcular tiempo restante
-function getTiempoRestante(fechaFin) {
-  const dias = calcularDiasRestantes(fechaFin);
 
-  if (dias === 0) return 'Vence hoy';
-  if (dias === 1) return 'Vence mañana';
-  if (dias > 0) return `Vence en ${dias} días`;
-  if (dias === -1) return 'Venció ayer';
-  return `Venció hace ${Math.abs(dias)} días`;
-}
 
 function obtenerSeveridadEstado(estado, fechaFin) {
   const diasRestantes = calcularDiasRestantes(fechaFin);
@@ -4575,17 +4941,41 @@ onMounted(() => {
   outline: none;
 }
 
-:deep(.p-dropdown) {
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+/* Agrega al final de tu <style scoped> */
+/* Estilos para botón siempre activo */
+:deep(.p-button.text-blue-500) {
+  color: #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
-:deep(.p-calendar) {
-  border-radius: 8px;
+:deep(.p-button.text-blue-500:hover:not(:disabled)) {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  color: #1d4ed8 !important;
 }
 
-:deep(.p-calendar .p-inputtext) {
-  border-radius: 8px 0 0 8px !important;
+:deep(.p-button.text-green-500) {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+:deep(.p-button.text-green-500:hover:not(:disabled)) {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  color: #059669 !important;
+}
+
+:deep(.p-button.text-orange-500) {
+  color: #f97316 !important;
+  background-color: rgba(249, 115, 22, 0.1) !important;
+}
+
+:deep(.p-button.text-orange-500:hover:not(:disabled)) {
+  background-color: rgba(249, 115, 22, 0.2) !important;
+  color: #ea580c !important;
+}
+
+:deep(.p-button:disabled) {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }
 
 /* SECTIONS CON COLORES SUAVES */
