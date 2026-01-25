@@ -6,9 +6,8 @@ export default {
       index(page = 1, limit = 10, q = "") {
              return Api().get(`/usuarios?page=${page}&limit=${limit}&q=${q}`);
          },
-    
 
-    guardarUsuario(datos) {  // Añade datos como parámetro aquí
+    store(datos) {  // Añade datos como parámetro aquí
         return Api().post("/usuarios", datos);
     },
 
@@ -16,7 +15,7 @@ export default {
         return Api().get("/usuarios/" + id);
     },
 
-    modificarUsuario(id, datos) {  // Añade datos como parámetro aquí
+    update(id, datos) {  // Añade datos como parámetro aquí
         return Api().put("/usuarios/" + id, datos);
     },
 

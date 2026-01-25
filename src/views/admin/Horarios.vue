@@ -11,7 +11,11 @@
                     placeholder="Sucursal" class="w-10rem" @change="filtrarHorarios" />
           <Dropdown v-model="filtroDisciplina" :options="disciplinas" optionLabel="nombre" optionValue="id" 
                     placeholder="Disciplina" class="w-10rem" @change="filtrarHorarios" />
-          <Dropdown v-model="filtroDia" :options="diasSemana" placeholder="Día" class="w-10rem" @change="filtrarHorarios" />
+          <Dropdown v-model="filtroDia" 
+          :options="diasSemanaOpciones" 
+          placeholder="Día" 
+          class="w-10rem" 
+          @change="filtrarHorarios" />
           <Button icon="pi pi-filter-slash" label="Limpiar" @click="limpiarFiltros" />
         </div>
       </template>
@@ -333,6 +337,7 @@ const buscar = ref('');
 // ... resto de tu código ...
 
 // Filtros
+const diasSemanaOpciones = ref(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']);
 const filtroSucursal = ref(null);
 const filtroDisciplina = ref(null);
 const filtroDia = ref(null);

@@ -55,5 +55,8 @@ export default {
     obtenerPorEstado(estado) {
         return Api().get(`/inscripciones/estado/${estado}`);
     }
+
+    
+    
 };
 // ¡NO agregues nada después de esta línea! El export ya terminó

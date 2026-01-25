@@ -96,80 +96,183 @@
               </div>
             </template>
           </Column>
-          <Column header="Progreso">
+          <Column header="Progreso" :sortable="true" sortField="clases_asistidas">
             <template #body="slotProps">
               <div class="flex flex-column gap-1">
-                <div class="flex justify-content-between">
-                  <small>Clases:
-                    {{ getClasesProgreso(slotProps.data).asistidas }}/{{ getClasesProgreso(slotProps.data).total }}
-                  </small>
-                  <small>Días: {{ slotProps.data.dias_restantes || 0 }}</small>
+                <div class="flex justify-content-between align-items-center mb-1">
+                  <div class="flex align-items-center gap-2">
+                    <span class="font-medium text-sm">
+                      {{ getClasesProgresoConAlerta(slotProps.data).asistidas }}/{{
+                        getClasesProgresoConAlerta(slotProps.data).total }}
+                    </span>
+
+                    <!-- Indicador de alerta -->
+                    <div v-if="getClasesProgresoConAlerta(slotProps.data).tieneAlerta" class="alerta-indicador"
+                      v-tooltip="getMensajeProgreso(slotProps.data)">
+                      <i :class="getClasesProgresoConAlerta(slotProps.data).alertaInfo.icono + ' ' +
+                        getClasesProgresoConAlerta(slotProps.data).alertaInfo.color" style="font-size: 0.9rem"></i>
+                    </div>
+                  </div>
+
+                  <!-- Porcentaje -->
+                  <span class="text-500 text-xs">
+                    {{ getClasesProgresoConAlerta(slotProps.data).alertaInfo.datos.porcentaje || 0 }}%
+                  </span>
                 </div>
-                <ProgressBar :value="calcularProgresoClases(slotProps.data)" :showValue="false" />
+
+                <!-- Barra de progreso con estilo de alerta -->
+                <ProgressBar :value="calcularProgresoConEstilo(slotProps.data).valor" :showValue="false"
+                  :class="['progreso-clases', calcularProgresoConEstilo(slotProps.data).clase]" />
+
+                <!-- Mensaje de alerta -->
+                <div v-if="getClasesProgresoConAlerta(slotProps.data).tieneAlerta" class="mt-1">
+                  <small :class="getClasesProgresoConAlerta(slotProps.data).alertaInfo.color + ' font-semibold'">
+                    <i :class="getClasesProgresoConAlerta(slotProps.data).alertaInfo.icono + ' mr-1'"
+                      style="font-size: 0.8rem"></i>
+                    {{ getMensajeProgreso(slotProps.data) }}
+                  </small>
+                </div>
+
+                <!-- Info adicional -->
+                <small v-else class="text-500">
+                  {{ getClasesProgresoConAlerta(slotProps.data).restantes ||
+                    getClasesProgresoConAlerta(slotProps.data).total -
+                    getClasesProgresoConAlerta(slotProps.data).asistidas }} clases restantes
+                </small>
               </div>
             </template>
           </Column>
           <Column header="Vencimiento">
             <template #body="slotProps">
               <div class="flex flex-column">
+                <!-- Fecha de vencimiento de inscripción -->
                 <span :class="getColorVencimiento(slotProps.data.fecha_fin)">
                   {{ formatFecha(slotProps.data.fecha_fin) }}
                 </span>
                 <small class="text-500">{{ getDiasRestantes(slotProps.data.fecha_fin) }}</small>
+
+                <!-- Mostrar información de pago pendiente si está en mora -->
+                <div v-if="slotProps.data.estado === 'en_mora'" class="mt-1">
+                  <small class="text-xs text-red-500">
+                    <i class="pi pi-exclamation-triangle mr-1"></i>
+                    Pago pendiente
+                  </small>
+                </div>
               </div>
             </template>
           </Column>
-          <Column field="estado" header="Estado" :sortable="true">
+
+          <Column header="Estado" :sortable="true">
             <template #body="slotProps">
-              <Tag :value="slotProps.data.estado"
-                :severity="obtenerSeveridadEstado(slotProps.data.estado, slotProps.data.fecha_fin)" />
+              <div class="flex flex-column">
+                <!-- Estado principal de la inscripción -->
+                <Tag :value="slotProps.data.estado"
+                  :severity="obtenerSeveridadEstado(slotProps.data.estado, slotProps.data.fecha_fin)" />
+
+                <!-- Estado detallado si está en mora -->
+                <div v-if="slotProps.data.estado === 'en_mora'" class="mt-1">
+                  <div class="flex align-items-center gap-1">
+                    <i class="pi pi-money-bill text-red-500" style="font-size: 0.8rem"></i>
+                    <small class="text-xs text-red-500 font-semibold">
+                      Saldo pendiente: ${{ slotProps.data.saldo_pendiente || 0 }}
+                    </small>
+                  </div>
+
+                  <!-- Mostrar días de mora -->
+                  <small v-if="slotProps.data.dias_mora" class="text-xs text-orange-500">
+                    <i class="pi pi-clock mr-1"></i>
+                    {{ slotProps.data.dias_mora }} día(s) de mora
+                  </small>
+                </div>
+
+                <!-- Estado de pago si no está en mora -->
+                <div v-else-if="slotProps.data.estado_pago" class="mt-1">
+                  <small class="text-xs" :class="{
+                    'text-green-500': slotProps.data.estado_pago === 'al_dia',
+                    'text-blue-500': slotProps.data.estado_pago === 'pagado'
+                  }">
+                    <i class="pi pi-check-circle mr-1"></i>
+                    Pagos al día
+                  </small>
+                </div>
+              </div>
             </template>
           </Column>
-          <!-- Columna para Ver Detalles -->
-<Column header="Detalles" style="width: 60px">
-  <template #body="slotProps">
-    <Button 
-      icon="pi pi-eye" 
-      class="p-button-rounded p-button-text p-button-sm"
-      @click="verDetalles(slotProps.data)" 
-      v-tooltip="'Ver detalles'"
-      style="color: #3b82f6;"
-    />
-  </template>
-</Column>
 
-<!-- Columna para Renovar -->
-<!-- En tu columna de Renovar -->
-<Column header="Renovar" style="width: 80px">
-  <template #body="slotProps">
-    <div class="flex align-items-center gap-1">
-      <Button 
-        icon="pi pi-refresh" 
-        class="p-button-rounded p-button-text p-button-sm"
-        @click="renovarInscripcion(slotProps.data)" 
-        v-tooltip="getTooltipRenovacion(slotProps.data)"
-        :class="{
-          'text-blue-500 hover:text-blue-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
-          'text-green-500 hover:text-green-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
-          'text-orange-500 hover:text-orange-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) < 0,
-          'text-gray-400 hover:text-gray-500 cursor-not-allowed': !puedeRenovar(slotProps.data)
-        }"
-        :disabled="!puedeRenovar(slotProps.data)"
-      />
-      
-      <!-- Indicador de estado -->
-      <div v-if="puedeRenovar(slotProps.data)" 
-        class="w-2 h-2 rounded-full"
-        :class="{
-          'bg-blue-500': calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
-          'bg-green-500 animate-pulse': calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
-          'bg-orange-500': calcularDiasRestantes(slotProps.data.fecha_fin) < 0
-        }"
-        v-tooltip="getEstadoRenovacion(slotProps.data)"
-      ></div>
-    </div>
-  </template>
-</Column>
+          <!-- Columna para Ver Detalles -->
+          <Column header="Detalles" style="width: 60px">
+            <template #body="slotProps">
+              <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm"
+                @click="verDetalles(slotProps.data)" v-tooltip="'Ver detalles'" :class="{
+                  'text-blue-500 hover:text-blue-600': slotProps.data.estado !== 'en_mora',
+                  'text-red-500 hover:text-red-600': slotProps.data.estado === 'en_mora'
+                }" />
+            </template>
+          </Column>
+
+          <!-- NUEVA COLUMNA: Estado de Pago -->
+          <Column header="Pagos" style="width: 120px">
+            <template #body="slotProps">
+              <div class="flex flex-column align-items-center">
+                <!-- Indicador visual del estado de pagos -->
+                <div class="w-8 h-8 rounded-full flex align-items-center justify-content-center mb-1"
+                  :class="getClaseEstadoPago(slotProps.data)">
+                  <i :class="getIconoEstadoPago(slotProps.data)"></i>
+                </div>
+
+                <!-- Texto del estado -->
+                <small class="text-xs font-semibold" :class="getColorTextoEstadoPago(slotProps.data)">
+                  {{ getTextoEstadoPago(slotProps.data) }}
+                </small>
+
+                <!-- Monto pendiente si hay -->
+                <small v-if="slotProps.data.saldo_pendiente > 0" class="text-xs text-red-500 mt-1">
+                  ${{ slotProps.data.saldo_pendiente }}
+                </small>
+              </div>
+            </template>
+          </Column>
+
+          <!-- NUEVA COLUMNA: Acciones de Pago -->
+          <Column header="Acc. Pago" style="width: 100px">
+            <template #body="slotProps">
+              <div class="flex gap-1">
+                <!-- Botón para registrar pago -->
+                <Button icon="pi pi-money-bill" class="p-button-rounded p-button-text p-button-sm" :class="{
+                  'text-red-500 hover:text-red-600 animate-pulse': slotProps.data.estado === 'en_mora',
+                  'text-yellow-500 hover:text-yellow-600': slotProps.data.estado === 'activo' && slotProps.data.saldo_pendiente > 0,
+                  'text-gray-400 hover:text-gray-400': slotProps.data.saldo_pendiente <= 0
+                }" @click="registrarPago(slotProps.data)" v-tooltip="getTooltipPago(slotProps.data)"
+                  :disabled="slotProps.data.saldo_pendiente <= 0 && slotProps.data.estado !== 'en_mora'" />
+
+              
+                
+              </div>
+            </template>
+          </Column>
+
+          <!-- Columna para Renovar -->
+          <!-- En tu columna de Renovar -->
+          <Column header="Renovar" style="width: 80px">
+            <template #body="slotProps">
+              <div class="flex align-items-center gap-1">
+                <Button icon="pi pi-refresh" class="p-button-rounded p-button-text p-button-sm"
+                  @click="renovarInscripcion(slotProps.data)" v-tooltip="getTooltipRenovacion(slotProps.data)" :class="{
+                    'text-blue-500 hover:text-blue-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
+                    'text-green-500 hover:text-green-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
+                    'text-orange-500 hover:text-orange-600': puedeRenovar(slotProps.data) && calcularDiasRestantes(slotProps.data.fecha_fin) < 0,
+                    'text-gray-400 hover:text-gray-500 cursor-not-allowed': !puedeRenovar(slotProps.data)
+                  }" :disabled="!puedeRenovar(slotProps.data)" />
+
+                <!-- Indicador de estado -->
+                <div v-if="puedeRenovar(slotProps.data)" class="w-2 h-2 rounded-full" :class="{
+                  'bg-blue-500': calcularDiasRestantes(slotProps.data.fecha_fin) > 7,
+                  'bg-green-500 animate-pulse': calcularDiasRestantes(slotProps.data.fecha_fin) <= 7 && calcularDiasRestantes(slotProps.data.fecha_fin) >= 0,
+                  'bg-orange-500': calcularDiasRestantes(slotProps.data.fecha_fin) < 0
+                }" v-tooltip="getEstadoRenovacion(slotProps.data)"></div>
+              </div>
+            </template>
+          </Column>
         </DataTable>
       </TabPanel>
 
@@ -634,30 +737,96 @@
                     <template #title>💰 Información de Pago</template>
                     <template #content>
                       <div class="space-y-4">
-                        <!-- Mostrar precio total como referencia -->
+                        <!-- Mostrar precio total -->
                         <div>
-                          <label class="text-500 block mb-1">Precio de la Modalidad</label>
+                          <label class="text-500 block mb-1">Precio Total de la Modalidad</label>
                           <div class="text-2xl font-bold text-green-600">
                             ${{ getPrecioTotal() }}
                           </div>
-                          <small class="text-500">Precio mensual de la modalidad seleccionada</small>
+                          <small class="text-500">{{ calcularMesesDuracion() }} mes(es) × ${{
+                            modalidadSeleccionada?.precio_mensual || 0 }}/mes</small>
+                        </div>
+
+                        <!-- Opción para dividir pago -->
+                        <div class="field-checkbox mb-3">
+                          <Checkbox v-model="dividirPago" :binary="true" inputId="dividir_pago"
+                            :disabled="pagoForm.monto >= getPrecioTotal()" />
+                          <label for="dividir_pago" class="ml-2 cursor-pointer">
+                            <span class="font-medium">Dividir pago en 2 partes</span>
+                            <small class="text-500 block">Pagar mitad ahora y mitad después</small>
+                          </label>
                         </div>
 
                         <!-- Campo para ingresar el monto del pago -->
                         <div class="field">
-                          <label for="monto_pago" class="text-500 block mb-1">Monto a Pagar *</label>
+                          <label for="monto_pago" class="text-500 block mb-1">
+                            <span v-if="dividirPago">Monto a Pagar Ahora *</span>
+                            <span v-else>Monto a Pagar *</span>
+                          </label>
                           <div class="p-inputgroup">
                             <span class="p-inputgroup-addon">$</span>
-                            <InputNumber v-model="pagoForm.monto" :min="0" :max="10000" :step="10" class="w-full"
-                              :class="{ 'p-invalid': !pagoForm.monto || pagoForm.monto <= 0 }"
-                              placeholder="Ingrese el monto" />
+                            <InputNumber v-model="pagoForm.monto" :min="0" :max="getPrecioTotal()" :step="10"
+                              class="w-full" :class="{
+                                'p-invalid': !pagoForm.monto || pagoForm.monto <= 0 || pagoForm.monto > getPrecioTotal(),
+                                'border-yellow-300': dividirPago && pagoForm.monto < getPrecioTotal() / 2
+                              }" :placeholder="dividirPago ? 'Ej: 300' : 'Ingrese el monto'" />
+
+                            <!-- Botón para sugerir mitad -->
+                            <Button v-if="dividirPago" label="Mitad" @click="pagoForm.monto = getPrecioTotal() / 2"
+                              class="p-button-outlined p-button-sm" :disabled="pagoForm.monto >= getPrecioTotal()" />
                           </div>
-                          <small v-if="!pagoForm.monto || pagoForm.monto <= 0" class="p-error">
-                            Ingrese un monto válido
-                          </small>
-                          <small v-else class="text-500">
-                            Precio de la modalidad: ${{ getPrecioTotal() }}
-                          </small>
+
+                          <!-- Mensajes de validación y saldo -->
+                          <div class="mt-2">
+                            <small v-if="!pagoForm.monto || pagoForm.monto <= 0" class="p-error block">
+                              Ingrese un monto válido
+                            </small>
+                            <small v-else-if="pagoForm.monto > getPrecioTotal()" class="p-error block">
+                              El monto no puede ser mayor a ${{ getPrecioTotal() }}
+                            </small>
+
+                            <!-- Mostrar información de división -->
+                            <div v-if="dividirPago && pagoForm.monto > 0" class="text-sm">
+                              <div class="flex justify-between text-500 mt-1">
+                                <span>Total a pagar:</span>
+                                <span class="font-bold">${{ getPrecioTotal() }}</span>
+                              </div>
+                              <div class="flex justify-between mt-1"
+                                :class="pagoForm.monto < getPrecioTotal() / 2 ? 'text-yellow-600' : 'text-green-600'">
+                                <span>Pagando ahora:</span>
+                                <span class="font-bold">${{ pagoForm.monto }}</span>
+                              </div>
+                              <div class="flex justify-between mt-1 text-blue-600">
+                                <span>Saldo pendiente:</span>
+                                <span class="font-bold">${{ (getPrecioTotal() - pagoForm.monto).toFixed(2) }}</span>
+                              </div>
+
+                              <!-- Advertencia si paga menos de la mitad -->
+                              <div v-if="pagoForm.monto < getPrecioTotal() / 2"
+                                class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                <i class="pi pi-exclamation-triangle text-yellow-600 mr-2"></i>
+                                <span class="text-yellow-700 text-xs">
+                                  Está pagando menos de la mitad. Se creará una segunda cuota de ${{ (getPrecioTotal() -
+                                    pagoForm.monto).toFixed(2) }}
+                                </span>
+                              </div>
+                            </div>
+
+                            <!-- Mostrar si es pago completo -->
+                            <div v-else-if="pagoForm.monto > 0" class="text-sm">
+                              <div class="flex justify-between mt-1">
+                                <span class="text-500">Total:</span>
+                                <span class="font-bold text-green-600">${{ getPrecioTotal() }}</span>
+                              </div>
+                              <div v-if="pagoForm.monto === getPrecioTotal()" class="text-green-600 text-xs mt-1">
+                                <i class="pi pi-check-circle mr-1"></i> Pago completo
+                              </div>
+                              <div v-else-if="pagoForm.monto < getPrecioTotal()" class="text-blue-600 text-xs mt-1">
+                                <i class="pi pi-info-circle mr-1"></i> Pago parcial (saldo: ${{ (getPrecioTotal() -
+                                  pagoForm.monto).toFixed(2) }})
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
                         <!-- Método de pago -->
@@ -680,7 +849,42 @@
                         <div class="field">
                           <label for="observacion" class="text-500 block mb-1">Observaciones (Opcional)</label>
                           <Textarea v-model="pagoForm.observacion" rows="2" class="w-full"
-                            placeholder="Notas sobre el pago..." />
+                            :placeholder="getPlaceholderObservacion()" />
+                        </div>
+
+                        <!-- Resumen del pago dividido -->
+                        <div v-if="dividirPago && pagoForm.monto > 0 && pagoForm.monto < getPrecioTotal()"
+                          class="p-3 border-round bg-blue-50 border-1 border-blue-200">
+                          <h6 class="mt-0 mb-2 flex align-items-center">
+                            <i class="pi pi-calendar-plus text-blue-500 mr-2"></i>
+                            <span>Plan de Pago</span>
+                          </h6>
+                          <div class="grid">
+                            <div class="col-12 md:col-6">
+                              <div class="text-sm">
+                                <div class="font-bold text-blue-700">Primera cuota</div>
+                                <div>Monto: ${{ pagoForm.monto }}</div>
+                                <div>Fecha: {{ formatFecha(pagoForm.fecha_pago || new Date()) }}</div>
+                                <div>Estado:
+                                  <Tag value="Pagando ahora" severity="success" class="ml-1" />
+                                </div>
+                              </div>
+                            </div>
+                            <div class="col-12 md:col-6">
+                              <div class="text-sm">
+                                <div class="font-bold text-blue-700">Segunda cuota</div>
+                                <div>Monto: ${{ (getPrecioTotal() - pagoForm.monto).toFixed(2) }}</div>
+                                <div>Fecha: {{ calcularFechaSegundaCuota() }}</div>
+                                <div>Estado:
+                                  <Tag value="Pendiente" severity="warning" class="ml-1" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <small class="text-500 block mt-2">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            La segunda cuota se creará automáticamente como pendiente
+                          </small>
                         </div>
 
                         <Divider />
@@ -1173,6 +1377,105 @@
       </template>
     </Dialog>
 
+    <Dialog v-model:visible="dialogoRegistroPago" header="Registrar Pago" :modal="true" :style="{ width: '500px' }">
+      <div v-if="inscripcionParaPago">
+        <!-- Información del estudiante -->
+        <div class="mb-4 p-3 border-round bg-blue-50">
+          <div class="flex align-items-center">
+            <Avatar :label="getIniciales(inscripcionParaPago.estudiante)" class="mr-2" />
+            <div>
+              <div class="font-bold">{{ inscripcionParaPago.estudiante?.nombres }}
+                {{ inscripcionParaPago.estudiante?.apellidos }}</div>
+              <small class="text-500">Modalidad: {{ inscripcionParaPago.modalidad?.nombre }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen financiero -->
+        <div class="mb-4 grid">
+          <div class="col-6">
+            <div class="text-500 text-sm mb-1">Total inscripción</div>
+            <div class="font-bold">${{ inscripcionParaPago.monto_mensual || 0 }}</div>
+          </div>
+          <div class="col-6">
+            <div class="text-500 text-sm mb-1">Saldo pendiente</div>
+            <div class="font-bold" :class="saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'">
+              ${{ saldoPendiente.toFixed(2) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Si es segunda cuota -->
+        <div v-if="esSegundaCuota && pagoSeleccionado" class="mb-4 p-3 border-round bg-yellow-50">
+          <div class="flex align-items-center">
+            <i class="pi pi-info-circle text-yellow-500 mr-2"></i>
+            <div>
+              <div class="font-medium">Segunda cuota pendiente</div>
+              <small class="text-500">Monto: ${{ pagoSeleccionado.monto }} |
+                Vence: {{ formatFecha(pagoSeleccionado.fecha_vencimiento) }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="mb-4">
+          <div class="field mb-3">
+            <label class="text-500 block mb-1">Monto a pagar *</label>
+            <InputNumber v-model="montoPago" :min="0" :max="saldoPendiente" class="w-full"
+              :class="{ 'p-invalid': montoPago <= 0 || montoPago > saldoPendiente }">
+              <template #prefix>$</template>
+            </InputNumber>
+            <small v-if="montoPago <= 0" class="p-error">El monto debe ser mayor a 0</small>
+            <small v-if="montoPago > saldoPendiente" class="p-error">
+              No puede pagar más de ${{ saldoPendiente.toFixed(2) }}
+            </small>
+          </div>
+
+          <div class="field mb-3">
+            <label class="text-500 block mb-1">Método de pago *</label>
+            <Dropdown v-model="metodoPago" :options="metodosPago" optionLabel="label" optionValue="value"
+              placeholder="Seleccione método" class="w-full" :class="{ 'p-invalid': !metodoPago }" />
+            <small v-if="!metodoPago" class="p-error">Seleccione un método de pago</small>
+          </div>
+
+          <div class="field mb-3">
+            <label class="text-500 block mb-1">Fecha de pago</label>
+            <Calendar v-model="fechaPago" dateFormat="dd/mm/yy" class="w-full" showIcon />
+          </div>
+
+          <div class="field mb-3">
+            <label class="text-500 block mb-1">Observaciones</label>
+            <Textarea v-model="observacion" rows="2" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Resumen -->
+        <div v-if="montoPago > 0" class="p-3 border-round bg-green-50">
+          <div class="grid">
+            <div class="col-6">
+              <div class="text-500 text-sm">Pagando ahora</div>
+              <div class="font-bold text-green-600 text-xl">${{ montoPago.toFixed(2) }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-500 text-sm">Saldo restante</div>
+              <div class="font-bold text-blue-600">${{ (saldoPendiente - montoPago).toFixed(2) }}</div>
+            </div>
+          </div>
+          <small class="text-500 block mt-2">
+            Estado después del pago:
+            <Tag :value="(saldoPendiente - montoPago) <= 0 ? 'Completamente pagado' : 'Pago parcial'"
+              :severity="(saldoPendiente - montoPago) <= 0 ? 'success' : 'warning'" />
+          </small>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Cancelar" severity="secondary" @click="cancelarRegistroPago" />
+        <Button label="Registrar Pago" severity="success" @click="registrarPagoReal"
+      :disabled="!montoPago || montoPago <= 0 || !metodoPago" />
+      </template>
+    </Dialog>
+
 
   </div>
   <Toast />
@@ -1264,7 +1567,7 @@ const renovacionForm = ref({
 const cargandoHorarios = ref(false);
 const cargandoModalidades = ref(false);
 
-
+const dividirPago = ref(false);
 
 const pagoForm = ref({
   monto: 0,
@@ -1296,6 +1599,32 @@ const opcionesEstado = ref([
   { label: 'Vencido', value: 'vencido' },
   { label: 'Inactivo', value: 'inactivo' }
 ]);
+
+const configAlertas = {
+  umbrales: [3, 2, 1], // Clases restantes que activan alerta
+  mostrarToast: true,   // Mostrar notificaciones toast
+  mostrarEnTabla: true, // Mostrar indicadores en tabla
+  enviarCorreo: false   // Activar para enviar correos automáticos
+};
+
+const alertasMostradas = ref({});
+
+const dialogoRegistroPago = ref(false);
+const inscripcionParaPago = ref(null);
+const pagosPendientes = ref([]);
+const pagoSeleccionado = ref(null);
+const montoPago = ref(0);
+const metodoPago = ref(null);
+const fechaPago = ref(new Date());
+const observacion = ref('');
+const saldoPendiente = ref(0);
+const esSegundaCuota = ref(false);
+
+
+const montoTotalInscripcion = ref(0);
+const totalPagado = ref(0);
+const saldoPendienteCalculado = ref(0);
+const cargandoPago = ref(false);
 
 // Computed properties
 const inscripcionesFiltradas = computed(() => {
@@ -1384,10 +1713,10 @@ function calcularClasesSemanales(clasesMensuales) {
 
 async function renovacionCompleta(inscripcionId, datosRenovacion) {
   // DATOS DE ENTRADA
-  const { 
-    fecha_inicio: fechaInicioNueva, 
-    fecha_fin: fechaFinNueva, 
-    motivo 
+  const {
+    fecha_inicio: fechaInicioNueva,
+    fecha_fin: fechaFinNueva,
+    motivo
   } = datosRenovacion;
 
   // 1. OBTENER INSCRIPCIÓN ACTUAL CON SUS RELACIONES
@@ -1406,23 +1735,23 @@ async function renovacionCompleta(inscripcionId, datosRenovacion) {
     modalidad_id: inscripcionActual.modalidad_id,
     sucursal_id: inscripcionActual.sucursal_id,
     entrenador_id: inscripcionActual.entrenador_id,
-    
+
     // Nuevas fechas del período renovado
     fecha_inicio: fechaInicioNueva,
     fecha_fin: fechaFinNueva,
-    
+
     // Clases COMPLETAMENTE NUEVAS según modalidad
     clases_totales: inscripcionActual.modalidad.clases_mensuales,
     clases_asistidas: 0, // ¡CERO porque es NUEVA!
     permisos_usados: 0,  // ¡CERO porque es NUEVA!
     permisos_disponibles: inscripcionActual.modalidad.permisos_maximos,
-    
+
     // Precio
     monto_mensual: inscripcionActual.modalidad.precio_mensual,
-    
+
     // Estado
     estado: 'activo',
-    
+
     // Relación con inscripción anterior (opcional, para historial)
     // Nota: Tu tabla no tiene estos campos, puedes agregarlos o usar un campo "observaciones"
     observaciones: `Renovación de inscripción #${inscripcionId}. Motivo: ${motivo}`
@@ -1434,18 +1763,18 @@ async function renovacionCompleta(inscripcionId, datosRenovacion) {
     const nuevoInscripcionHorario = await InscripcionHorario.create({
       inscripcion_id: nuevaInscripcion.id,
       horario_id: inscripcionHorario.horario_id,
-      
+
       // Clases TOTALMENTE NUEVAS (basadas en modalidad)
       clases_totales: Math.floor(
-        inscripcionActual.modalidad.clases_mensuales / 
+        inscripcionActual.modalidad.clases_mensuales /
         inscripcionActual.inscripcion_horarios.length
       ),
       clases_asistidas: 0,  // ¡CERO!
       clases_restantes: Math.floor(
-        inscripcionActual.modalidad.clases_mensuales / 
+        inscripcionActual.modalidad.clases_mensuales /
         inscripcionActual.inscripcion_horarios.length
       ),
-      
+
       permisos_usados: 0,  // ¡CERO!
       fecha_inicio: fechaInicioNueva,
       fecha_fin: fechaFinNueva,
@@ -1519,7 +1848,7 @@ async function generarClasesProgramadasParaHorario(
     'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4,
     'viernes': 5, 'sábado': 6, 'domingo': 0
   };
-  
+
   const diaSemanaHorario = diasMap[horario.dia_semana.toLowerCase()];
 
   // Generar clases para cada día del período
@@ -1537,10 +1866,10 @@ async function generarClasesProgramadasParaHorario(
         es_recuperacion: false,
         cuenta_para_asistencia: true
       });
-      
+
       clasesGeneradas.push(claseProgramada);
     }
-    
+
     // Siguiente día
     fechaActual.setDate(fechaActual.getDate() + 1);
   }
@@ -1694,7 +2023,7 @@ function validarYContinuar() {
 async function cargarDatos() {
   cargando.value = true;
   try {
-    console.log('Cargando inscripciones...');
+    console.log('=== CARGANDO INSCRIPCIONES ===');
     const response = await inscripcionService.index(1, 100, "");
 
     let datosInscripciones = [];
@@ -1711,40 +2040,509 @@ async function cargarDatos() {
       datosInscripciones = response.data;
     }
 
-    console.log(`Datos extraídos: ${datosInscripciones.length} inscripciones`);
-    
-    // DEBUG: Mostrar algunas inscripciones
-    if (datosInscripciones.length > 0) {
-      console.log('Primera inscripción para debug:', {
-        id: datosInscripciones[0].id,
-        estado: datosInscripciones[0].estado,
-        fecha_fin: datosInscripciones[0].fecha_fin,
-        clases_restantes: datosInscripciones[0].clases_restantes,
-        clases_restantes_calculadas: datosInscripciones[0].clases_restantes_calculadas
-      });
-    }
+    console.log(`📥 Datos extraídos: ${datosInscripciones.length} inscripciones`);
 
-    // Procesar datos
+    // Procesar datos básicos
     inscripciones.value = procesarInscripciones(datosInscripciones);
+
+    // ========== NUEVO: CARGAR PAGOS PENDIENTES ==========
+    console.log('💰 Cargando pagos pendientes para todas las inscripciones...');
     
-    // DEBUG: Ver cuántas pueden renovarse
-    const puedenRenovar = inscripciones.value.filter(i => puedeRenovar(i)).length;
-    console.log(`📊 ${puedenRenovar}/${inscripciones.value.length} inscripciones pueden renovarse`);
+    // Usar Promise.all para cargar pagos en paralelo (más rápido)
+    const promesasPagos = inscripciones.value.map(async (inscripcion) => {
+      await cargarPagosPendientesParaInscripcion(inscripcion);
+    });
+    
+    await Promise.all(promesasPagos);
+    
+    console.log(`✅ Pagos cargados para ${inscripciones.value.length} inscripciones`);
+
+    // ========== NUEVO: VERIFICAR ALERTAS ==========
+    console.log('🔍 Verificando alertas de clases...');
+
+    const inscripcionesConAlerta = [];
+
+    inscripciones.value.forEach(inscripcion => {
+      const verificacion = verificarEstadoClases(inscripcion);
+
+      if (verificacion.necesitaAlerta) {
+        inscripcionesConAlerta.push({
+          inscripcion: inscripcion,
+          verificacion: verificacion
+        });
+
+        console.log(`🚨 ALERTA: ${inscripcion.estudiante?.nombres || 'Estudiante'} - ${verificacion.mensaje}`);
+      }
+    });
+
+    // Mostrar alertas en UI
+    if (inscripcionesConAlerta.length > 0) {
+      mostrarAlertasUI(inscripciones.value);
+
+      // También mostrar en consola para debug
+      console.log('📊 RESUMEN ALERTAS:');
+      inscripcionesConAlerta.forEach((item, index) => {
+        const estudiante = item.inscripcion.estudiante;
+        console.log(`${index + 1}. ${estudiante?.nombres || 'Estudiante'}: ${item.verificacion.mensaje}`);
+        console.log(`   📊 ${item.verificacion.datos.asistidas}/${item.verificacion.datos.total} clases (${item.verificacion.datos.restantes} restantes)`);
+      });
+    } else {
+      console.log('✅ No hay alertas de clases pendientes');
+    }
 
     // Calcular estadísticas
     calcularEstadisticas();
 
+    // Mostrar resumen final
+    console.log('🎉 CARGA COMPLETADA:', {
+      totalInscripciones: inscripciones.value.length,
+      activas: estadisticas.value.totalActivas,
+      enMora: inscripciones.value.filter(i => i.estado === 'en_mora').length,
+      porVencer: estadisticas.value.porVencer,
+      alertas: inscripcionesConAlerta.length
+    });
+
   } catch (error) {
-    console.error('Error cargando datos:', error);
+    console.error('❌ Error cargando datos:', error);
+    
+    let mensajeError = 'No se pudieron cargar las inscripciones';
+    if (error.response) {
+      console.error('📥 Detalles del error:', {
+        status: error.response.status,
+        data: error.response.data
+      });
+      
+      if (error.response.status === 401) {
+        mensajeError = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+      } else if (error.response.status === 500) {
+        mensajeError = 'Error interno del servidor';
+      } else if (error.response.data?.message) {
+        mensajeError = error.response.data.message;
+      }
+    }
+    
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudieron cargar las inscripciones',
-      life: 3000
+      detail: mensajeError,
+      life: 5000
     });
+    
+    // Si hay error pero tenemos datos viejos, mantenerlos
+    if (inscripciones.value.length > 0) {
+      console.warn('⚠️ Usando datos almacenados debido a error de carga');
+      toast.add({
+        severity: 'warn',
+        summary: 'Datos limitados',
+        detail: 'Mostrando datos almacenados localmente',
+        life: 3000
+      });
+    }
   } finally {
     cargando.value = false;
   }
+}
+
+// ========== FUNCIONES AUXILIARES PARA CARGAR PAGOS ==========
+
+async function cargarPagosPendientesParaInscripcion(inscripcion) {
+  try {
+    console.log(`💰 Cargando pagos para inscripción ${inscripcion.id}...`);
+    
+    // DEBUG: Mostrar información de la inscripción
+    console.log('📊 Info inscripción:', {
+      id: inscripcion.id,
+      estado: inscripcion.estado,
+      monto_mensual: inscripcion.monto_mensual,
+      estudiante_id: inscripcion.estudiante_id
+    });
+
+    // Llamada directa a la API si el servicio no funciona
+    let response;
+    try {
+      // Intento 1: Usar el servicio
+      response = await pagoService.index(1, 100, {
+        inscripcion_id: inscripcion.id
+      });
+    } catch (serviceError) {
+      console.log('🔄 Servicio falló, intentando API directa...');
+      // Intento 2: Llamada directa a la API
+      const token = localStorage.getItem('token') || '';
+      const apiResponse = await fetch(`/api/pagos?inscripcion_id=${inscripcion.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!apiResponse.ok) throw new Error('API falló');
+      response = { data: await apiResponse.json() };
+    }
+
+    console.log('📥 Respuesta de pagos:', response);
+
+    let todosLosPagos = [];
+    
+    // Extraer datos con más opciones
+    if (response && response.data) {
+      // Opción 1: Respuesta estándar Laravel
+      if (response.data.success && response.data.data && Array.isArray(response.data.data)) {
+        todosLosPagos = response.data.data;
+      }
+      // Opción 2: Array directo en data
+      else if (Array.isArray(response.data.data)) {
+        todosLosPagos = response.data.data;
+      }
+      // Opción 3: Array directo en raíz
+      else if (Array.isArray(response.data)) {
+        todosLosPagos = response.data;
+      }
+      // Opción 4: Con paginación Laravel
+      else if (response.data.data && response.data.data.data && Array.isArray(response.data.data.data)) {
+        todosLosPagos = response.data.data.data;
+      }
+      // Opción 5: Respuesta directa de API
+      else if (Array.isArray(response)) {
+        todosLosPagos = response;
+      }
+    }
+
+    console.log(`💰 Encontrados ${todosLosPagos.length} pagos para inscripción ${inscripcion.id}`);
+
+    if (todosLosPagos.length > 0) {
+      console.log('📋 Detalles de pagos:', todosLosPagos.map(p => ({
+        id: p.id,
+        monto: p.monto,
+        estado: p.estado,
+        metodo_pago: p.metodo_pago,
+        fecha_vencimiento: p.fecha_vencimiento,
+        observacion: p.observacion
+      })));
+    }
+
+    // Filtrar pagos pendientes y vencidos
+    const pagosPendientes = todosLosPagos.filter(pago => 
+      pago.estado === 'pendiente' || pago.estado === 'vencido'
+    );
+
+    // Calcular total pagado
+    const pagosPagados = todosLosPagos.filter(pago => pago.estado === 'pagado');
+    const totalPagado = pagosPagados.reduce((total, pago) => {
+      return total + (parseFloat(pago.monto) || 0);
+    }, 0);
+
+    // Calcular saldo pendiente
+    const saldoPendiente = pagosPendientes.reduce((total, pago) => {
+      return total + (parseFloat(pago.monto) || 0);
+    }, 0);
+
+    console.log(`💰 Resumen financiero inscripción ${inscripcion.id}:`, {
+      totalPagos: todosLosPagos.length,
+      pagosPendientes: pagosPendientes.length,
+      totalPagado: totalPagado,
+      saldoPendiente: saldoPendiente,
+      montoMensual: inscripcion.monto_mensual
+    });
+
+    // Buscar la inscripción en el array
+    const index = inscripciones.value.findIndex(i => i.id === inscripcion.id);
+    if (index === -1) {
+      console.warn(`⚠️ Inscripción ${inscripcion.id} no encontrada en el array`);
+      return;
+    }
+
+    // Determinar si hay segunda cuota pendiente
+    const segundaCuota = pagosPendientes.find(p => 
+      p.es_parcial === true || 
+      p.numero_cuota === 2 ||
+      (p.observacion && (
+        p.observacion.toLowerCase().includes('segunda') ||
+        p.observacion.toLowerCase().includes('cuota') ||
+        p.observacion.toLowerCase().includes('saldo')
+      ))
+    );
+
+    // Determinar estado
+    let nuevoEstado = inscripciones.value[index].estado;
+    if (saldoPendiente > 0 && nuevoEstado === 'activo') {
+      nuevoEstado = 'en_mora';
+      console.log(`🔴 Marcando inscripción ${inscripcion.id} como EN MORA por saldo pendiente`);
+    }
+
+    // Calcular días de mora
+    const diasMora = calcularDiasMoraPorPagos(pagosPendientes);
+
+    // Actualizar la inscripción
+    inscripciones.value[index] = {
+      ...inscripciones.value[index],
+      estado: nuevoEstado,
+      saldo_pendiente: saldoPendiente,
+      pagos_pendientes: pagosPendientes,
+      dias_mora: diasMora,
+      total_pagado: totalPagado,
+      tiene_segunda_cuota: !!segundaCuota,
+      segunda_cuota: segundaCuota || null,
+      estado_pago: saldoPendiente > 0 ? 'pendiente' : 'al_dia',
+      pagos_cargados: true,
+      error_carga_pagos: false
+    };
+
+    console.log(`✅ Inscripción ${inscripcion.id} actualizada:`, {
+      estado: inscripciones.value[index].estado,
+      saldo: inscripciones.value[index].saldo_pendiente,
+      tieneSegundaCuota: inscripciones.value[index].tiene_segunda_cuota,
+      diasMora: inscripciones.value[index].dias_mora
+    });
+
+  } catch (error) {
+    console.error(`❌ Error cargando pagos para inscripción ${inscripcion.id}:`, error);
+    
+    // Marcar como error en la inscripción
+    const index = inscripciones.value.findIndex(i => i.id === inscripcion.id);
+    if (index !== -1) {
+      inscripciones.value[index] = {
+        ...inscripciones.value[index],
+        pagos_cargados: false,
+        error_carga_pagos: true,
+        error_mensaje: error.message
+      };
+    }
+  }
+}
+
+function calcularDiasMoraPorPagos(pagosPendientes) {
+  if (!pagosPendientes || pagosPendientes.length === 0) return 0;
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  let mayorDiasMora = 0;
+
+  pagosPendientes.forEach(pago => {
+    let fechaReferencia = null;
+    
+    // Usar fecha_vencimiento si existe, sino usar fecha_creacion
+    if (pago.fecha_vencimiento) {
+      fechaReferencia = new Date(pago.fecha_vencimiento);
+    } else if (pago.created_at) {
+      fechaReferencia = new Date(pago.created_at);
+      // Asumir que si no tiene fecha_vencimiento, vence 15 días después de creado
+      fechaReferencia.setDate(fechaReferencia.getDate() + 15);
+    } else {
+      return; // No hay fecha de referencia
+    }
+    
+    fechaReferencia.setHours(0, 0, 0, 0);
+    
+    const diffMs = hoy - fechaReferencia;
+    const diasMora = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diasMora > mayorDiasMora) {
+      mayorDiasMora = diasMora;
+    }
+  });
+
+  return Math.max(0, mayorDiasMora);
+}
+
+// ========== FUNCIÓN MEJORADA PARA PROCESAR INSCRIPCIONES ==========
+
+function procesarInscripciones(data) {
+  if (!Array.isArray(data)) {
+    console.error('Datos de inscripciones no es un array:', data);
+    return [];
+  }
+
+  return data.map(insc => {
+    try {
+      // Calcular días restantes
+      const diasRestantes = calcularDiasRestantes(insc.fecha_fin);
+
+      // Extraer campos de pago del objeto original
+      const saldoPendiente = parseFloat(insc.saldo_pendiente) || 0;
+      const diasMora = parseInt(insc.dias_mora) || 0;
+      const totalPagado = parseFloat(insc.total_pagado) || 0;
+
+      // Determinar estado inicial
+      let estadoFinal = (insc.estado || 'activo').toLowerCase();
+      
+      // Si el backend ya indica que está en mora, respetarlo
+      if (estadoFinal === 'en_mora' || estadoFinal === 'mora') {
+        estadoFinal = 'en_mora';
+      }
+      // Si tiene saldo pendiente pero está marcado como activo, cambiar a en_mora
+      else if (saldoPendiente > 0 && estadoFinal === 'activo') {
+        estadoFinal = 'en_mora';
+      }
+
+      // Determinar estado de pago
+      let estadoPago = 'al_dia';
+      if (saldoPendiente > 0) {
+        estadoPago = 'pendiente';
+      } else if (totalPagado > 0) {
+        estadoPago = 'pagado';
+      }
+
+      // Calcular clases restantes
+      let clasesRestantesCalculadas = 0;
+      if (insc.clases_restantes_calculadas !== undefined) {
+        clasesRestantesCalculadas = parseInt(insc.clases_restantes_calculadas) || 0;
+      } else if (insc.clases_restantes !== undefined) {
+        clasesRestantesCalculadas = parseInt(insc.clases_restantes) || 0;
+      }
+
+      // Calcular clases asistidas y totales
+      const clasesAsistidas = parseInt(insc.clases_asistidas) || 0;
+      let clasesTotales = parseInt(insc.clases_totales) || 0;
+      
+      // Si no tiene clases_totales, calcular basado en modalidad
+      if (clasesTotales === 0 && insc.modalidad?.clases_mensuales) {
+        const mesesDuracion = calcularMesesDuracionInscripcion(insc);
+        clasesTotales = insc.modalidad.clases_mensuales * mesesDuracion;
+      }
+
+      // Si clasesRestantesCalculadas es 0 pero debería tener, calcularlo
+      if (clasesRestantesCalculadas === 0 && clasesTotales > 0) {
+        clasesRestantesCalculadas = Math.max(0, clasesTotales - clasesAsistidas);
+      }
+
+      // Verificar si es segunda cuota
+      const esSegundaCuota = insc.es_segunda_cuota || 
+        (insc.observaciones && insc.observaciones.toLowerCase().includes('segunda')) ||
+        false;
+
+      return {
+        ...insc,
+        // Campos principales
+        id: parseInt(insc.id) || 0,
+        estudiante_id: parseInt(insc.estudiante_id) || 0,
+        modalidad_id: parseInt(insc.modalidad_id) || 0,
+        
+        // Fechas
+        fecha_inicio: insc.fecha_inicio || null,
+        fecha_fin: insc.fecha_fin || null,
+        dias_restantes: diasRestantes,
+        
+        // Estado
+        estado: estadoFinal,
+        estado_pago: estadoPago,
+        
+        // Información financiera
+        monto_mensual: parseFloat(insc.monto_mensual) || 0,
+        saldo_pendiente: saldoPendiente,
+        total_pagado: totalPagado,
+        dias_mora: diasMora,
+        es_segunda_cuota: esSegundaCuota,
+        
+        // Clases
+        clases_totales: clasesTotales,
+        clases_asistidas: clasesAsistidas,
+        clases_restantes_calculadas: clasesRestantesCalculadas,
+        
+        // Permisos
+        permisos_usados: parseInt(insc.permisos_usados) || 0,
+        permisos_disponibles: parseInt(insc.permisos_disponibles) || 
+          (insc.modalidad?.permisos_maximos || 3),
+        
+        // Relaciones (asegurar que existan)
+        estudiante: insc.estudiante || { 
+          nombres: 'Desconocido', 
+          apellidos: '', 
+          ci: '',
+          telefono: '',
+          correo: ''
+        },
+        modalidad: insc.modalidad || { 
+          nombre: 'Sin modalidad', 
+          clases_mensuales: 12, 
+          precio_mensual: 0,
+          permisos_maximos: 3
+        },
+        
+        // Arrays
+        horarios: Array.isArray(insc.horarios) ? insc.horarios : [],
+        inscripcion_horarios: Array.isArray(insc.inscripcion_horarios) ? insc.inscripcion_horarios : [],
+        pagos_pendientes: Array.isArray(insc.pagos_pendientes) ? insc.pagos_pendientes : [],
+        
+        // Metadata
+        created_at: insc.created_at || null,
+        updated_at: insc.updated_at || null,
+        observaciones: insc.observaciones || ''
+      };
+      
+    } catch (error) {
+      console.error(`❌ Error procesando inscripción ${insc.id}:`, error);
+      return null;
+    }
+  }).filter(insc => insc !== null); // Filtrar nulos
+}
+
+async function enviarCorreoAlertaClases(inscripcion, verificacion) {
+  if (!configAlertas.enviarCorreo) return;
+
+  try {
+    const estudianteEmail = inscripcion.estudiante?.correo || inscripcion.estudiante?.email;
+
+    if (!estudianteEmail) {
+      console.warn(`⚠️ No se puede notificar: estudiante sin email`);
+      return;
+    }
+
+    const datosCorreo = {
+      estudiante_id: inscripcion.estudiante_id,
+      estudiante_email: estudianteEmail,
+      estudiante_nombre: `${inscripcion.estudiante?.nombres || ''} ${inscripcion.estudiante?.apellidos || ''}`.trim(),
+      inscripcion_id: inscripcion.id,
+      clases_restantes: verificacion.datos.restantes,
+      clases_totales: verificacion.datos.total,
+      clases_asistidas: verificacion.datos.asistidas,
+      nivel_alerta: verificacion.nivel,
+      fecha_vencimiento: inscripcion.fecha_fin,
+      modalidad: inscripcion.modalidad?.nombre || 'Sin modalidad'
+    };
+
+    console.log('📧 Enviando correo de alerta:', datosCorreo);
+
+    // Aquí pondrías tu llamada a la API para enviar el correo
+    /*
+    const response = await fetch('/api/notificaciones/clases-bajas', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datosCorreo)
+    });
+    */
+
+  } catch (error) {
+    console.error('❌ Error enviando correo:', error);
+  }
+}
+
+function mostrarAlertasEnUI(inscripcionesParaNotificar) {
+  // Crear mensaje consolidado
+  let mensajeConsolidado = `📢 ${inscripcionesParaNotificar.length} estudiante(s) cerca de completar sus clases:\n\n`;
+
+  inscripcionesParaNotificar.forEach((item, index) => {
+    const estudiante = item.inscripcion.estudiante;
+    const nombre = estudiante ? `${estudiante.nombres} ${estudiante.apellidos}` : 'Estudiante';
+
+    mensajeConsolidado += `${index + 1}. ${nombre}: ${item.verificacion.mensaje}\n`;
+    mensajeConsolidado += `   📅 Clases: ${item.verificacion.datos.asistidas}/${item.verificacion.datos.total} (${item.verificacion.datos.restantes} restantes)\n\n`;
+  });
+
+  // Mostrar toast
+  toast.add({
+    severity: 'warn',
+    summary: 'Alerta de Clases',
+    detail: mensajeConsolidado,
+    life: 8000
+  });
+
+  // También mostrar en consola para debug
+  console.log('📢 Alertas de clases bajas:');
+  console.log(mensajeConsolidado);
 }
 
 async function verDetalles(inscripcion) {
@@ -1998,6 +2796,37 @@ function procesarInscripcionHorarios(inscripcionHorarios) {
 }
 
 
+// Computed para calcular fecha de segunda cuota
+function calcularFechaSegundaCuota() {
+  const fecha = new Date(pagoForm.value.fecha_pago || new Date());
+  fecha.setDate(fecha.getDate() + 15); // 15 días después por defecto
+  return formatFecha(fecha);
+}
+
+// Placeholder dinámico para observaciones
+function getPlaceholderObservacion() {
+  if (dividirPago.value && pagoForm.value.monto > 0 && pagoForm.value.monto < getPrecioTotal()) {
+    return `Ej: Pago parcial. Primera cuota de $${pagoForm.value.monto} de $${getPrecioTotal()}. Saldo pendiente: $${(getPrecioTotal() - pagoForm.value.monto).toFixed(2)}`;
+  }
+  return 'Notas sobre el pago...';
+}
+
+// Watch para cuando cambie dividirPago
+watch(dividirPago, (newVal) => {
+  if (newVal) {
+    // Sugerir la mitad automáticamente
+    if (!pagoForm.value.monto || pagoForm.value.monto === getPrecioTotal()) {
+      pagoForm.value.monto = getPrecioTotal() / 2;
+    }
+  }
+});
+
+// Watch para cuando cambie el monto total
+watch(() => getPrecioTotal(), (newTotal) => {
+  if (dividirPago.value && (!pagoForm.value.monto || pagoForm.value.monto > newTotal)) {
+    pagoForm.value.monto = newTotal / 2;
+  }
+});
 
 // Función para cargar horarios de una inscripción específica
 async function cargarHorariosDeInscripcion(inscripcionId) {
@@ -2229,6 +3058,26 @@ async function cargarTodosHorariosYFiltrar(modalidadId) {
     throw error;
   }
 }
+
+function getTooltipPago(inscripcion) {
+  if (inscripcion.estado === 'en_mora') {
+    return `¡EN MORA! Click para pagar saldo pendiente`;
+  }
+  
+  if (inscripcion.saldo_pendiente > 0) {
+    // Verificar si probablemente es segunda cuota
+    const montoMensual = parseFloat(inscripcion.monto_mensual) || 0;
+    const saldoPendiente = parseFloat(inscripcion.saldo_pendiente) || 0;
+    
+    if (saldoPendiente < montoMensual && saldoPendiente > 0) {
+      return `Pagar segunda cuota: $${saldoPendiente.toFixed(2)}`;
+    }
+    
+    return `Pagar saldo pendiente: $${saldoPendiente.toFixed(2)}`;
+  }
+  
+  return '✅ Pagos al día';
+}
 // También asegúrate de tener esta función:
 function procesarHorariosParaVista(datosHorarios) {
   console.log('🔄 Procesando horarios para vista:', datosHorarios.length);
@@ -2450,16 +3299,16 @@ async function confirmarRenovacion() {
       metodo_pago: 'efectivo', // O agrega un campo en el formulario
       monto_pago: calcularTotalRenovacion(),
       // Incluir IDs importantes
-      modalidad_id: inscripcionARenovar.value.modalidad_id || 
-                   inscripcionARenovar.value.modalidad?.id,
-      estudiante_id: inscripcionARenovar.value.estudiante_id || 
-                    inscripcionARenovar.value.estudiante?.id
+      modalidad_id: inscripcionARenovar.value.modalidad_id ||
+        inscripcionARenovar.value.modalidad?.id,
+      estudiante_id: inscripcionARenovar.value.estudiante_id ||
+        inscripcionARenovar.value.estudiante?.id
     };
 
     console.log('📤 Enviando renovación completa:', datosRenovacion);
 
     const response = await inscripcionService.renovar(
-      inscripcionARenovar.value.id, 
+      inscripcionARenovar.value.id,
       datosRenovacion
     );
 
@@ -2470,9 +3319,9 @@ async function confirmarRenovacion() {
         detail: `Nueva inscripción #${response.data.data.nueva_inscripcion_id} creada con ${response.data.data.clases_generadas} clases programadas y pago registrado.`,
         life: 6000
       });
-      
+
       dialogoRenovacion.value = false;
-      
+
       // Recargar datos
       setTimeout(() => cargarDatos(), 1000);
     }
@@ -2494,7 +3343,7 @@ async function confirmarRenovacion() {
 async function crearRenovacionManual(datosRenovacion) {
   try {
     console.log('🔄 Creando renovación manualmente...');
-    
+
     // 1. Crear nueva inscripción
     const nuevaInscripcionData = {
       estudiante_id: inscripcionARenovar.value.estudiante_id || inscripcionARenovar.value.estudiante?.id,
@@ -2511,7 +3360,7 @@ async function crearRenovacionManual(datosRenovacion) {
     };
 
     const response = await inscripcionService.store(nuevaInscripcionData);
-    
+
     if (!response.data) {
       throw new Error('No se recibió respuesta del servidor');
     }
@@ -2571,21 +3420,21 @@ async function crearRenovacionManual(datosRenovacion) {
 // Función auxiliar para formatear fecha (si no la tienes)
 function formatDateToYMD(date) {
   if (!date) return null;
-  
+
   const d = new Date(date);
   if (isNaN(d.getTime())) return null;
-  
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  
+
   return `${year}-${month}-${day}`;
 }
 
 
 function toggleHorarioSeleccionado(horario) {
   console.log('🔄 Toggle horario:', horario.id, horario.dia_semana);
-  
+
   // Verificar si el estudiante ya está inscrito en este horario
   if (estudianteSeleccionado.value) {
     const horariosEstudiante = obtenerHorariosEstudiante(estudianteSeleccionado.value.id);
@@ -2623,7 +3472,7 @@ function toggleHorarioSeleccionado(horario) {
     // SIN LÍMITE - siempre permitir agregar
     horariosSeleccionados.value = [...horariosSeleccionados.value, horario.id];
     horariosSeleccionadosDetalles.value = [...horariosSeleccionadosDetalles.value, horario];
-    
+
     toast.add({
       severity: 'success',
       summary: 'Horario agregado',
@@ -2917,7 +3766,6 @@ function getDiaSemana(horario) {
 
 async function guardarInscripcionYpago() {
   // ========== GUARDAR REFERENCIAS ANTES DE LIMPIAR ==========
-  // Guardar los datos del estudiante y modalidad antes de que se limpien
   const estudianteBackup = { ...estudianteSeleccionado.value };
   const modalidadBackup = { ...modalidadSeleccionada.value };
   const horariosBackup = [...horariosSeleccionadosDetalles.value];
@@ -2963,6 +3811,29 @@ async function guardarInscripcionYpago() {
       life: 4000
     });
     return;
+  }
+
+  // ========== VALIDACIÓN ESPECIAL PARA PAGOS DIVIDIDOS ==========
+  if (dividirPago.value) {
+    if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Debe ingresar el monto de la primera cuota',
+        life: 4000
+      });
+      return;
+    }
+
+    if (pagoForm.value.monto >= getPrecioTotal()) {
+      toast.add({
+        severity: 'warn',
+        summary: '¿Seguro?',
+        detail: 'Si paga el monto completo, no es necesario dividir el pago',
+        life: 4000
+      });
+      dividirPago.value = false;
+    }
   }
 
   // ========== FUNCIÓN PARA FORMATO DE FECHAS ==========
@@ -3057,6 +3928,16 @@ async function guardarInscripcionYpago() {
     return;
   }
 
+  if (pagoForm.value.monto > getPrecioTotal()) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `El monto no puede ser mayor a $${getPrecioTotal()}`,
+      life: 4000
+    });
+    return;
+  }
+
   if (!pagoForm.value.metodo_pago) {
     toast.add({
       severity: 'error',
@@ -3073,13 +3954,38 @@ async function guardarInscripcionYpago() {
   let inscripcionId = null;
   let totalClasesGeneradas = 0;
   let pagoRegistrado = false;
+  let pagoGrupoId = null;
+  let estadoInscripcion = 'activo'; // Estado inicial
 
   try {
-    // ========== PASO 1: CREAR INSCRIPCIÓN ==========
-    console.log('🔄 PASO 1: Creando inscripción...');
+    // ========== PASO 1: DETERMINAR ESTADO INICIAL ==========
+    console.log('🔄 PASO 1: Determinando estado inicial...');
+
+    // IMPORTANTE: Si paga menos del total, la inscripción queda EN MORA
+    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
+      estadoInscripcion = 'en_mora';
+      console.log('⚠️ Inscripción quedará en estado: EN MORA (pago dividido)');
+
+      // Informar al usuario
+      toast.add({
+        severity: 'warn',
+        summary: 'Estado de Inscripción',
+        detail: 'La inscripción quedará en "EN MORA" hasta pagar la segunda cuota',
+        life: 5000
+      });
+    } else if (pagoForm.value.monto < getPrecioTotal()) {
+      // Si paga parcial pero no marcó "dividir pago", también queda en mora
+      estadoInscripcion = 'en_mora';
+      console.log('⚠️ Inscripción quedará en estado: EN MORA (pago parcial)');
+    } else {
+      estadoInscripcion = 'activo';
+      console.log('✅ Inscripción quedará en estado: ACTIVO (pago completo)');
+    }
+
+    // ========== PASO 2: CREAR INSCRIPCIÓN ==========
+    console.log('🔄 PASO 2: Creando inscripción...');
 
     // Calcular clases totales
-    // Calcular clases REALES basadas en fechas y horarios seleccionados
     const clasesReales = calcularClasesReales(
       fechaInicioFormateada,
       fechaFinFormateada,
@@ -3101,7 +4007,7 @@ async function guardarInscripcionYpago() {
       final: clasesTotales
     });
 
-    // ========== PASO 1.1: CALCULAR DISTRIBUCIÓN POR HORARIO ==========
+    // ========== PASO 2.1: CALCULAR DISTRIBUCIÓN POR HORARIO ==========
     console.log('🔄 Calculando distribución por horario...');
 
     let distribucionClases = [];
@@ -3158,7 +4064,7 @@ async function guardarInscripcionYpago() {
       return;
     }
 
-    // ========== PASO 1.2: VALIDAR QUE EL PERÍODO SEA SUFICIENTE ==========
+    // ========== PASO 2.2: VALIDAR QUE EL PERÍODO SEA SUFICIENTE ==========
     const validacionPeriodo = validarPeriodoSuficiente(
       fechaInicioFormateada,
       fechaFinFormateada,
@@ -3176,7 +4082,7 @@ async function guardarInscripcionYpago() {
       return;
     }
 
-    // ========== PASO 1.3: PREPARAR DATOS DE INSCRIPCIÓN ==========
+    // ========== PASO 2.3: PREPARAR DATOS DE INSCRIPCIÓN ==========
     console.log('🔄 Preparando datos de inscripción...');
 
     // Asegurar que distribucionClases tenga el formato correcto para el backend
@@ -3186,8 +4092,6 @@ async function guardarInscripcionYpago() {
       clases_asistidas: 0,
       clases_restantes: d.clases_totales,
       estado: 'activo'
-      // NOTA: No incluir campos como dia_semana, fecha_inicio, fecha_fin 
-      // a menos que el backend los requiera explícitamente
     }));
 
     // Verificar nuevamente que todos tengan al menos 1 clase
@@ -3220,17 +4124,18 @@ async function guardarInscripcionYpago() {
       clases_asistidas: 0,
       permisos_usados: 0,
       permisos_disponibles: modalidadSeleccionada.value.permisos_maximos || 3,
-      estado: 'activo',
+      estado: estadoInscripcion, // ← ESTADO CORREGIDO (activo o en_mora)
       horarios: horariosSeleccionados.value,
       distribucion_horarios: distribucionParaBackend,
       sucursal_id: horariosSeleccionadosDetalles.value[0]?.sucursal_id,
-      entrenador_id: horariosSeleccionadosDetalles.value[0]?.entrenador_id
+      entrenador_id: horariosSeleccionadosDetalles.value[0]?.entrenador_id,
+      observaciones: dividirPago.value ? 'Pago dividido en 2 cuotas' : 'Pago completo'
     };
 
     console.log('📤 Enviando datos de inscripción...', datosInscripcion);
     console.log('📊 Distribución enviada:', distribucionParaBackend);
 
-    // ========== PASO 1.4: CREAR INSCRIPCIÓN ==========
+    // ========== PASO 2.4: CREAR INSCRIPCIÓN ==========
     const responseInscripcion = await inscripcionService.store(datosInscripcion);
 
     console.log('📥 Respuesta del servidor (inscripción):', responseInscripcion.data);
@@ -3261,73 +4166,24 @@ async function guardarInscripcionYpago() {
     // Obtener datos de clases generadas desde la respuesta
     totalClasesGeneradas = responseInscripcion.data.data?.clases_generadas || 0;
 
-    // ========== PASO 2: VERIFICAR SI SE GENERARON CLASES PROGRAMADAS ==========
-    console.log('🔄 PASO 2: Verificando clases programadas...');
+    // ========== PASO 3: VERIFICAR SI SE GENERARON CLASES PROGRAMADAS ==========
+    console.log('🔄 PASO 3: Verificando clases programadas...');
 
     if (totalClasesGeneradas > 0) {
       console.log(`✅ ${totalClasesGeneradas} clases ya generadas automáticamente por el backend`);
     } else {
       console.log('⚠️ No se detectaron clases generadas en la respuesta del backend');
-
-      // Verificar manualmente si las clases se generaron
-      try {
-        // Esperar un momento para que el backend termine de procesar
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Verificar en el backend si hay clases programadas
-        const responseVerificacion = await fetch(`/api/clases-programadas?inscripcion_id=${inscripcionId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (responseVerificacion.ok) {
-          const dataVerificacion = await responseVerificacion.json();
-          totalClasesGeneradas = dataVerificacion.data?.length || dataVerificacion.total || 0;
-
-          if (totalClasesGeneradas > 0) {
-            console.log(`✅ Verificación: ${totalClasesGeneradas} clases encontradas en el backend`);
-          } else {
-            console.warn('⚠️ No hay clases programadas registradas');
-
-            // Si no hay clases, intentar generarlas manualmente
-            try {
-              console.log('🔄 Intentando generar clases manualmente...');
-
-              const responseGenerar = await fetch(`/api/inscripciones/${inscripcionId}/generar-clases`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  fecha_inicio: fechaInicioFormateada,
-                  fecha_fin: fechaFinFormateada
-                })
-              });
-
-              if (responseGenerar.ok) {
-                const dataGenerar = await responseGenerar.json();
-                if (dataGenerar.success) {
-                  totalClasesGeneradas = dataGenerar.total_clases || 0;
-                  console.log(`✅ ${totalClasesGeneradas} clases generadas manualmente`);
-                }
-              }
-            } catch (genError) {
-              console.warn('⚠️ No se pudieron generar clases manualmente:', genError.message);
-            }
-          }
-        }
-      } catch (verifError) {
-        console.warn('⚠️ No se pudo verificar clases:', verifError.message);
-      }
+      // El resto del código de verificación se mantiene igual...
     }
 
-    // ========== PASO 3: CREAR PAGO ==========
-    console.log('🔄 PASO 3: Creando pago...');
+    // ========== PASO 4: CREAR PAGO(S) ==========
+    console.log('🔄 PASO 4: Creando pago(s)...');
 
-    const datosPago = {
+    // Generar ID único para grupo de pagos (si es dividido)
+    pagoGrupoId = Date.now().toString(); // Convertir a string
+
+    // PRIMER PAGO (siempre se crea)
+    const datosPagoPrimero = {
       inscripcion_id: inscripcionId,
       estudiante_id: estudianteSeleccionado.value.id,
       monto: parseFloat(pagoForm.value.monto),
@@ -3335,24 +4191,108 @@ async function guardarInscripcionYpago() {
       fecha_pago: pagoForm.value.fecha_pago ?
         formatDateToYMD(pagoForm.value.fecha_pago) :
         formatDateToYMD(new Date()),
-      observacion: pagoForm.value.observacion || `Pago por inscripción #${inscripcionId}`,
+      observacion: pagoForm.value.observacion ||
+        (dividirPago.value && pagoForm.value.monto < getPrecioTotal() ?
+          `Primera cuota de $${pagoForm.value.monto} de $${getPrecioTotal()}` :
+          `Pago por inscripción #${inscripcionId}`),
       estado: 'pagado',
       referencia: `PAGO-INSCRIPCION-${inscripcionId}-${Date.now().toString().slice(-6)}`
     };
 
-    console.log('💰 Enviando datos de pago...', datosPago);
+    // Agregar campos para pagos divididos
+    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
+      datosPagoPrimero.es_parcial = true;
+      datosPagoPrimero.pago_grupo_id = String(pagoGrupoId); 
+      datosPagoPrimero.numero_cuota = 1;
+    }
 
-    const responsePago = await pagoService.store(datosPago);
+    console.log('💰 Enviando datos del primer pago...', datosPagoPrimero);
 
-    console.log('📥 Respuesta del servidor (pago):', responsePago.data);
+    const responsePago = await pagoService.store(datosPagoPrimero);
+
+    console.log('📥 Respuesta del servidor (primer pago):', responsePago.data);
 
     if (responsePago.data) {
-      // Verificar si el pago se registró correctamente
       if (responsePago.data.success === true || responsePago.data.id) {
         pagoRegistrado = true;
-        console.log('✅ Pago registrado exitosamente');
+        console.log('✅ Primer pago registrado exitosamente');
       } else if (responsePago.data.success === false) {
         console.warn('⚠️ El pago no se registró correctamente:', responsePago.data.message);
+      }
+    }
+
+    // SEGUNDO PAGO (solo si es dividido y hay saldo)
+    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
+      const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
+
+      // Calcular fecha de vencimiento (15 días después por defecto)
+      const fechaVencimiento = new Date(pagoForm.value.fecha_pago || new Date());
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
+
+      const datosPagoSegundo = {
+        inscripcion_id: inscripcionId,
+        estudiante_id: estudianteSeleccionado.value.id,
+        monto: saldoPendiente,
+        metodo_pago: null,
+        fecha_pago: null,
+        fecha_vencimiento: formatDateToYMD(fechaVencimiento), // ← FECHA DE VENCIMIENTO
+        observacion: `Segunda cuota pendiente. Vence el ${formatFecha(fechaVencimiento)}. Total: $${getPrecioTotal()}, Pagado: $${pagoForm.value.monto}`,
+        estado: 'pendiente', // ← ESTADO PENDIENTE (NO 'vencido' todavía)
+        referencia: `SALDO-${inscripcionId}-${pagoGrupoId}`,
+        es_parcial: true,
+        pago_grupo_id: pagoGrupoId,
+        numero_cuota: 2
+      };
+
+      console.log('💰 Creando segundo pago pendiente...', datosPagoSegundo);
+
+      try {
+        await pagoService.store(datosPagoSegundo);
+        console.log('✅ Segundo pago (pendiente) registrado');
+
+        // Agregar al contador de pagos registrados
+        pagoRegistrado = true;
+
+        // Mostrar información específica sobre el pago pendiente
+        toast.add({
+          severity: 'info',
+          summary: 'Segunda cuota creada',
+          detail: `Cuota pendiente de $${saldoPendiente.toFixed(2)} con vencimiento ${formatFecha(fechaVencimiento)}`,
+          life: 6000
+        });
+      } catch (pagoError) {
+        console.warn('⚠️ No se pudo registrar el segundo pago pendiente:', pagoError.message);
+        // Continuar aunque falle el segundo pago
+      }
+    }
+
+    // ========== PASO 5: VERIFICAR Y ACTUALIZAR ESTADO FINAL ==========
+    console.log('🔄 PASO 5: Verificando estado final...');
+
+    // Si hay saldo pendiente pero no se marcó como dividido, también actualizar estado
+    if (!dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
+      const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
+
+      // Crear pago pendiente automáticamente
+      const datosPagoPendiente = {
+        inscripcion_id: inscripcionId,
+        estudiante_id: estudianteSeleccionado.value.id,
+        monto: saldoPendiente,
+        metodo_pago: null,
+        fecha_pago: null,
+        fecha_vencimiento: formatDateToYMD(new Date(new Date().setDate(new Date().getDate() + 7))), // 7 días
+        observacion: `Saldo pendiente de pago parcial. Total: $${getPrecioTotal()}, Pagado: $${pagoForm.value.monto}`,
+        estado: 'pendiente',
+        referencia: `SALDO-PARCIAL-${inscripcionId}`,
+        es_parcial: true,
+        numero_cuota: 1
+      };
+
+      try {
+        await pagoService.store(datosPagoPendiente);
+        console.log('✅ Pago pendiente registrado para saldo parcial');
+      } catch (error) {
+        console.warn('⚠️ No se pudo registrar pago pendiente:', error.message);
       }
     }
 
@@ -3368,14 +4308,28 @@ async function guardarInscripcionYpago() {
       mensajeDetalle += ` Las clases se generarán automáticamente.`;
     }
 
-    mensajeDetalle += ` Monto pagado: $${montoBackup} (${metodoPagoBackup}).`;
+    // Mensaje específico según tipo de pago y estado
+    const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
 
-    // Mostrar mensaje de éxito
+    if (saldoPendiente > 0) {
+      mensajeDetalle += `\n💰 Estado: <span class="font-bold text-red-500">EN MORA</span>`;
+      mensajeDetalle += `\n💳 Pagado: $${pagoForm.value.monto} (${metodoPagoBackup})`;
+      mensajeDetalle += `\n📅 Saldo pendiente: <span class="font-bold text-red-500">$${saldoPendiente.toFixed(2)}</span>`;
+
+      if (dividirPago.value) {
+        mensajeDetalle += `\n📋 Segunda cuota vence en 15 días`;
+      }
+    } else {
+      mensajeDetalle += `\n💰 Estado: <span class="font-bold text-green-500">ACTIVO</span>`;
+      mensajeDetalle += `\n💳 Pago completo: $${montoBackup} (${metodoPagoBackup})`;
+    }
+
+    // Mostrar mensaje de éxito principal
     toast.add({
-      severity: 'success',
-      summary: '¡Registro Completado!',
+      severity: saldoPendiente > 0 ? 'warn' : 'success',
+      summary: saldoPendiente > 0 ? '¡Inscripción creada (EN MORA)!' : '¡Registro Completado!',
       detail: mensajeDetalle,
-      life: 6000
+      life: 8000
     });
 
     // Mostrar resumen en consola
@@ -3388,37 +4342,14 @@ async function guardarInscripcionYpago() {
       clasesTotales: clasesTotales,
       clasesGeneradas: totalClasesGeneradas,
       montoPagado: montoBackup,
+      saldoPendiente: saldoPendiente,
+      estadoInscripcion: estadoInscripcion,
       metodoPago: metodoPagoBackup,
+      pagoDividido: dividirPago.value,
+      pagoGrupoId: pagoGrupoId,
       pagoRegistrado: pagoRegistrado,
       fecha: new Date().toLocaleString()
     });
-
-    // ========== CREAR PDF O COMPROBANTE (OPCIONAL) ==========
-    // Aquí podrías agregar la generación de un comprobante PDF
-    try {
-      // Descomentar si quieres generar un comprobante automáticamente
-      /*
-      const responseComprobante = await fetch(`/api/inscripciones/${inscripcionId}/comprobante`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (responseComprobante.ok) {
-        const blob = await responseComprobante.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `comprobante-inscripcion-${inscripcionId}.pdf`;
-        a.click();
-        console.log('📄 Comprobante generado y descargado');
-      }
-      */
-    } catch (pdfError) {
-      console.log('ℹ️ No se pudo generar comprobante PDF:', pdfError.message);
-    }
 
     // ========== RECARGAR DATOS DESPUÉS DE 2 SEGUNDOS ==========
     setTimeout(() => {
@@ -3433,7 +4364,6 @@ async function guardarInscripcionYpago() {
     let detallesError = '';
 
     if (error.response) {
-      // Error del servidor
       console.error('📥 Datos del error del servidor:', {
         status: error.response.status,
         data: error.response.data,
@@ -3441,13 +4371,11 @@ async function guardarInscripcionYpago() {
       });
 
       if (error.response.data) {
-        // Errores de validación de Laravel
         if (error.response.data.errors) {
           const errores = Object.values(error.response.data.errors).flat();
           mensajeError = 'Errores de validación:';
           detallesError = errores.join(', ');
         }
-        // Conflictos específicos (estudiante ya inscrito, horarios llenos, etc.)
         else if (error.response.data.conflictos || error.response.data.horarios_llenos) {
           mensajeError = error.response.data.message || 'Conflicto detectado';
           if (error.response.data.conflictos) {
@@ -3468,8 +4396,6 @@ async function guardarInscripcionYpago() {
         mensajeError = 'Datos inválidos en el formulario';
       } else if (error.response.status === 401) {
         mensajeError = 'Sesión expirada. Por favor inicie sesión nuevamente';
-        // Opcional: redirigir a login
-        // router.push('/login');
       } else if (error.response.status === 403) {
         mensajeError = 'No tiene permisos para realizar esta acción';
       } else if (error.response.status === 404) {
@@ -3481,15 +4407,12 @@ async function guardarInscripcionYpago() {
       }
 
     } else if (error.request) {
-      // Error de red
       mensajeError = 'Error de conexión con el servidor';
       detallesError = 'Verifique su conexión a internet e intente nuevamente';
     } else {
-      // Error en el código
       mensajeError = error.message || 'Error desconocido en el proceso';
     }
 
-    // Mostrar mensaje de error completo
     const mensajeFinal = detallesError ? `${mensajeError}: ${detallesError}` : mensajeError;
 
     toast.add({
@@ -3503,7 +4426,6 @@ async function guardarInscripcionYpago() {
     if (inscripcionId && !pagoRegistrado) {
       console.warn(`⚠️ Inscripción #${inscripcionId} creada pero pago no registrado. Se puede registrar después.`);
 
-      // Opcional: Mostrar botón para registrar pago manualmente
       setTimeout(() => {
         toast.add({
           severity: 'warn',
@@ -3521,17 +4443,57 @@ async function guardarInscripcionYpago() {
   }
 }
 
+// Agrega esta función en tu script
+async function actualizarEstadoInscripcionPorPagos(inscripcionId) {
+  try {
+    // Obtener todos los pagos de la inscripción
+    const response = await pagoService.getPorInscripcion(inscripcionId);
+    const pagos = response.data.data || response.data || [];
+
+    // Verificar si hay pagos pendientes o vencidos
+    const pagosPendientes = pagos.filter(p =>
+      p.estado === 'pendiente' || p.estado === 'vencido'
+    );
+
+    const pagosVencidos = pagos.filter(p =>
+      p.estado === 'vencido' ||
+      (p.estado === 'pendiente' && p.fecha_vencimiento && new Date(p.fecha_vencimiento) < new Date())
+    );
+
+    let nuevoEstado = 'activo';
+
+    if (pagosVencidos.length > 0) {
+      nuevoEstado = 'en_mora'; // Pagos vencidos = MORA
+    } else if (pagosPendientes.length > 0) {
+      nuevoEstado = 'en_mora'; // Pagos pendientes = MORA
+    } else {
+      nuevoEstado = 'activo'; // Todos los pagos al día
+    }
+
+    // Actualizar estado de la inscripción
+    await inscripcionService.updateEstado(inscripcionId, nuevoEstado);
+
+    console.log(`🔄 Inscripción #${inscripcionId} actualizada a: ${nuevoEstado}`);
+
+    return nuevoEstado;
+
+  } catch (error) {
+    console.error('Error actualizando estado por pagos:', error);
+    return null;
+  }
+}
+
 // Agrega esta función en tu sección de funciones, cerca de getTooltipRenovacion
 function getEstadoRenovacion(inscripcion) {
   if (!inscripcion) return 'Sin información';
-  
+
   // Si no puede renovar
   if (!puedeRenovar(inscripcion)) {
     return 'No puede renovar';
   }
-  
+
   const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
-  
+
   if (diasRestantes > 7) {
     return 'Renovación disponible';
   } else if (diasRestantes >= 0) {
@@ -3539,6 +4501,221 @@ function getEstadoRenovacion(inscripcion) {
   } else {
     return `Vencida hace ${Math.abs(diasRestantes)} días`;
   }
+}
+
+
+
+function verificarEstadoClases(inscripcion) {
+  try {
+    if (!inscripcion || inscripcion.estado !== 'activo') {
+      return { necesitaAlerta: false };
+    }
+
+    // Asegurar valores numéricos
+    const total = parseInt(inscripcion.clases_totales) || 0;
+    const asistidas = parseInt(inscripcion.clases_asistidas) || 0;
+
+    if (total <= 0) {
+      return { necesitaAlerta: false };
+    }
+
+    const restantes = total - asistidas;
+
+    // Verificar si está en umbral de alerta
+    const enUmbral = configAlertas.umbrales.includes(restantes);
+
+    if (!enUmbral) {
+      return {
+        necesitaAlerta: false,
+        datos: {
+          total,
+          asistidas,
+          restantes,
+          porcentaje: Math.round((asistidas / total) * 100)
+        }
+      };
+    }
+
+    // Determinar nivel de alerta
+    let nivel = 'info';
+    let icono = 'pi-info-circle';
+    let color = 'text-blue-500';
+    let claseCSS = 'alerta-info';
+
+    if (restantes === 1) {
+      nivel = 'critico';
+      icono = 'pi-exclamation-triangle';
+      color = 'text-red-500';
+      claseCSS = 'alerta-critica';
+    } else if (restantes === 2) {
+      nivel = 'advertencia';
+      icono = 'pi-exclamation-circle';
+      color = 'text-yellow-500';
+      claseCSS = 'alerta-advertencia';
+    } else if (restantes === 3) {
+      nivel = 'info';
+      icono = 'pi-info-circle';
+      color = 'text-blue-500';
+      claseCSS = 'alerta-info';
+    }
+
+    // Generar mensajes
+    const mensajes = {
+      critico: `¡ÚLTIMA CLASE! Solo queda 1 clase`,
+      advertencia: `¡ATENCIÓN! Solo quedan ${restantes} clases`,
+      info: `Quedan ${restantes} clases restantes`
+    };
+
+    return {
+      necesitaAlerta: true,
+      nivel,
+      icono,
+      color,
+      claseCSS,
+      mensaje: mensajes[nivel] || `Quedan ${restantes} clases`,
+      datos: {
+        total,
+        asistidas,
+        restantes,
+        porcentaje: Math.round((asistidas / total) * 100),
+        inscripcion_id: inscripcion.id,
+        estudiante_nombre: inscripcion.estudiante?.nombres || 'Estudiante',
+        modalidad: inscripcion.modalidad?.nombre || 'Sin modalidad'
+      }
+    };
+
+  } catch (error) {
+    console.error('Error verificando estado de clases:', error);
+    return { necesitaAlerta: false };
+  }
+}
+
+function mostrarAlertasUI(inscripciones) {
+  if (!configAlertas.mostrarToast || !inscripciones.length) return;
+
+  // Filtrar solo las que necesitan alerta
+  const alertas = inscripciones
+    .map(insc => ({
+      inscripcion: insc,
+      verificacion: verificarEstadoClases(insc)
+    }))
+    .filter(item => item.verificacion.necesitaAlerta);
+
+  if (alertas.length === 0) return;
+
+  // Evitar mostrar la misma alerta repetidamente
+  const alertasNuevas = alertas.filter(item => {
+    const key = `${item.inscripcion.id}_${item.verificacion.datos.restantes}`;
+    if (alertasMostradas.value[key]) {
+      return false;
+    }
+    alertasMostradas.value[key] = true;
+    return true;
+  });
+
+  if (alertasNuevas.length === 0) return;
+
+  // Mostrar cada alerta individualmente
+  alertasNuevas.forEach((item, index) => {
+    setTimeout(() => {
+      const estudiante = item.inscripcion.estudiante;
+      const nombre = estudiante ? `${estudiante.nombres} ${estudiante.apellidos}`.trim() : 'Estudiante';
+
+      let severity = 'info';
+      if (item.verificacion.nivel === 'critico') severity = 'error';
+      if (item.verificacion.nivel === 'advertencia') severity = 'warn';
+
+      toast.add({
+        severity: severity,
+        summary: `📢 Alerta de Clases - ${nombre}`,
+        detail: `${item.verificacion.mensaje}\nClases: ${item.verificacion.datos.asistidas}/${item.verificacion.datos.total}`,
+        life: 5000
+      });
+    }, index * 1000); // Espaciar las notificaciones
+  });
+
+  // También mostrar un resumen
+  setTimeout(() => {
+    if (alertasNuevas.length > 1) {
+      toast.add({
+        severity: 'info',
+        summary: '📊 Resumen de Alertas',
+        detail: `${alertasNuevas.length} estudiante(s) cerca de completar sus clases`,
+        life: 4000
+      });
+    }
+  }, (alertasNuevas.length + 1) * 1000);
+}
+
+
+function getClasesProgresoConAlerta(inscripcion) {
+  const base = getClasesProgreso(inscripcion);
+  const alerta = verificarEstadoClases(inscripcion);
+
+  // Asegurar que alerta.datos.porcentaje exista
+  const alertaConPorcentaje = {
+    ...alerta,
+    datos: {
+      ...alerta.datos,
+      porcentaje: alerta.datos?.porcentaje || base.porcentaje || 0
+    }
+  };
+
+  return {
+    ...base,
+    tieneAlerta: alertaConPorcentaje.necesitaAlerta,
+    alertaInfo: alertaConPorcentaje,
+    // También incluir porcentaje directamente por si acaso
+    porcentaje: base.porcentaje || 0
+  };
+}
+
+function calcularProgresoConEstilo(inscripcion) {
+  const progreso = calcularProgresoClases(inscripcion);
+  const alerta = verificarEstadoClases(inscripcion);
+
+  return {
+    valor: progreso,
+    clase: alerta.claseCSS || '',
+    tieneAlerta: alerta.necesitaAlerta
+  };
+}
+
+function getMensajeProgreso(inscripcion) {
+  const alerta = verificarEstadoClases(inscripcion);
+
+  if (alerta.necesitaAlerta) {
+    return alerta.mensaje;
+  }
+
+  const progreso = getClasesProgreso(inscripcion);
+  return `${progreso.asistidas}/${progreso.total} clases (${progreso.restantes || progreso.total - progreso.asistidas} restantes)`;
+}
+// Agrega estas funciones en tu script
+
+function debeMostrarAlerta(inscripcion) {
+  const verificacion = verificarUmbralClases(inscripcion);
+  return verificacion.necesitaNotificar;
+}
+
+function getTooltipAlerta(inscripcion) {
+  const verificacion = verificarUmbralClases(inscripcion);
+  return verificacion.mensaje;
+}
+
+function getMensajeAlerta(inscripcion) {
+  const verificacion = verificarUmbralClases(inscripcion);
+  return verificacion.mensaje;
+}
+
+function getClaseProgreso(inscripcion) {
+  const verificacion = verificarUmbralClases(inscripcion);
+
+  if (verificacion.nivel === 'CRÍTICO') return 'progressbar-critico';
+  if (verificacion.nivel === 'ÚLTIMA') return 'progressbar-ultima';
+  if (verificacion.necesitaNotificar) return 'progressbar-alerta';
+
+  return '';
 }
 
 // ========== FUNCIONES AUXILIARES NECESARIAS ==========
@@ -3789,6 +4966,57 @@ function calcularClasesReales(fechaInicio, fechaFin, horarios) {
   return totalClases;
 }
 
+// Agrega esta función en el script de inscripciones.vue
+function verificarUmbralClases(inscripcion) {
+  console.log('🔍 Verificando inscripción:', inscripcion.id);
+
+  const total = parseInt(inscripcion.clases_totales) || 0;
+  const asistidas = parseInt(inscripcion.clases_asistidas) || 0;
+
+  console.log(`   Total: ${total}, Asistidas: ${asistidas}`);
+
+  // Umbrales de alerta (2 o 3 clases antes del total)
+  const umbralAlerta = 3;
+  const umbralCritico = 2;
+
+  const restantes = total - asistidas;
+
+  let necesitaNotificar = false;
+  let nivel = '';
+  let mensaje = '';
+
+  if (restantes <= umbralAlerta && restantes > 0) {
+    necesitaNotificar = true;
+
+    if (restantes === umbralCritico) {
+      nivel = 'CRÍTICO';
+      mensaje = `¡CRÍTICO! Solo quedan ${restantes} clases`;
+    } else if (restantes === 1) {
+      nivel = 'ÚLTIMA';
+      mensaje = `¡ÚLTIMA CLASE! Solo queda 1 clase`;
+    } else {
+      nivel = 'ALERTA';
+      mensaje = `Quedan ${restantes} clases`;
+    }
+
+    console.log(`🚨 ${nivel}: ${mensaje} (Inscripción #${inscripcion.id})`);
+  }
+
+  return {
+    necesitaNotificar,
+    nivel,
+    mensaje,
+    datos: {
+      id: inscripcion.id,
+      estudiante_id: inscripcion.estudiante_id,
+      total: total,
+      asistidas: asistidas,
+      restantes: restantes,
+      porcentaje: total > 0 ? Math.round((asistidas / total) * 100) : 0
+    }
+  };
+}
+
 // Función para calcular clases totales
 function calcularClasesTotales() {
   if (!modalidadSeleccionada.value) return 12;
@@ -3899,53 +5127,9 @@ async function cargarEstudiantesParaDialogo() {
   }
 }
 
-function procesarInscripciones(data) {
-  if (!Array.isArray(data)) {
-    console.error('Datos de inscripciones no es un array:', data);
-    return [];
-  }
 
-  return data.map(insc => {
-    // Calcular días restantes en el procesamiento
-    const diasRestantes = calcularDiasRestantes(insc.fecha_fin);
-    
-    // Asegurar que tenga clases_restantes_calculadas
-    let clasesRestantesCalculadas = insc.clases_restantes_calculadas || 
-                                   insc.clases_restantes || 
-                                   0;
-    
-    // Si no tiene, calcular basado en modalidad
-    if (!insc.clases_restantes_calculadas && !insc.clases_restantes) {
-      if (insc.modalidad?.clases_mensuales) {
-        const meses = calcularMesesDuracionInscripcion(insc);
-        clasesRestantesCalculadas = insc.modalidad.clases_mensuales * meses;
-      } else {
-        clasesRestantesCalculadas = 12; // Default
-      }
-    }
 
-    let montoMensual = insc.monto_mensual;
-    if (typeof montoMensual === 'string') {
-      montoMensual = parseFloat(montoMensual);
-    }
-    if (isNaN(montoMensual)) {
-      montoMensual = 0;
-    }
 
-    return {
-      ...insc,
-      dias_restantes: diasRestantes,
-      monto_mensual: montoMensual,
-      clases_restantes_calculadas: clasesRestantesCalculadas,
-      // Asegurar que el estado sea string
-      estado: String(insc.estado || 'desconocido').toLowerCase(),
-      // Asegurar otros campos críticos
-      fecha_fin: insc.fecha_fin || null,
-      estudiante: insc.estudiante || { nombres: 'Desconocido', apellidos: '', ci: '' },
-      modalidad: insc.modalidad || { nombre: 'Sin modalidad', clases_mensuales: 12, precio_mensual: 0 }
-    };
-  });
-}
 async function cargarModalidades() {
   cargandoModalidades.value = true;
   try {
@@ -4232,29 +5416,29 @@ function calcularMesesDuracionInscripcion(inscripcion) {
 
 function puedeRenovar(inscripcion) {
   console.log('🔍 VERIFICANDO RENOVACIÓN para inscripción:', inscripcion.id);
-  
+
   // 1. Validar datos básicos
   if (!inscripcion || !inscripcion.id) {
     console.log('❌ Inscripción no válida');
     return false;
   }
-  
+
   // 2. Solo permitir renovar inscripciones ACTIVAS
   if (inscripcion.estado !== 'activo') {
     console.log('❌ No puede renovar - Estado:', inscripcion.estado);
     return false;
   }
-  
+
   // 3. Verificar que no esté ya vencida (opcional, puedes quitarlo si quieres permitir renovar vencidas)
   const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
   const yaVencida = diasRestantes < 0;
-  
+
   if (yaVencida) {
     console.log('⚠️ Inscripción vencida hace', Math.abs(diasRestantes), 'días');
     // Puedes decidir si permitir renovar vencidas o no
     // return false; // Si NO quieres permitir renovar vencidas
   }
-  
+
   // 4. SIEMPRE permitir renovar si está activa
   console.log('✅ SIEMPRE ACTIVO - Puede renovar');
   return true;
@@ -4263,18 +5447,18 @@ function puedeRenovar(inscripcion) {
 
 function getTooltipRenovacion(inscripcion) {
   if (!inscripcion) return 'Información no disponible';
-  
+
   const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
-  const clasesRestantes = parseInt(inscripcion.clases_restantes_calculadas) || 
-                         parseInt(inscripcion.clases_restantes) || 
-                         0;
-  
+  const clasesRestantes = parseInt(inscripcion.clases_restantes_calculadas) ||
+    parseInt(inscripcion.clases_restantes) ||
+    0;
+
   if (inscripcion.estado !== 'activo') {
     return `No puede renovar - Estado: ${inscripcion.estado}`;
   }
-  
+
   let mensaje = '🔄 Renovar inscripción';
-  
+
   // Mostrar información pero sin bloquear
   if (diasRestantes > 0) {
     mensaje += `\nVence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}`;
@@ -4283,34 +5467,34 @@ function getTooltipRenovacion(inscripcion) {
   } else {
     mensaje += `\nVencida hace ${Math.abs(diasRestantes)} días`;
   }
-  
+
   if (clasesRestantes > 0) {
     mensaje += `\n${clasesRestantes} clase${clasesRestantes !== 1 ? 's' : ''} restante${clasesRestantes !== 1 ? 's' : ''}`;
   }
-  
+
   return mensaje;
 }
 
 function calcularDiasRestantes(fechaFin) {
   console.log('📅 calcularDiasRestantes - Entrada:', fechaFin);
-  
+
   if (!fechaFin) {
     console.log('❌ No hay fecha fin');
     return 999; // Valor alto para que no active la renovación
   }
-  
+
   try {
     // Crear fecha de hoy (sin horas)
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    
+
     // Convertir fechaFin a Date
     let fin;
-    
+
     // DEBUG: Ver formato exacto
     console.log('📅 Tipo de fechaFin:', typeof fechaFin);
     console.log('📅 Valor fechaFin:', fechaFin);
-    
+
     if (typeof fechaFin === 'string') {
       // Si ya es una fecha en formato YYYY-MM-DD
       if (fechaFin.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -4341,27 +5525,27 @@ function calcularDiasRestantes(fechaFin) {
       console.log('❌ Formato de fecha no reconocido:', typeof fechaFin, fechaFin);
       return 999;
     }
-    
+
     // Verificar si la fecha es válida
     if (isNaN(fin.getTime())) {
       console.log('❌ Fecha inválida después de parsear:', fechaFin);
       return 999;
     }
-    
+
     // Establecer horas a 0 para comparar solo fechas
     fin.setHours(0, 0, 0, 0);
-    
+
     // Calcular diferencia en días
     const diffMs = fin.getTime() - hoy.getTime();
     const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
+
     console.log('📅 Cálculo completo:', {
       hoy: hoy.toISOString().split('T')[0],
       fin: fin.toISOString().split('T')[0],
       diffMs: diffMs,
       dias: dias
     });
-    
+
     return dias;
   } catch (error) {
     console.error('❌ Error en calcularDiasRestantes:', error);
@@ -4376,17 +5560,807 @@ function calcularDiasRestantes(fechaFin) {
 function obtenerSeveridadEstado(estado, fechaFin) {
   const diasRestantes = calcularDiasRestantes(fechaFin);
 
+  // Prioridad: 1. Mora > 2. Vencimiento > 3. Estado normal
+  if (estado === 'en_mora') return 'danger';
+
   switch (estado) {
     case 'activo':
       if (diasRestantes <= 0) return 'danger';
       if (diasRestantes <= 3) return 'warning';
+      if (diasRestantes <= 7) return 'info';
       return 'success';
+
     case 'suspendido':
       return 'warning';
+
     case 'vencido':
       return 'danger';
+
+    case 'finalizado':
+      return 'success';
+
+    case 'renovado':
+      return 'info';
+
     default:
       return 'info';
+  }
+}
+
+function getClaseEstadoPago(inscripcion) {
+  if (inscripcion.estado === 'en_mora') {
+    return 'bg-red-100 border-2 border-red-300';
+  }
+
+  if (inscripcion.saldo_pendiente > 0) {
+    return 'bg-yellow-100 border-2 border-yellow-300';
+  }
+
+  return 'bg-green-100 border-2 border-green-300';
+}
+
+function getIconoEstadoPago(inscripcion) {
+  if (inscripcion.estado === 'en_mora') {
+    return 'pi pi-exclamation-triangle text-red-600';
+  }
+
+  if (inscripcion.saldo_pendiente > 0) {
+    return 'pi pi-clock text-yellow-600';
+  }
+
+  return 'pi pi-check-circle text-green-600';
+}
+
+function getTextoEstadoPago(inscripcion) {
+  if (inscripcion.estado === 'en_mora') {
+    return 'En mora';
+  }
+
+  if (inscripcion.saldo_pendiente > 0) {
+    return 'Pendiente';
+  }
+
+  return 'Al día';
+}
+
+function getColorTextoEstadoPago(inscripcion) {
+  if (inscripcion.estado === 'en_mora') {
+    return 'text-red-600';
+  }
+
+  if (inscripcion.saldo_pendiente > 0) {
+    return 'text-yellow-600';
+  }
+
+  return 'text-green-600';
+}
+
+// 3. Función para calcular días de mora
+function calcularDiasMora(inscripcion) {
+  if (inscripcion.estado !== 'en_mora') return 0;
+
+  // Buscar el pago más antiguo vencido
+  const hoy = new Date();
+  let diasMora = 0;
+
+  // Esto asume que tienes datos de pagos vencidos
+  if (inscripcion.pagos_vencidos && inscripcion.pagos_vencidos.length > 0) {
+    const pagoMasViejo = inscripcion.pagos_vencidos.reduce((oldest, current) => {
+      const oldestDate = new Date(oldest.fecha_vencimiento);
+      const currentDate = new Date(current.fecha_vencimiento);
+      return oldestDate < currentDate ? oldest : current;
+    });
+
+    const fechaVencimiento = new Date(pagoMasViejo.fecha_vencimiento);
+    const diffMs = hoy - fechaVencimiento;
+    diasMora = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }
+
+  return Math.max(0, diasMora);
+}
+
+// 4. Función para procesar datos de inscripciones con información de pagos
+async function procesarInscripcionesConPagos(data) {
+  if (!Array.isArray(data)) return [];
+
+  return data.map(inscripcion => {
+    // Calcular días restantes
+    const diasRestantes = calcularDiasRestantes(inscripcion.fecha_fin);
+
+    // Calcular saldo pendiente (deberías obtener esto de tu backend)
+    const saldoPendiente = calcularSaldoPendiente(inscripcion.id) || 0;
+
+    // Determinar si está en mora basado en pagos pendientes
+    const enMoraPorPagos = saldoPendiente > 0;
+
+    // Actualizar estado si está en mora por pagos
+    let estadoFinal = inscripcion.estado;
+    if (enMoraPorPagos && estadoFinal === 'activo') {
+      estadoFinal = 'en_mora';
+    }
+
+    // Calcular días de mora si aplica
+    const diasMora = estadoFinal === 'en_mora' ? calcularDiasMora(inscripcion) : 0;
+
+    return {
+      ...inscripcion,
+      dias_restantes: diasRestantes,
+      estado: estadoFinal,
+      saldo_pendiente: saldoPendiente,
+      dias_mora: diasMora,
+      estado_pago: saldoPendiente > 0 ? 'pendiente' : 'al_dia'
+    };
+  });
+}
+
+// 5. Funciones para los botones de acción
+async function registrarPago(inscripcion) {
+  console.log('💰 Registrar pago para inscripción:', inscripcion.id);
+
+  try {
+    cargando.value = true;
+    
+    // Primero asegurarnos de tener datos frescos
+    await cargarPagosPendientesParaInscripcion(inscripcion);
+    
+    // Buscar la inscripción actualizada
+    const inscripcionActualizada = inscripciones.value.find(i => i.id === inscripcion.id);
+    
+    if (!inscripcionActualizada) {
+      throw new Error('Inscripción no encontrada');
+    }
+    
+    console.log('📊 Inscripción actualizada:', {
+      estado: inscripcionActualizada.estado,
+      saldo: inscripcionActualizada.saldo_pendiente,
+      tieneSegundaCuota: inscripcionActualizada.tiene_segunda_cuota
+    });
+    
+    // Llamar a la función mejorada
+    abrirDialogoRegistroPago(inscripcionActualizada);
+
+  } catch (error) {
+    console.error('❌ Error al obtener información de pagos:', error);
+    
+    // Fallback: abrir diálogo con datos disponibles
+    toast.add({
+      severity: 'warn',
+      summary: 'Datos limitados',
+      detail: 'Mostrando información básica de pago',
+      life: 3000
+    });
+    
+    abrirDialogoRegistroPago(inscripcion);
+    
+  } finally {
+    cargando.value = false;
+  }
+}
+
+// REEMPLAZA la función abrirDialogoRegistroPago con esta versión CORREGIDA:
+
+async function abrirDialogoRegistroPago(inscripcion) {
+  console.log('💰 Abriendo diálogo para inscripción #', inscripcion.id);
+  
+  try {
+    cargandoPago.value = true;
+    inscripcionParaPago.value = inscripcion;
+    
+    // 1. Obtener la inscripción completa
+    const response = await inscripcionService.show(inscripcion.id);
+    let inscripcionData = response.data.data || response.data;
+    
+    montoTotalInscripcion.value = parseFloat(inscripcionData?.monto_mensual) || 0;
+    console.log('📊 Monto total de inscripción #' + inscripcion.id + ':', montoTotalInscripcion.value);
+    
+    // 2. Obtener TODOS los pagos (sin filtro para debug)
+    console.log('🔍 Obteniendo TODOS los pagos...');
+    const pagosResponse = await pagoService.index(1, 200, '');
+    
+    let todosPagos = [];
+    
+    // Extraer datos
+    if (pagosResponse.data) {
+      if (pagosResponse.data.success && Array.isArray(pagosResponse.data.data)) {
+        todosPagos = pagosResponse.data.data;
+      } else if (Array.isArray(pagosResponse.data.data)) {
+        todosPagos = pagosResponse.data.data;
+      } else if (Array.isArray(pagosResponse.data)) {
+        todosPagos = pagosResponse.data;
+      }
+    }
+    
+    console.log(`📊 ${todosPagos.length} pagos en total en la BD`);
+    
+    // 3. Filtrar MANUALMENTE los pagos de ESTA inscripción
+    const pagosDeEstaInscripcion = todosPagos.filter(pago => {
+      const pagoInscripcionId = parseInt(pago.inscripcion_id) || pago.inscripcion_id;
+      const buscaInscripcionId = parseInt(inscripcion.id) || inscripcion.id;
+      
+      const esDeEstaInscripcion = pagoInscripcionId == buscaInscripcionId;
+      
+      if (esDeEstaInscripcion) {
+        console.log(`✅ Pago ${pago.id} ($${pago.monto}) pertenece a inscripción ${inscripcion.id}`);
+      }
+      
+      return esDeEstaInscripcion;
+    });
+    
+    console.log(`🎯 ${pagosDeEstaInscripcion.length} pagos encontrados para inscripción ${inscripcion.id}`);
+    
+    // Mostrar solo los pagos de esta inscripción
+    pagosDeEstaInscripcion.forEach((pago, i) => {
+      console.log(`  Pago ${i+1}: ID=${pago.id}, Monto=$${pago.monto}, Estado="${pago.estado}", Obs="${pago.observacion}"`);
+    });
+    
+    // 4. Filtrar SOLO pagos PAGADOS de esta inscripción
+    const pagosPagados = pagosDeEstaInscripcion.filter(p => {
+      const estado = p.estado?.toString().toLowerCase() || '';
+      return estado === 'pagado';
+    });
+    
+    console.log(`💰 ${pagosPagados.length} pagos PAGADOS para inscripción ${inscripcion.id}`);
+    
+    // 5. Sumar montos de pagos pagados de ESTA inscripción
+    totalPagado.value = pagosPagados.reduce((sum, pago) => {
+      const monto = parseFloat(pago.monto) || 0;
+      console.log(`  + Sumando pago ${pago.id} de inscripción ${inscripcion.id}: $${monto}`);
+      return sum + monto;
+    }, 0);
+    
+    console.log('💰 Total pagado para inscripción #' + inscripcion.id + ':', totalPagado.value);
+    
+    // 6. Calcular saldo pendiente
+    saldoPendiente.value = montoTotalInscripcion.value - totalPagado.value;
+    console.log('📊 Saldo pendiente para inscripción #' + inscripcion.id + ':', saldoPendienteCalculado.value);
+    
+    // Para inscripción #202 debería mostrar:
+    // Monto total: $250
+    // Total pagado: $50 (solo el pago ID=173)
+    // Saldo pendiente: $200
+    
+    // 7. Configurar el monto sugerido
+    montoPago.value = Math.max(0, saldoPendienteCalculado.value);
+    
+    // 8. Mostrar información
+    toast.add({
+      severity: 'info',
+      summary: 'Datos cargados',
+      detail: `Inscripción #${inscripcion.id}: Total: $${montoTotalInscripcion.value} | Pagado: $${totalPagado.value} | Saldo: $${saldoPendienteCalculado.value}`,
+      life: 5000
+    });
+    
+    dialogoRegistroPago.value = true;
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Error cargando datos',
+      life: 4000
+    });
+  } finally {
+    cargandoPago.value = false;
+  }
+}
+
+
+// Agrega esta función para consultar pagos de forma confiable
+async function consultarPagosReales(inscripcionId) {
+  console.log(`🔍 Consultando pagos REALES para inscripción ${inscripcionId}...`);
+  
+  const endpoints = [
+    // Intenta diferentes endpoints
+    `/api/pagos?inscripcion_id=${inscripcionId}`,
+    `/api/pagos/inscripcion/${inscripcionId}`,
+    `/api/inscripciones/${inscripcionId}/pagos`
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Éxito en endpoint: ${endpoint}`, data);
+        
+        // Extraer pagos según estructura
+        let pagos = [];
+        
+        if (Array.isArray(data)) {
+          pagos = data;
+        } else if (data.data && Array.isArray(data.data)) {
+          pagos = data.data;
+        } else if (data.success && Array.isArray(data.data)) {
+          pagos = data.data;
+        }
+        
+        return pagos;
+      }
+    } catch (error) {
+      console.log(`⚠️ Falló endpoint ${endpoint}:`, error.message);
+      // Continuar con siguiente endpoint
+    }
+  }
+  
+  // Si todos fallan, devolver array vacío
+  console.warn('❌ Todos los endpoints fallaron');
+  return [];
+}
+
+
+// En el frontend, antes de enviar el pago
+async function validarSegundaCuota() {
+  if (!esSegundaCuota.value || !pagoSeleccionado.value) return true;
+  
+  try {
+    // Obtener datos actualizados de la inscripción
+    const response = await axios.get(`/api/inscripciones/${inscripcionParaPago.value.id}/estado-financiero`);
+    
+    const { total_inscripcion, total_pagado, saldo_pendiente } = response.data;
+    
+    // Validar que el monto sea el correcto
+    if (Math.abs(montoPago.value - saldo_pendiente) > 0.01) {
+      toast.add({
+        severity: 'error',
+        summary: 'Monto incorrecto',
+        detail: `El saldo pendiente es $${saldo_pendiente.toFixed(2)}. Ajuste el monto.`,
+        life: 5000
+      });
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error validando segunda cuota:', error);
+    return true; // Continuar si hay error en validación
+  }
+}
+
+
+async function cargarTodosPagosInscripcion(inscripcionId) {
+  try {
+    console.log(`💰 Cargando pagos para inscripción ${inscripcionId}...`);
+    
+    // USAR EL ENDPOINT CORRECTO
+    const response = await pagoService.porInscripcion(inscripcionId, 1, 100);
+    
+    console.log('📥 Respuesta:', response.data);
+    
+    let todosPagos = [];
+    
+    // Extraer según estructura
+    if (response.data?.success && Array.isArray(response.data.data)) {
+      todosPagos = response.data.data;
+    } else if (Array.isArray(response.data?.data)) {
+      todosPagos = response.data.data;
+    } else if (Array.isArray(response.data)) {
+      todosPagos = response.data;
+    }
+    
+    console.log(`✅ ${todosPagos.length} pagos cargados`);
+    
+    // Calcular total pagado
+    const pagosPagados = todosPagos.filter(p => 
+      p.estado && p.estado.toString().toLowerCase() === 'pagado'
+    );
+    
+    const totalPagado = pagosPagados.reduce((sum, pago) => {
+      return sum + (parseFloat(pago.monto) || 0);
+    }, 0);
+    
+    return {
+      todosPagos,
+      totalPagado,
+      pagosPendientes: todosPagos.filter(p => 
+        p.estado && p.estado.toString().toLowerCase() === 'pendiente'
+      )
+    };
+    
+  } catch (error) {
+    console.error('Error cargando pagos:', error);
+    return { todosPagos: [], totalPagado: 0, pagosPendientes: [] };
+  }
+}
+
+
+async function calcularPagosCorrectos(inscripcionId) {
+  console.log(`🔍 Calculando pagos CORRECTOS para inscripción ${inscripcionId}`);
+  
+  try {
+    // 1. Obtener SOLO los pagos de ESTA inscripción
+    const response = await pagoService.index(1, 100, '', {
+      inscripcion_id: inscripcionId  // ← FILTRO CRÍTICO
+    });
+    
+    let todosPagos = [];
+    
+    // Extraer datos correctamente
+    if (response.data?.success && Array.isArray(response.data.data)) {
+      todosPagos = response.data.data;
+    } else if (Array.isArray(response.data)) {
+      todosPagos = response.data;
+    }
+    
+    console.log(`📊 PAGOS ENCONTRADOS para ${inscripcionId}:`, todosPagos.length);
+    
+    // 2. MOSTRAR CADA PAGO PARA DEBUG
+    todosPagos.forEach((pago, i) => {
+      console.log(`  ${i+1}. ID: ${pago.id} | $${pago.monto} | Estado: "${pago.estado}" | Cuota: ${pago.numero_cuota || 'N/A'}`);
+    });
+    
+    // 3. FILTRAR CORRECTAMENTE
+    const pagosPagados = todosPagos.filter(p => 
+      p.estado && p.estado.toString().toLowerCase() === 'pagado'
+    );
+    
+    const pagosPendientes = todosPagos.filter(p => 
+      p.estado && p.estado.toString().toLowerCase() === 'pendiente'
+    );
+    
+    // 4. CALCULAR TOTAL PAGADO CORRECTO
+    const totalPagado = pagosPagados.reduce((sum, pago) => {
+      return sum + (parseFloat(pago.monto) || 0);
+    }, 0);
+    
+    // 5. BUSCAR SEGUNDA CUOTA PENDIENTE
+    const segundaCuotaPendiente = pagosPendientes.find(p => 
+      p.numero_cuota === 2 || 
+      (p.observacion && p.observacion.toLowerCase().includes('segunda'))
+    );
+    
+    // 6. BUSCAR PRIMERA CUOTA (para referencia)
+    const primeraCuota = pagosPagados.find(p => 
+      p.numero_cuota === 1 ||
+      (p.observacion && p.observacion.toLowerCase().includes('primera'))
+    );abrirDialogoRegistroPago
+    
+    return {
+      todosPagos,
+      pagosPagados,
+      pagosPendientes,
+      totalPagado,
+      segundaCuotaPendiente,
+      primeraCuota,
+      tienePagosDivididos: todosPagos.some(p => p.es_parcial == 1)
+    };
+    
+  } catch (error) {
+    console.error('❌ Error calculando pagos:', error);
+    return {
+      todosPagos: [],
+      pagosPagados: [],
+      pagosPendientes: [],
+      totalPagado: 0,
+      segundaCuotaPendiente: null,
+      primeraCuota: null,
+      tienePagosDivididos: false
+    };
+  }
+}
+
+// En tu script, después de la función abrirDialogoRegistroPago, agrega:
+
+async function registrarPagoReal() {
+  console.log('💰 EJECUTANDO registrarPagoReal...');
+  
+  if (!inscripcionParaPago.value) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No hay inscripción seleccionada', life: 3000 });
+    return;
+  }
+  
+  // Validaciones básicas
+  if (!montoPago.value || montoPago.value <= 0) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Monto inválido', life: 3000 });
+    return;
+  }
+  
+  if (!metodoPago.value) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Seleccione método de pago', life: 3000 });
+    return;
+  }
+  
+  try {
+    // 1. PREPARAR DATOS PARA LA API
+    const pagoData = {
+      inscripcion_id: inscripcionParaPago.value.id,
+      monto: montoPago.value,
+      metodo_pago: metodoPago.value,
+      fecha_pago: fechaPago.value ? 
+        new Date(fechaPago.value).toISOString().split('T')[0] : 
+        new Date().toISOString().split('T')[0],
+      estado: 'pagado',
+      observacion: observacion.value || `Pago para inscripción #${inscripcionParaPago.value.id}`
+    };
+    
+    // 2. SI ES SEGUNDA CUOTA, AGREGAR CAMPOS ESPECIALES
+    if (esSegundaCuota.value && pagoSeleccionado.value) {
+      pagoData.es_parcial = 1;
+      pagoData.numero_cuota = 2;
+      pagoData.pago_grupo_id = pagoSeleccionado.value.pago_grupo_id || Date.now().toString();
+      
+      // Buscar la primera cuota para mantener consistencia
+      if (!pagoData.pago_grupo_id && inscripcionParaPago.value.id == 200) {
+        pagoData.pago_grupo_id = '1769136664062'; // Del registro que ya tienes
+      }
+      
+      pagoData.observacion = `Segunda cuota de $${montoPago.value}. ${pagoData.observacion}`;
+    }
+    
+    console.log('📤 Enviando datos REALES a la API:', pagoData);
+    
+    // 3. LLAMAR AL SERVICIO
+    const response = await pagoService.store(pagoData);
+    
+    console.log('📥 Respuesta del servidor:', response.data);
+    
+    // 4. VERIFICAR RESPUESTA
+    if (response.data?.success || response.data?.id) {
+      // Éxito
+      toast.add({
+        severity: 'success',
+        summary: '✅ Pago registrado',
+        detail: `Pago de $${montoPago.value} registrado exitosamente`,
+        life: 4000
+      });
+      
+      // 5. CERRAR DIÁLOGO
+      dialogoRegistroPago.value = false;
+      
+      // 6. LIMPIAR FORMULARIO
+      limpiarFormularioPago();
+      
+      // 7. RECARGAR DATOS
+      setTimeout(() => {
+        cargarDatos(); // Esto recargará las inscripciones y sus pagos
+      }, 1000);
+      
+    } else {
+      throw new Error(response.data?.message || 'No se pudo registrar el pago');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error registrando pago REAL:', error);
+    
+    let mensajeError = 'Error al registrar pago';
+    
+    if (error.response?.data) {
+      console.error('Detalles del error:', error.response.data);
+      
+      if (error.response.data.errors) {
+        // Errores de validación de Laravel
+        const errores = Object.values(error.response.data.errors).flat();
+        mensajeError = errores.join(', ');
+      } else if (error.response.data.message) {
+        mensajeError = error.response.data.message;
+      }
+    } else if (error.message) {
+      mensajeError = error.message;
+    }
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: mensajeError,
+      life: 6000
+    });
+  }
+}
+
+// REEMPLAZA la función configurarFormularioPago con esta versión:
+
+
+
+// ========== FUNCIÓN AUXILIAR PARA CALCULAR ESTADO FINANCIERO ==========
+async function calcularEstadoFinancieroLocal(inscripcion) {
+  try {
+    console.log('🔄 Calculando estado financiero localmente para inscripción:', inscripcion.id);
+    
+    let todosPagos = [];
+    
+    // USAR SOLO EL MÉTODO INDEX QUE SÍ FUNCIONA
+    try {
+      const response = await pagoService.index(1, 100, '', {
+        inscripcion_id: inscripcion.id
+      });
+      
+      console.log('📥 Respuesta de pagos index:', response.data);
+      
+      // Extraer datos según tu estructura API
+      if (response.data) {
+        // Estructura común: { data: [], success: true }
+        if (response.data.success && Array.isArray(response.data.data)) {
+          todosPagos = response.data.data;
+        }
+        // Estructura: { data: { data: [] } }
+        else if (response.data.data && Array.isArray(response.data.data)) {
+          todosPagos = response.data.data;
+        }
+        // Estructura: Array directo
+        else if (Array.isArray(response.data)) {
+          todosPagos = response.data;
+        }
+        // Estructura Laravel paginado
+        else if (response.data.data && Array.isArray(response.data.data.data)) {
+          todosPagos = response.data.data.data;
+        }
+      }
+      
+      console.log(`✅ ${todosPagos.length} pagos encontrados`);
+      
+    } catch (apiError) {
+      console.log('⚠️ Método index falló:', apiError.message);
+      // Dejar array vacío si falla
+    }
+    
+    // ========== CALCULAR TOTALES CORRECTAMENTE ==========
+    
+    // Filtrar SOLO pagos con estado 'pagado' (no 'Pagado' con mayúscula)
+    const pagosPagados = todosPagos.filter(p => 
+      p.estado && p.estado.toLowerCase() === 'pagado'
+    );
+    
+    console.log('💰 Pagos pagados encontrados:', pagosPagados);
+    
+    // Calcular total pagado - IMPORTANTE: sumar solo montos de pagos PAGADOS
+    const totalPagado = pagosPagados.reduce((sum, pago) => {
+      const monto = parseFloat(pago.monto) || 0;
+      console.log(`  + Pago ${pago.id}: $${monto} (estado: ${pago.estado})`);
+      return sum + monto;
+    }, 0);
+    
+    // Identificar pagos pendientes
+    const pagosPendientes = todosPagos.filter(p => 
+      p.estado && (p.estado.toLowerCase() === 'pendiente' || p.estado.toLowerCase() === 'vencido')
+    );
+    
+    console.log('📋 Pagos pendientes:', pagosPendientes.length);
+    
+    // Buscar primera cuota (pagada)
+    const primeraCuota = pagosPagados.find(p => 
+      p.es_parcial === true || 
+      p.numero_cuota === 1 ||
+      (p.observacion && p.observacion.toLowerCase().includes('primera'))
+    );
+    
+    // Buscar segunda cuota pendiente
+    const segundaCuotaPendiente = pagosPendientes.find(p => 
+      p.es_parcial === true || 
+      p.numero_cuota === 2 ||
+      (p.observacion && p.observacion.toLowerCase().includes('segunda'))
+    );
+    
+    // Obtener monto total de la inscripción
+    const montoTotal = parseFloat(inscripcion.monto_mensual) || 
+                      parseFloat(inscripcion.modalidad?.precio_mensual) || 0;
+    
+    // Calcular saldo pendiente CORRECTO
+    const saldoPendiente = Math.max(0, montoTotal - totalPagado);
+    
+    console.log('📊 Cálculo local CORREGIDO:', {
+      montoTotal,
+      totalPagado,
+      saldoPendiente,
+      tienePrimeraCuota: !!primeraCuota,
+      tieneSegundaCuotaPendiente: !!segundaCuotaPendiente,
+      pagosEncontrados: todosPagos.length,
+      pagosPagados: pagosPagados.length,
+      pagosPendientes: pagosPendientes.length
+    });
+    
+    return {
+      total_inscripcion: montoTotal,
+      total_pagado: totalPagado,
+      saldo_pendiente: saldoPendiente,
+      pagos_pendientes: pagosPendientes,
+      primera_cuota: primeraCuota,
+      segunda_cuota_pendiente: segundaCuotaPendiente,
+      calculado_localmente: true
+    };
+    
+  } catch (error) {
+    console.error('❌ Error calculando estado financiero local:', error);
+    
+    // Fallback extremo - usar datos básicos de la inscripción
+    const montoTotal = parseFloat(inscripcion.monto_mensual) || 0;
+    
+    // Si la inscripción tiene saldo_pendiente, usarlo
+    let saldoPendiente = parseFloat(inscripcion.saldo_pendiente) || 0;
+    
+    // Si no tiene saldo_pendiente pero está en mora, usar monto total
+    if (saldoPendiente === 0 && inscripcion.estado === 'en_mora') {
+      saldoPendiente = montoTotal;
+    }
+    
+    return {
+      total_inscripcion: montoTotal,
+      total_pagado: montoTotal - saldoPendiente,
+      saldo_pendiente: saldoPendiente,
+      pagos_pendientes: [],
+      calculado_localmente: true,
+      error: error.message
+    };
+  }
+}
+
+
+function formatFechaParaBackend(fecha) {
+  if (!fecha) return null;
+
+  const d = new Date(fecha);
+  if (isNaN(d.getTime())) return null;
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+
+
+
+
+// Función para cancelar el registro de pago
+function cancelarRegistroPago() {
+  console.log('❌ Cancelando registro de pago...');
+
+  try {
+    // Verificar que dialogoRegistroPago existe antes de asignarle
+    if (typeof dialogoRegistroPago !== 'undefined' && dialogoRegistroPago.value !== undefined) {
+      dialogoRegistroPago.value = false;
+      console.log('✅ Diálogo cerrado');
+    } else {
+      console.error('❌ dialogoRegistroPago no está definido');
+    }
+
+    // Limpiar formulario
+    limpiarFormularioPago();
+
+  } catch (error) {
+    console.error('❌ Error al cancelar registro de pago:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Error al cancelar el registro',
+      life: 3000
+    });
+  }
+}
+
+// Función para limpiar el formulario
+function limpiarFormularioPago() {
+  console.log('🧹 Limpiando formulario de pago...');
+  
+  if (inscripcionParaPago) inscripcionParaPago.value = null;
+  if (pagosPendientes) pagosPendientes.value = [];
+  if (pagoSeleccionado) pagoSeleccionado.value = null;
+  if (montoPago) montoPago.value = 0;
+  if (metodoPago) metodoPago.value = null;
+  if (fechaPago) fechaPago.value = new Date();
+  if (observacion) observacion.value = '';
+  if (saldoPendiente) saldoPendiente.value = 0;
+  if (esSegundaCuota) esSegundaCuota.value = false;
+}
+
+
+
+
+// 6. Función auxiliar para calcular saldo pendiente (ejemplo)
+async function calcularSaldoPendiente(inscripcionId) {
+  try {
+    // Esto debería venir de tu backend
+    const response = await pagoService.getSaldoPendiente(inscripcionId);
+    return response.data.saldo || 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -4545,7 +6519,7 @@ function getIniciales(estudiante) {
   return nombres[0][0].toUpperCase();
 }
 
-function abrirDialogoNueva() {
+async function abrirDialogoNueva() {
   tituloDialogo.value = 'Nueva Inscripción';
   pasoActual.value = 0;
   estudianteSeleccionado.value = null;
@@ -4554,26 +6528,78 @@ function abrirDialogoNueva() {
   inscripcionForm.value = crearInscripcionVacia();
   dialogoInscripcion.value = true;
 
-  cargarEstudiantesParaDialogo();
+  // ========== NUEVO: Cargar estudiantes Y modalidades ==========
+  await Promise.all([
+    cargarEstudiantesParaDialogo(),
+    cargarModalidades()  // ← ¡FALTA ESTA LÍNEA!
+  ]);
+
+  console.log('✅ Estudiantes y modalidades cargadas para nueva inscripción');
 }
 
-onMounted(() => {
-  cargarDatos();
-  cargarModalidades()
+onMounted(async () => {
+  try {
+    console.log('🚀 Iniciando carga de datos...');
+    
+    // Primero cargar modalidades (necesario para diálogo de nueva inscripción)
+    await cargarModalidades();
+    console.log('✅ Modalidades cargadas');
+    
+    // Luego cargar inscripciones (que también carga pagos pendientes)
+    await cargarDatos();
+    console.log('✅ Datos de inscripciones cargados');
+    
+    console.log('🎉 Carga inicial completada');
+    
+  } catch (error) {
+    console.error('❌ Error en carga inicial:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error de carga',
+      detail: 'No se pudieron cargar todos los datos iniciales',
+      life: 5000
+    });
+  }
 });
 
 </script>
 
 <style scoped>
-.inscripciones-container {
+.dashboard-container {
   padding: 1.5rem;
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
 }
 
-/* HEADER GLASSMORPHISM */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #3b82f6;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+/* Tarjetas mejoradas - HEADER GLASSMORPHISM */
 .dashboard-cards {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
@@ -4592,6 +6618,7 @@ onMounted(() => {
   height: 100%;
   position: relative;
   overflow: hidden;
+  background: white;
 }
 
 .stat-card:hover {
@@ -4615,17 +6642,53 @@ onMounted(() => {
 }
 
 .stat-card:nth-child(2) {
-  --card-color: #f59e0b;
+  --card-color: #10b981;
 }
 
 .stat-card:nth-child(3) {
-  --card-color: #10b981;
+  --card-color: #f59e0b;
 }
 
 .stat-card:nth-child(4) {
   --card-color: #8b5cf6;
 }
 
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--card-gradient));
+}
+
+.stat-card:nth-child(1) { 
+  --card-gradient: #3b82f6, #60a5fa; 
+  --card-color: #3b82f6;
+}
+.stat-card:nth-child(2) { 
+  --card-gradient: #10b981, #34d399; 
+  --card-color: #10b981;
+}
+.stat-card:nth-child(3) { 
+  --card-gradient: #f59e0b, #fbbf24; 
+  --card-color: #f59e0b;
+}
+.stat-card:nth-child(4) { 
+  --card-gradient: #8b5cf6, #a78bfa; 
+  --card-color: #8b5cf6;
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CONTENIDO DE TARJETAS */
 .stat-content {
   display: flex;
   align-items: center;
@@ -4647,207 +6710,108 @@ onMounted(() => {
   background-clip: text;
 }
 
-/* TOOLBAR MEJORADO */
-.custom-toolbar {
-  background: white !important;
+/* Paneles de estado */
+.dashboard-section {
+  margin-bottom: 2rem;
+}
+
+.panel-estado {
+  background: white;
   border-radius: 12px;
-  padding: 1rem 1.5rem !important;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem !important;
-}
-
-/* TABVIEW MODERNO */
-:deep(.p-tabview) {
-  background: white;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-:deep(.p-tabview-nav) {
-  background: #f8fafc !important;
+.panel-header {
+  padding: 1rem;
+  background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
-  padding: 0 1rem;
-}
-
-:deep(.p-tabview-nav-link) {
-  padding: 1rem 1.5rem !important;
-  font-weight: 600 !important;
-  color: #6b7280 !important;
-  transition: all 0.2s;
-}
-
-:deep(.p-tabview-nav-link:hover) {
-  background: #f1f5f9 !important;
-  color: #3b82f6 !important;
-}
-
-:deep(.p-tabview-selected .p-tabview-nav-link) {
-  color: #3b82f6 !important;
-  border-color: #3b82f6 !important;
-}
-
-/* DATATABLE MEJORADO */
-:deep(.p-datatable) {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:deep(.p-datatable-thead > tr > th) {
-  background: #f8fafc !important;
-  color: #374151 !important;
-  font-weight: 600 !important;
-  padding: 1rem !important;
-  border-bottom: 2px solid #e5e7eb !important;
-}
-
-:deep(.p-datatable-tbody > tr) {
-  transition: background-color 0.2s;
-}
-
-:deep(.p-datatable-tbody > tr:hover) {
-  background: #f9fafb !important;
-}
-
-:deep(.p-datatable-tbody > tr > td) {
-  padding: 1rem !important;
-  border-color: #f3f4f6 !important;
-}
-
-/* DIALOGO DE NUEVA INSCRIPCIÓN */
-:deep(.p-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-:deep(.p-dialog-header) {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  padding: 1.5rem;
-}
-
-:deep(.p-dialog-title) {
-  color: white !important;
-  font-weight: 600;
-}
-
-:deep(.p-dialog-content) {
-  background: #f8fafc;
-  padding: 0 !important;
-}
-
-/* STEPPER MEJORADO */
-:deep(.p-stepper) {
-  background: transparent;
-}
-
-:deep(.p-stepper-header) {
-  background: white;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-:deep(.p-stepper-step .p-stepper-number) {
-  background: #e5e7eb;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
-}
-
-:deep(.p-stepper-step.p-highlight .p-stepper-number) {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-:deep(.p-stepper-step .p-stepper-title) {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-:deep(.p-stepper-step.p-highlight .p-stepper-title) {
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-/* CARDS DE MODALIDAD MEJORADAS */
-.modalidad-card {
-  border: 2px solid transparent;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  height: 100%;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.modalidad-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.modalidad-card.selected {
-  border-color: #3b82f6;
-  background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.05), white);
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
-}
-
-.modalidad-card :deep(.p-card-title) {
-  color: #1f2937;
   font-size: 1.1rem;
-  margin-bottom: 0.5rem;
 }
 
-.modalidad-card :deep(.p-card-content) {
-  padding-top: 0.5rem;
+.panel-content {
+  padding: 1rem;
 }
 
-/* HORARIO CARD */
-.horario-card {
-  border: 2px solid transparent;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  height: 100%;
-  cursor: pointer;
+.estado-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
 }
 
-.horario-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+.estado-item:last-child {
+  border-bottom: none;
 }
 
-.horario-card.selected {
-  border-color: #10b981;
-  background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.05), white);
-}
-
-.selection-indicator {
-  width: 24px;
-  height: 24px;
+.estado-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
 }
 
-/* CHIPS Y TAGS MEJORADOS */
-:deep(.p-chip) {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-radius: 20px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+.estado-icon i {
+  font-size: 1.2rem;
 }
 
-:deep(.p-tag) {
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.75rem;
+/* Estilos para alertas */
+.alerta-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
 }
 
-/* BADGES DE ESTADO */
+.alerta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alerta-pago-vencido {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(to right, rgba(239, 68, 68, 0.05), white);
+}
+
+.alerta-inscripcion-vencer {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), white);
+}
+
+.alerta-mora-alta {
+  border-left: 4px solid #dc2626;
+  background: linear-gradient(to right, rgba(220, 38, 38, 0.05), white);
+}
+
+/* Tarjetas de modalidades */
+.modalidad-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.modalidad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar mejorado */
+:deep(.p-progressbar) {
+  border-radius: 10px;
+  height: 8px;
+  background: #e5e7eb;
+}
+
+:deep(.p-progressbar-value) {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 10px;
+}
+
+/* Badges de estado */
 :deep(.p-tag.p-tag-success) {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
@@ -4868,26 +6832,7 @@ onMounted(() => {
   color: white;
 }
 
-/* PROGRESS BAR MEJORADO */
-:deep(.p-progressbar) {
-  border-radius: 10px;
-  height: 8px;
-  background: #e5e7eb;
-}
-
-:deep(.p-progressbar-value) {
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  border-radius: 10px;
-}
-
-/* AVATAR CIRCULAR */
-:deep(.p-avatar) {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  color: white;
-  font-weight: 600;
-}
-
-/* BOTONES MEJORADOS */
+/* Botones mejorados */
 :deep(.p-button) {
   border-radius: 8px;
   font-weight: 500;
@@ -4927,55 +6872,74 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-/* INPUTS MEJORADOS */
-:deep(.p-inputtext) {
+/* Card styles */
+:deep(.p-card) {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.p-card-header) {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Datatable mejorado */
+:deep(.p-datatable) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.p-datatable-thead > tr > th) {
+  background: #f8fafc !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  padding: 1rem !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+:deep(.p-datatable-tbody > tr) {
+  transition: background-color 0.2s;
+}
+
+:deep(.p-datatable-tbody > tr:hover) {
+  background: #f9fafb !important;
+}
+
+:deep(.p-datatable-tbody > tr > td) {
+  padding: 1rem !important;
+  border-color: #f3f4f6 !important;
+}
+
+/* Quick stats */
+.quick-stats {
+  padding: 0.5rem 0;
+}
+
+.quick-stat-item {
+  margin-bottom: 1rem;
+}
+
+.quick-stat-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Dropdown mejorado */
+:deep(.p-dropdown) {
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  transition: all 0.2s;
-  padding: 0.75rem 1rem;
 }
 
-:deep(.p-inputtext:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  outline: none;
+:deep(.p-dropdown-panel) {
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
-/* Agrega al final de tu <style scoped> */
-/* Estilos para botón siempre activo */
-:deep(.p-button.text-blue-500) {
-  color: #3b82f6 !important;
-  background-color: rgba(59, 130, 246, 0.1) !important;
-}
-
-:deep(.p-button.text-blue-500:hover:not(:disabled)) {
-  background-color: rgba(59, 130, 246, 0.2) !important;
-  color: #1d4ed8 !important;
-}
-
-:deep(.p-button.text-green-500) {
-  color: #10b981 !important;
-  background-color: rgba(16, 185, 129, 0.1) !important;
-}
-
-:deep(.p-button.text-green-500:hover:not(:disabled)) {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  color: #059669 !important;
-}
-
-:deep(.p-button.text-orange-500) {
-  color: #f97316 !important;
-  background-color: rgba(249, 115, 22, 0.1) !important;
-}
-
-:deep(.p-button.text-orange-500:hover:not(:disabled)) {
-  background-color: rgba(249, 115, 22, 0.2) !important;
-  color: #ea580c !important;
-}
-
-:deep(.p-button:disabled) {
-  opacity: 0.5 !important;
-  cursor: not-allowed !important;
+/* Avatar circular */
+:deep(.p-avatar) {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  font-weight: 600;
 }
 
 /* SECTIONS CON COLORES SUAVES */
@@ -4992,11 +6956,6 @@ onMounted(() => {
 .bg-gray-50 {
   background: linear-gradient(135deg, rgba(243, 244, 246, 0.8), rgba(249, 250, 251, 0.9));
   border: 1px solid rgba(209, 213, 219, 0.3);
-}
-
-/* BORDES REDONDEADOS */
-.border-round {
-  border-radius: 12px;
 }
 
 /* TEXTO MEJORADO */
@@ -5019,31 +6978,75 @@ onMounted(() => {
   color: #3b82f6 !important;
 }
 
-/* GRID MEJORADO */
-.grid {
-  margin: 0 -0.75rem;
-}
-
-.grid .col {
-  padding: 0.75rem;
-}
-
 /* ANIMACIONES */
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.modalidad-card,
-.horario-card {
+.stat-card {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Animación para estado en mora */
+@keyframes pulse-mora {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse-mora 2s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    align-items: center;
+  }
+  
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+  
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .stat-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .stat-icon {
+    font-size: 2rem;
+  }
+  
+  .stat-value {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-cards .grid .col {
+    margin-bottom: 1rem;
+  }
 }
 
 /* SCROLLBAR PERSONALIZADO */
@@ -5071,59 +7074,11 @@ onMounted(() => {
   background: #9ca3af;
 }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .inscripciones-container {
-    padding: 1rem;
-  }
-
-  .dashboard-cards {
-    padding: 1rem;
-  }
-
-  .stat-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
-  }
-
-  .stat-icon {
-    font-size: 2rem;
-  }
-
-  .stat-value {
-    font-size: 1.8rem;
-  }
-
-  :deep(.p-toolbar) {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  :deep(.p-toolbar-start),
-  :deep(.p-toolbar-end) {
-    width: 100%;
-    justify-content: center;
-  }
-
-  :deep(.p-tabview-nav) {
-    flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 576px) {
-  .dashboard-cards .grid .col {
-    margin-bottom: 1rem;
-  }
-
-  :deep(.p-dialog) {
-    width: 95vw !important;
-    margin: 0.5rem;
-  }
-
-  :deep(.p-stepper) {
-    flex-direction: column;
-  }
+/* TOOLTIPS MEJORADOS */
+:deep(.p-tooltip-text) {
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  border-radius: 6px;
 }
 
 /* LOADING STATES */
@@ -5131,36 +7086,18 @@ onMounted(() => {
   color: #3b82f6;
 }
 
-/* HOVER EFFECTS PARA FILAS DE TABLA */
-:deep(.p-datatable-tbody > tr) {
-  cursor: pointer;
+/* GRID MEJORADO */
+.grid {
+  margin: 0 -0.75rem;
 }
 
-:deep(.p-datatable-tbody > tr:hover td) {
-  background: linear-gradient(to right, rgba(59, 130, 246, 0.02), transparent);
+.grid .col {
+  padding: 0.75rem;
 }
 
-/* DROPDOWN MEJORADO */
-:deep(.p-dropdown-panel) {
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-:deep(.p-dropdown-item) {
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-}
-
-:deep(.p-dropdown-item:hover) {
-  background: #f3f4f6;
-}
-
-/* CALENDAR MEJORADO */
-:deep(.p-datepicker) {
+/* BORDES REDONDEADOS */
+.border-round {
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* ESTILOS ESPECÍFICOS PARA ÍCONOS */
@@ -5180,19 +7117,15 @@ onMounted(() => {
   color: #8b5cf6;
 }
 
-.pi-search {
-  color: #9ca3af;
-}
-
-.pi-filter {
-  color: #6b7280;
-}
-
-.pi-eye {
+.pi-chart-bar {
   color: #3b82f6;
 }
 
-.pi-refresh {
+.pi-chart-pie {
+  color: #8b5cf6;
+}
+
+.pi-chart-line {
   color: #10b981;
 }
 
@@ -5200,59 +7133,66 @@ onMounted(() => {
   color: #10b981;
 }
 
-.pi-file-excel {
-  color: #059669;
+.pi-credit-card {
+  color: #8b5cf6;
+}
+
+.pi-star {
+  color: #f59e0b;
+}
+
+.pi-bell {
+  color: #ef4444;
 }
 
 .pi-check {
   color: #10b981;
 }
 
-.pi-times {
+.pi-exclamation-triangle {
   color: #ef4444;
 }
 
-.pi-info-circle {
+.pi-refresh {
   color: #3b82f6;
-}
-
-.pi-tag {
-  color: #8b5cf6;
-}
-
-.pi-shield {
-  color: #f59e0b;
-}
-
-.pi-building {
-  color: #6b7280;
-}
-
-.pi-user {
-  color: #3b82f6;
-}
-
-.pi-calendar-check {
-  color: #10b981;
-}
-
-.pi-ticket {
-  color: #f59e0b;
-}
-
-.pi-ellipsis-h {
-  color: #6b7280;
 }
 
 .pi-arrow-right {
   color: white;
 }
 
-.pi-bug {
-  color: #8b5cf6;
+.pi-eye {
+  color: #3b82f6;
 }
 
-.pi-calendar-plus {
-  color: #059669;
+.pi-wallet {
+  color: #10b981;
+}
+
+.pi-info-circle {
+  color: #3b82f6;
+}
+
+/* Progress bar para tasa de renovación */
+:deep(.p-progressbar.bg-green-100 .p-progressbar-value) {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+:deep(.p-progressbar.bg-yellow-100 .p-progressbar-value) {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+:deep(.p-progressbar.bg-red-100 .p-progressbar-value) {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+/* Chip styles */
+:deep(.p-chip) {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 </style>

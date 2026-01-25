@@ -27,9 +27,10 @@ export default {
   },
   
   // Obtener pagos por inscripción
-  porInscripcion(inscripcionId, page = 1, limit = 10) {
-    return Api().get(`/pagos/inscripcion/${inscripcionId}?page=${page}&limit=${limit}`);
-  },
+// En pago.service.js, actualiza el método porInscripcion:
+porInscripcion(inscripcionId, page = 1, limit = 10) {
+  return Api().get(`/pagos/inscripcion/${inscripcionId}?page=${page}&limit=${limit}`);
+},
   
   // Obtener pagos por estudiante
   porEstudiante(estudianteId, page = 1, limit = 10) {

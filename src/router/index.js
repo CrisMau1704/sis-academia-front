@@ -10,7 +10,6 @@ import Modalidades from '../views/admin/Modalidades.vue'
 import Horarios from '../views/admin/Horarios.vue'
 import Inscripciones from '../views/admin/Inscripciones.vue'
 import Asistencias from '../views/admin/Asistencias.vue'
-import Reportes from '../views/admin/Reportes.vue'
 import Roles from '../views/admin/Roles.vue'
 import Usuario from '@/views/admin/Usuario.vue'
 import Sucursales from '../views/admin/Sucursales.vue'
@@ -19,6 +18,7 @@ import Disciplinas from '../views/admin/Disciplina.vue'
 import HistorialPago from '../views/admin/HistorialPago.vue'
 import AsistenciasMensuales from '../views/admin/AsistenciasMensuales.vue'
 import ClasesRestantes from '../views/admin/ClasesRestantes.vue'
+import RecuperarClases from '../views/admin/RecuperarClases.vue'
 
 
 
@@ -75,6 +75,12 @@ const routes = [
         path: 'asistencias',
         name: 'Asistencias',
         component: Asistencias
+      },
+
+      {
+        path: 'recuperarclases',
+        name: 'RecuperarClases',
+        component: RecuperarClases
       },
 
       {

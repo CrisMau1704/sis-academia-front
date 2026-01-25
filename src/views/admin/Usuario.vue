@@ -81,7 +81,7 @@
 import { ref, onMounted } from 'vue';
 import usuarioService from '../../services/usuario.service';
 import Toast from 'primevue/toast';
-import ToastService from 'primevue/toastservice';
+
 
 const usuarios = ref([]);
 const usuario = ref({ name: '', email: '', password: '' });
@@ -128,9 +128,9 @@ const listarUsuarios = async () => {
 async function guardarUsuario() {
     try {
         if (usuario.value.id) {
-            await usuarioService.modificarUsuario(usuario.value.id, usuario.value);
+            await usuarioService.update(usuario.value.id, usuario.value);
         } else {
-            await usuarioService.guardarUsuario(usuario.value);
+            await usuarioService.store(usuario.value);
         }
         toast.value.add({ severity: 'success', summary: 'Éxito', detail: 'Usuario guardado', life: 3000 });
         listarUsuarios();

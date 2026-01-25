@@ -2,13 +2,13 @@
     <div class="layout-topbar">
         <!-- Logo y título -->
         <router-link to="/" class="layout-topbar-logo">
-    <div class="logo-container">
-        <img src="/public/demo/images/logo1.jpeg" alt="Logo" class="logo-image">
-        <div class="logo-text">
-            <span class="logo-title">Sistema de Control</span>
-        </div>
-    </div>
-</router-link>
+            <div class="logo-container">
+                <img src="/demo/images/logo1.jpeg" alt="Logo" class="logo-image">
+                <div class="logo-text">
+                    <span class="logo-title">Sistema de Control</span>
+                </div>
+            </div>
+        </router-link>
 
         <!-- Botón del menú lateral -->
         <button class="menu-toggle-btn" @click="onMenuToggle()">
@@ -19,7 +19,14 @@
         <div class="topbar-center">
             <div class="welcome-message">
                 <i class="pi pi-user"></i>
-                <span>Bienvenido, {{ userName }}</span>
+                <span>Bienvenido, {{ userName || 'Usuario' }}</span>
+            </div>
+            <div class="datetime-info" v-if="showDateTime">
+                <i class="pi pi-calendar"></i>
+                <span>{{ currentDate }}</span>
+                <span class="time-separator">|</span>
+                <i class="pi pi-clock"></i>
+                <span>{{ currentTime }}</span>
             </div>
         </div>
 
@@ -27,32 +34,78 @@
         <div class="topbar-right">
             <button class="logout-btn" @click="onSalir">
                 <i class="pi pi-power-off"></i>
-                <span>Salir</span>
+                <span class="logout-text">Salir</span>
             </button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeMount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
 import { useRouter } from 'vue-router';
 
 const { onMenuToggle } = useLayout();
 const router = useRouter();
 
-// Datos del usuario
-const userName = ref('Administrador');
+// Datos del usuario - ahora obtenido del localStorage
+const userName = ref('');
+const showDateTime = ref(true);
 
 // Fecha y hora
 const currentTime = ref('');
 const currentDate = ref('');
 
+// Obtener datos del usuario al montar el componente
+onBeforeMount(() => {
+    loadUserData();
+});
+
 // Inicializar fecha y hora
 onMounted(() => {
     updateDateTime();
     setInterval(updateDateTime, 60000);
+    
+    // Escuchar cambios de tamaño de pantalla para responsividad
+    window.addEventListener('resize', handleResize);
+    handleResize();
 });
+
+// Cargar datos del usuario desde localStorage
+const loadUserData = () => {
+    try {
+        // Intenta obtener del localStorage (ajusta según tu implementación)
+        const userData = localStorage.getItem('user_data');
+        if (userData) {
+            const parsedData = JSON.parse(userData);
+            userName.value = parsedData.name || parsedData.username || parsedData.email || 'Administrador';
+        } else {
+            // Si no hay datos, intenta obtener de otras fuentes
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                // Podrías decodificar el JWT si está en ese formato
+                const tokenParts = token.split('.');
+                if (tokenParts.length === 3) {
+                    try {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        userName.value = payload.name || payload.username || payload.email || 'Administrador';
+                    } catch (e) {
+                        console.warn('No se pudo decodificar el token');
+                        userName.value = 'Administrador';
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        userName.value = 'Administrador';
+    }
+};
+
+// Manejar cambio de tamaño de pantalla
+const handleResize = () => {
+    showDateTime.value = window.innerWidth > 768;
+};
 
 const updateDateTime = () => {
     const now = new Date();
@@ -66,15 +119,21 @@ const updateDateTime = () => {
     
     // Fecha
     currentDate.value = now.toLocaleDateString('es-BO', {
-        weekday: 'short',
+        weekday: 'long',
         day: 'numeric',
-        month: 'short'
+        month: 'long',
+        year: 'numeric'
     });
 };
 
 // Función de salir
 const onSalir = () => {
+    // Limpiar datos de sesión
     localStorage.removeItem("access_token");
+    localStorage.removeItem("user_data");
+    sessionStorage.clear();
+    
+    // Redirigir al login
     router.push({ name: 'Login' });
 };
 </script>
@@ -96,34 +155,35 @@ const onSalir = () => {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Logo */
+/* Logo mejorado */
 .layout-topbar-logo {
     text-decoration: none;
     margin-right: 2rem;
-    min-width: 220px;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
 }
 
 .logo-container {
     display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 }
 
-.logo-icon {
-    font-size: 2rem;
-    color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
+.logo-image {
+    height: 45px;
+    width: auto;
+    max-height: 50px;
+    object-fit: contain;
+    border-radius: 8px;
+    transition: all 0.3s ease;
 }
 
 .logo-text {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .logo-title {
@@ -131,12 +191,7 @@ const onSalir = () => {
     font-weight: 700;
     color: white;
     line-height: 1.2;
-}
-
-.logo-subtitle {
-    font-size: 0.75rem;
-    color: #a0aec0;
-    opacity: 0.8;
+    white-space: nowrap;
 }
 
 /* Botón del menú lateral */
@@ -153,6 +208,7 @@ const onSalir = () => {
     align-items: center;
     justify-content: center;
     margin-right: 1.5rem;
+    flex-shrink: 0;
     
     &:hover {
         background: rgba(102, 126, 234, 0.3);
@@ -165,13 +221,14 @@ const onSalir = () => {
     }
 }
 
-/* Centro del topbar */
+/* Centro del topbar mejorado */
 .topbar-center {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
+    gap: 2rem;
+    min-width: 0; /* Para evitar overflow */
 }
 
 .welcome-message {
@@ -183,6 +240,8 @@ const onSalir = () => {
     border-radius: 20px;
     font-size: 0.95rem;
     color: #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
     
     i {
         color: #667eea;
@@ -191,6 +250,30 @@ const onSalir = () => {
     
     span {
         font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+}
+
+.datetime-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #cbd5e0;
+    
+    i {
+        color: #68d391;
+        font-size: 1rem;
+    }
+    
+    .time-separator {
+        opacity: 0.5;
+        margin: 0 0.25rem;
     }
 }
 
@@ -212,6 +295,7 @@ const onSalir = () => {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
     
     &:hover {
         transform: translateY(-2px);
@@ -226,46 +310,112 @@ const onSalir = () => {
         font-size: 1.1rem;
     }
     
-    span {
+    .logout-text {
         font-weight: 500;
     }
 }
 
-/* Responsive */
+/* Responsive mejorado */
+@media (max-width: 1024px) {
+    .topbar-center {
+        gap: 1rem;
+    }
+    
+    .datetime-info {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .welcome-message span {
+        max-width: 150px;
+    }
+}
+
 @media (max-width: 768px) {
     .layout-topbar {
         padding: 0 1rem;
+        height: 60px;
     }
     
-    .logo-subtitle {
-        display: none;
+    .layout-topbar-logo {
+        min-width: auto;
+        margin-right: 1rem;
+    }
+    
+    .logo-image {
+        height: 35px;
     }
     
     .logo-text {
         display: none;
     }
     
-    .logo-icon {
+    .menu-toggle-btn {
         width: 40px;
         height: 40px;
-        font-size: 1.5rem;
+        margin-right: 1rem;
+        
+        i {
+            font-size: 1.2rem;
+        }
     }
     
-    .welcome-message span {
-        display: none;
+    .topbar-center {
+        justify-content: flex-end;
+        gap: 0.5rem;
     }
     
     .welcome-message {
-        padding: 0.5rem;
-        background: transparent;
-    }
-    
-    .logout-btn {
-        padding: 0.5rem;
+        padding: 0.5rem 1rem;
         
         span {
             display: none;
         }
+        
+        i {
+            font-size: 1.2rem;
+        }
+    }
+    
+    .datetime-info {
+        display: none;
+    }
+    
+    .logout-btn {
+        padding: 0.5rem 1rem;
+        
+        .logout-text {
+            display: none;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .layout-topbar {
+        padding: 0 0.75rem;
+    }
+    
+    .logo-image {
+        height: 30px;
+    }
+    
+    .menu-toggle-btn {
+        width: 36px;
+        height: 36px;
+        margin-right: 0.75rem;
+    }
+    
+    .welcome-message {
+        padding: 0.4rem 0.8rem;
+        background: transparent;
+        
+        i {
+            font-size: 1.1rem;
+        }
+    }
+    
+    .logout-btn {
+        padding: 0.4rem 0.8rem;
     }
 }
 
@@ -303,6 +453,31 @@ const onSalir = () => {
         i {
             color: #667eea;
         }
+    }
+    
+    .datetime-info {
+        background: rgba(0, 0, 0, 0.05);
+        color: #718096;
+        
+        i {
+            color: #48bb78;
+        }
+    }
+}
+
+/* Animaciones */
+.logo-image {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>

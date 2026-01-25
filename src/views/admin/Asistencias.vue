@@ -666,14 +666,13 @@ async function marcarAsistencia(estudiante, horarioId, estado) {
     const fecha = fechaSeleccionada.value;
     const fechaISO = new Date(fecha).toISOString().split('T')[0];
 
-    // Si es justificación, abrir modal
+    // Si es justificación, abrir modal directamente
     if (estado === 'permiso') {
-      const claseProgramadaId = await buscarClaseProgramada(estudiante.id, horarioId, fechaISO);
-      justificarRapido(estudiante, horarioId, claseProgramadaId);
+      justificarRapido(estudiante, horarioId); // Sin claseProgramadaId
       return;
     }
 
-    // Procesar asistencia normal
+    // Procesar asistencia normal (presente o ausente)
     await procesarAsistenciaCompleta(estudiante, horarioId, estado, fechaISO);
 
   } catch (error) {
@@ -687,35 +686,13 @@ async function marcarAsistencia(estudiante, horarioId, estado) {
   }
 }
 
-async function buscarClaseProgramada(estudianteId, horarioId, fecha) {
-  try {
-    const response = await fetch(
-      `/api/clases-programadas/buscar?estudiante_id=${estudianteId}&horario_id=${horarioId}&fecha=${fecha}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.success ? data.data?.id : null;
-    }
-    return null;
-  } catch (error) {
-    console.warn('⚠️ Error buscando clase programada:', error);
-    return null;
-  }
-}
+
 
 async function procesarAsistenciaCompleta(estudiante, horarioId, estado, fechaISO) {
   console.log('🚀 PROCESANDO ASISTENCIA COMPLETA');
   
-  // 1. Buscar clase programada
-  const claseProgramadaId = await buscarClaseProgramada(estudiante.id, horarioId, fechaISO);
-  console.log('🔍 Clase programada ID:', claseProgramadaId);
+  // Eliminada la búsqueda de clase programada
+  const claseProgramadaId = null; // <-- Simplemente usa null
   
   // 2. Actualizar inscripción principal SI ES ASISTENCIA
   let datosActualizados = null;
@@ -734,7 +711,7 @@ async function procesarAsistenciaCompleta(estudiante, horarioId, estado, fechaIS
     console.log('📝 Es justificación, se maneja en modal');
   }
   
-  // 4. Actualizar clase programada si existe
+  // 4. Actualizar clase programada si existe (pero ya sabemos que es null)
   if (claseProgramadaId) {
     await actualizarClaseProgramada(claseProgramadaId, estado, fechaISO, estudiante, horarioId);
   }
@@ -1066,6 +1043,8 @@ async function enviarNotificacionClasesBajas(estudiante, inscripcion, clasesRest
   }
 }
 
+
+
 async function marcarInscripcionCompletada(inscripcionId) {
   try {
     const response = await fetch(`/api/inscripciones/${inscripcionId}/completar`, {
@@ -1092,11 +1071,11 @@ async function marcarInscripcionCompletada(inscripcionId) {
 
 // ========== FUNCIONES DE JUSTIFICACIÓN ==========
 
-function justificarRapido(estudiante, horarioId, claseProgramadaId = null) {
+function justificarRapido(estudiante, horarioId) {
   estudianteSeleccionado.value = {
     ...estudiante,
-    horario_id: horarioId,
-    clase_programada_id: claseProgramadaId
+    horario_id: horarioId
+    
   };
   motivoJustificacion.value = '';
   mostrarJustificacionRapida.value = true;
@@ -1113,116 +1092,139 @@ async function confirmarJustificacionRapida() {
     return;
   }
 
+  if (!motivoJustificacion.value.trim()) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Campo requerido',
+      detail: 'Debe especificar un motivo para la justificación',
+      life: 3000
+    });
+    return;
+  }
+
   procesandoJustificacion.value = true;
 
   try {
     const fecha = new Date(fechaSeleccionada.value).toISOString().split('T')[0];
     const estudiante = estudianteSeleccionado.value;
+    const horarioId = estudiante.horario_id;
     
-    // 1. Actualizar permisos en la inscripción
-    if (estudiante.inscripcion_id) {
-      try {
-        // Obtener datos actuales
-        const responseGet = await fetch(`/api/inscripciones/${estudiante.inscripcion_id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
+    console.log('📝 Iniciando justificación para:', {
+      estudiante: estudiante.nombres,
+      horario: horarioId,
+      fecha: fecha,
+      motivo: motivoJustificacion.value
+    });
 
-        if (responseGet.ok) {
-          const result = await responseGet.json();
-          const inscripcion = result.data || result;
-          
-          const nuevosPermisosUsados = (inscripcion.permisos_usados || 0) + 1;
-          const nuevosPermisosDisponibles = Math.max(0, (inscripcion.permisos_disponibles || 0) - 1);
+    // 1. Preparar datos básicos (SIN clase_programada_id)
+    const datosJustificacion = {
+      inscripcion_id: estudiante.inscripcion_id,
+      estudiante_id: estudiante.id,
+      horario_id: horarioId,
+      fecha: fecha,
+      motivo: motivoJustificacion.value.trim(),
+      estado: 'permiso'
+    };
 
-          // Actualizar
-          await fetch(`/api/inscripciones/${estudiante.inscripcion_id}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              permisos_usados: nuevosPermisosUsados,
-              permisos_disponibles: nuevosPermisosDisponibles
-            })
-          });
-
-          // Guardar en localStorage
-          guardarAsistenciaLocal(
-            fechaSeleccionada.value,
-            estudiante.id,
-            estudiante.horario_id,
-            'permiso',
-            {
-              asistencia_hora: new Date().toISOString(),
-              permisos_disponibles: nuevosPermisosDisponibles,
-              permisos_usados: nuevosPermisosUsados
-            }
-          );
-        }
-      } catch (inscError) {
-        console.warn('⚠️ No se pudo actualizar permisos:', inscError);
-      }
+    // 2. Enviar al servidor
+    console.log('📤 Enviando justificación al servidor:', datosJustificacion);
+    const response = await asistenciaService.justificar(datosJustificacion);
+    
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Error en el servidor');
     }
 
-    // 2. Actualizar UI
-    const horario = horarios.value.find(h => h.id === estudiante.horario_id);
-    if (horario) {
-      const estudianteIndex = horario.estudiantes.findIndex(
+    console.log('✅ Servidor respondió:', response.data);
+
+    // 3. Actualizar permisos en localStorage y UI
+    const nuevosPermisosDisponibles = Math.max(0, (estudiante.permisos_disponibles || 0) - 1);
+    
+    // Guardar en localStorage
+    guardarAsistenciaLocal(
+      fechaSeleccionada.value,
+      estudiante.id,
+      horarioId,
+      'permiso',
+      {
+        asistencia_hora: new Date().toISOString(),
+        permisos_disponibles: nuevosPermisosDisponibles,
+        permisos_usados: (estudiante.permisos_usados || 0) + 1,
+        motivo: motivoJustificacion.value.trim()
+      }
+    );
+
+    // 4. Actualizar UI
+    const horarioIndex = horarios.value.findIndex(h => h.id === horarioId);
+    if (horarioIndex !== -1) {
+      const estudianteIndex = horarios.value[horarioIndex].estudiantes.findIndex(
         e => e.id === estudiante.id
       );
       if (estudianteIndex !== -1) {
-        horario.estudiantes[estudianteIndex].asistencia_estado = 'permiso';
-        horario.estudiantes[estudianteIndex].permisos_disponibles = 
-          Math.max(0, (horario.estudiantes[estudianteIndex].permisos_disponibles || 0) - 1);
-        horario.estudiantes[estudianteIndex].asistencia_hora = new Date().toISOString();
+        horarios.value[horarioIndex].estudiantes[estudianteIndex] = {
+          ...horarios.value[horarioIndex].estudiantes[estudianteIndex],
+          asistencia_estado: 'permiso',
+          asistencia_hora: new Date().toISOString(),
+          permisos_disponibles: nuevosPermisosDisponibles
+        };
+        
+        // Forzar reactividad
+        horarios.value = [...horarios.value];
       }
     }
 
-    // 3. Actualizar estadísticas
+    // 5. Actualizar estadísticas
     calcularEstadisticas();
 
-    // 4. Mostrar notificación
+    // 6. Mostrar notificación de éxito
     toast.add({
       severity: 'success',
-      summary: '✅ Justificación guardada',
-      detail: `Permisos restantes: ${(estudiante.permisos_disponibles || 0) - 1}/3`,
+      summary: '✅ Justificación registrada',
+      detail: `Permisos restantes: ${nuevosPermisosDisponibles}/3`,
       life: 3000
     });
 
+    // 7. Cerrar modal
     cerrarJustificacion();
 
-    // 5. Enviar al servidor
-    try {
-      const data = {
-        inscripcion_id: estudiante.inscripcion_id,
-        horario_id: estudiante.horario_id,
-        fecha: fecha,
-        motivo: motivoJustificacion.value
-      };
-      const response = await asistenciaService.justificar(data);
-      if (response.data.success) {
-        console.log('✅ Justificación guardada en servidor');
-      }
-    } catch (serverError) {
-      console.warn('⚠️ No se pudo enviar justificación al servidor:', serverError);
-    }
-
   } catch (error) {
-    console.error('Error justificando:', error);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudo guardar la justificación',
-      life: 3000
-    });
+    console.error('❌ Error justificando:', error);
+    
+    // Verificar si es error de JSON (HTML en lugar de JSON)
+    if (error.message.includes('Unexpected token') || error.message.includes('<!DOCTYPE')) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error del servidor',
+        detail: 'El servidor devolvió una respuesta no válida. Verifica la API.',
+        life: 5000
+      });
+    } else if (error.response?.status === 500) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error 500 del servidor',
+        detail: 'Error interno del servidor. Contacta al administrador.',
+        life: 5000
+      });
+    } else if (error.response?.status === 422) {
+      toast.add({
+        severity: 'error',
+        summary: 'Datos inválidos',
+        detail: 'Verifica los datos enviados al servidor.',
+        life: 4000
+      });
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo guardar la justificación',
+        life: 3000
+      });
+    }
   } finally {
     procesandoJustificacion.value = false;
   }
 }
+
+
 
 function cerrarJustificacion() {
   mostrarJustificacionRapida.value = false;

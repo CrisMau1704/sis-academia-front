@@ -249,25 +249,145 @@ async function funIngresar() {
     try {
         const { data } = await authService.login(credenciales.value);
 
-        // Guardar tokens y datos de usuario
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("user_data", JSON.stringify(data.user || {}));
+        // DEBUG: Ver toda la respuesta
+        console.log('Respuesta completa del login:', data);
 
-        const rol = data.user?.rol || data.rol;
+        // Guardar tokens y datos de usuario
+        const token = data.access_token || data.token;
+        if (token) {
+            localStorage.setItem("access_token", token);
+        } else {
+            console.warn('No se recibió token en la respuesta');
+        }
+
+        const usuario = data.usuario || data.user || {};
+        localStorage.setItem("user_data", JSON.stringify(usuario));
+
+        const rol = data.rol || usuario.rol;
         if (rol) localStorage.setItem("user_rol", rol);
 
-        // Mostrar mensaje de éxito
-        showSuccess(`¡Bienvenido ${data.user?.name || 'Maestro'}!`);
+        // Guardar permisos
+        const permisos = data.permisos || data.permissions || [];
+        if (permisos && Array.isArray(permisos)) {
+            localStorage.setItem("user_permissions", JSON.stringify(permisos));
+            console.log('✅ Permisos guardados:', permisos);
+        } else {
+            console.warn('⚠️ No se recibieron permisos en la respuesta');
+            localStorage.setItem("user_permissions", JSON.stringify([]));
+        }
 
-        // Redirigir según el rol con pequeño delay
+        // Mostrar mensaje de éxito
+        showSuccess(`¡Bienvenido ${usuario.name || 'Maestro'}!`);
+
+        // Redirigir según PERMISOS con pequeño delay
         setTimeout(() => {
-            if (rol === 'super_admin' || rol === 'admin') {
+            // Obtener permisos guardados
+            const permisosGuardados = JSON.parse(localStorage.getItem("user_permissions") || "[]");
+            
+            console.log('📋 Permisos disponibles para redirección:', permisosGuardados);
+            console.log('👤 Rol del usuario:', rol);
+
+            // ============================================
+            // REDIRECCIÓN POR PERMISOS ESPECÍFICOS
+            // ============================================
+            
+            // 1. DASHBOARD Y VISIÓN GENERAL
+            if (permisosGuardados.includes('view_dashboard')) {
+                console.log('→ Redirigiendo a dashboard (tiene view_dashboard)');
                 router.push('/admin/dashboard');
-            } else if (rol === 'vendedor' || rol === 'recepcionista') {
+            } 
+            
+            // 2. GESTIÓN DE ESTUDIANTES
+            else if (permisosGuardados.includes('manage_students')) {
+                console.log('→ Redirigiendo a estudiantes (tiene manage_students)');
+                router.push('/admin/estudiantes');
+            }
+            else if (permisosGuardados.includes('manage_enrollments')) {
+                console.log('→ Redirigiendo a inscripciones (tiene manage_enrollments)');
+                router.push('/admin/inscripciones');
+            }
+            
+            // 3. CONTROL DE ASISTENCIAS
+            else if (permisosGuardados.includes('manage_attendance')) {
+                console.log('→ Redirigiendo a asistencias (tiene manage_attendance)');
+                router.push('/admin/asistencias');
+            }
+            else if (permisosGuardados.includes('manage_class_recovery')) {
+                console.log('→ Redirigiendo a recuperaciones (tiene manage_class_recovery)');
+                router.push('/admin/recuperarclases');
+            }
+            
+            // 4. PAGOS Y FINANZAS
+            else if (permisosGuardados.includes('view_payment_history')) {
+                console.log('→ Redirigiendo a pagos (tiene view_payment_history)');
+                router.push('/admin/historialpagos');
+            }
+            
+            // 5. CONFIGURACIÓN DEL SISTEMA
+            else if (permisosGuardados.includes('manage_branches')) {
+                console.log('→ Redirigiendo a sucursales (tiene manage_branches)');
+                router.push('/admin/sucursales');
+            }
+            else if (permisosGuardados.includes('manage_disciplines')) {
+                console.log('→ Redirigiendo a disciplinas (tiene manage_disciplines)');
+                router.push('/admin/disciplinas');
+            }
+            else if (permisosGuardados.includes('manage_modalities')) {
+                console.log('→ Redirigiendo a modalidades (tiene manage_modalities)');
+                router.push('/admin/modalidades');
+            }
+            else if (permisosGuardados.includes('manage_schedules')) {
+                console.log('→ Redirigiendo a horarios (tiene manage_schedules)');
+                router.push('/admin/horarios');
+            }
+            else if (permisosGuardados.includes('manage_trainers')) {
+                console.log('→ Redirigiendo a entrenadores (tiene manage_trainers)');
+                router.push('/admin/entrenadores');
+            }
+            
+            // 6. REPORTES
+            else if (permisosGuardados.includes('view_remaining_classes')) {
+                console.log('→ Redirigiendo a reporte de clases (tiene view_remaining_classes)');
+                router.push('/admin/clasesrestantes');
+            }
+            else if (permisosGuardados.includes('view_monthly_attendance')) {
+                console.log('→ Redirigiendo a reporte de asistencias (tiene view_monthly_attendance)');
+                router.push('/admin/asistenciasmensuales');
+            }
+            
+            // 7. ADMINISTRACIÓN DEL SISTEMA
+            else if (permisosGuardados.includes('manage_users')) {
+                console.log('→ Redirigiendo a usuarios (tiene manage_users)');
+                router.push('/admin/usuarios');
+            }
+            else if (permisosGuardados.includes('manage_roles')) {
+                console.log('→ Redirigiendo a roles (tiene manage_roles)');
+                router.push('/admin/roles');
+            }
+            
+            // ============================================
+            // FALLBACK: SI NO TIENE PERMISOS ESPECÍFICOS
+            // ============================================
+            else if (rol === 'super_admin' || rol === 'admin') {
+                console.log('→ Redirigiendo a dashboard (rol admin - fallback)');
+                router.push('/admin/dashboard');
+            } 
+            else if (rol === 'vendedor' || rol === 'recepcionista') {
+                console.log('→ Redirigiendo a pedidos (rol vendedor - fallback)');
                 router.push('/admin/pedido');
-            } else if (rol === 'entrenador') {
+            } 
+            else if (rol === 'entrenador') {
+                console.log('→ Redirigiendo a clases (rol entrenador - fallback)');
                 router.push('/entrenador/clases');
-            } else {
+            } 
+            else {
+                console.log('→ Redirigiendo a home (sin permisos específicos)');
+                toast.add({
+                    severity: 'warn',
+                    summary: 'Acceso limitado',
+                    detail: 'No tienes permisos configurados. Contacta al administrador.',
+                    life: 4000
+                });
                 router.push('/');
             }
         }, 1000);
@@ -278,6 +398,7 @@ async function funIngresar() {
         loading.value = false;
     }
 }
+
 
 function showError(message) {
     toast.add({

@@ -2,93 +2,195 @@
 import { ref, onMounted } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
 import authService from '../services/auth.service';
+import rolesService from '../services/roles.service'; // <-- Usa este servicio
 
 const model = ref([]);
+const userPermissions = ref([]);
 
-onMounted(() => {
-    const rol = authService.getUserRole();
-    console.log('Rol del usuario:', rol);
+// Estructura completa del menú con permisos
+const fullMenu = [
+    {
+        label: 'Inicio',
+        items: [
+            { 
+                label: 'Dashboard', 
+                icon: 'pi pi-fw pi-home', 
+                to: '/admin/dashboard',
+                permission: 'view_dashboard'  // <-- Permiso requerido
+            }
+        ]
+    },
+    {
+        label: 'Configuración General',
+        items: [
+            { 
+                label: 'Sucursales', 
+                icon: 'pi pi-fw pi-map-marker', 
+                to: '/admin/sucursales',
+                permission: 'manage_branches'
+            },
+            { 
+                label: 'Disciplinas', 
+                icon: 'pi pi-fw pi-star', 
+                to: '/admin/disciplinas',
+                permission: 'manage_disciplines'
+            },
+            { 
+                label: 'Modalidades', 
+                icon: 'pi pi-fw pi-briefcase', 
+                to: '/admin/modalidades',
+                permission: 'manage_modalities'
+            },
+            { 
+                label: 'Horarios', 
+                icon: 'pi pi-fw pi-clock', 
+                to: '/admin/horarios',
+                permission: 'manage_schedules'
+            },
+            { 
+                label: 'Entrenadores', 
+                icon: 'pi pi-fw pi-id-card', 
+                to: '/admin/entrenadores',
+                permission: 'manage_trainers'
+            }
+        ]
+    },
+    {
+        label: 'Gestión de Estudiantes',
+        items: [
+            { 
+                label: 'Estudiantes', 
+                icon: 'pi pi-fw pi-users', 
+                to: '/admin/estudiantes',
+                permission: 'manage_students'
+            },
+            { 
+                label: 'Inscripciones', 
+                icon: 'pi pi-fw pi-list', 
+                to: '/admin/inscripciones',
+                permission: 'manage_enrollments'
+            }
+        ]
+    },
+    {
+        label: 'Control de Asistencia',
+        items: [
+            { 
+                label: 'Registro Diario', 
+                icon: 'pi pi-fw pi-check-square', 
+                to: '/admin/asistencias',
+                permission: 'manage_attendance'
+            },
+            { 
+                label: 'Recuperar Clases', 
+                icon: 'pi pi-fw pi-refresh', 
+                to: '/admin/recuperarclases',
+                permission: 'manage_class_recovery'
+            }
+        ]
+    },
+    {
+        label: 'Pagos y Mensualidades',
+        items: [
+            { 
+                label: 'Historial de Pagos', 
+                icon: 'pi pi-fw pi-history', 
+                to: '/admin/historialpagos',
+                permission: 'view_payment_history'
+            }
+        ]
+    },
+    {
+        label: 'Reportes',
+        items: [
+            { 
+                label: 'Clases Restantes', 
+                icon: 'pi pi-fw pi-chart-line', 
+                to: '/admin/clasesrestantes',
+                permission: 'view_remaining_classes'
+            },
+            { 
+                label: 'Asistencia Mensual', 
+                icon: 'pi pi-fw pi-chart-bar', 
+                to: '/admin/asistenciasmensuales',
+                permission: 'view_monthly_attendance'
+            }
+        ]
+    },
+    {
+        label: 'Administración',
+        items: [
+            { 
+                label: 'Usuarios', 
+                icon: 'pi pi-fw pi-user', 
+                to: '/admin/usuario',
+                permission: 'manage_users'
+            },
+            { 
+                label: 'Roles y Permisos', 
+                icon: 'pi pi-fw pi-shield', 
+                to: '/admin/roles',
+                permission: 'manage_roles'
+            }
+        ]
+    }
+];
 
-// En tu archivo del menú
-if (rol === 'super_admin') {
-    model.value = [
-        {
-            label: 'Inicio',
-            items: [
-                { label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/admin/dashboard' }
-            ]
-        },
-        {
-            label: 'Configuración General',
-            items: [
-                { label: 'Sucursales', icon: 'pi pi-fw pi-map-marker', to: '/admin/sucursales' },
-                { label: 'Disciplinas', icon: 'pi pi-fw pi-star', to: '/admin/disciplinas' },
-                { label: 'Modalidades', icon: 'pi pi-fw pi-briefcase', to: '/admin/modalidades' },
-                
-                { label: 'Horarios', icon: 'pi pi-fw pi-clock', to: '/admin/horarios' },
-                { label: 'Entrenadores', icon: 'pi pi-fw pi-id-card', to: '/admin/entrenadores' }
-            ]
-        },
-        {
-            label: 'Gestión de Estudiantes',
-            items: [
-                { label: 'Estudiantes', icon: 'pi pi-fw pi-users', to: '/admin/estudiantes' },
-                { label: 'Inscripciones', icon: 'pi pi-fw pi-list', to: '/admin/inscripciones' },
-                
-            ]
-        },
-        {
-            label: 'Control de Asistencia',
-            items: [
-                { 
-                    label: 'Registro Diario', 
-                    icon: 'pi pi-fw pi-check-square', 
-                    to: '/admin/asistencias' 
-                },
-                
-                { 
-                    label: 'Recuperar Clases', 
-                    icon: 'pi pi-fw pi-refresh', 
-                    to: '/admin/recuperarclases' 
-                }
-            ]
-        },
-        {
-            label: 'Pagos y Mensualidades',
-            items: [
-               
-                { label: 'Historial de Pagos', icon: 'pi pi-fw pi-history', to: '/admin/historialpagos' }
-               
-            ]
-        },
-        {
-            label: 'Reportes',
-            items: [
-                { 
-                    label: 'Clases Restantes', 
-                    icon: 'pi pi-fw pi-chart-line', 
-                    to: '/admin/clasesrestantes',
-                    description: 'Ver cuántas clases le quedan a cada estudiante'
-                },
-                { 
-                    label: 'Asistencia Mensual', 
-                    icon: 'pi pi-fw pi-chart-bar', 
-                    to: '/admin/asistenciasmensuales' 
-                }
-                
-            ]
-        },
-        {
-            label: 'Administración',
-            items: [
-                { label: 'Usuarios', icon: 'pi pi-fw pi-user', to: '/admin/usuario' },
-                { label: 'Roles y Permisos', icon: 'pi pi-fw pi-shield', to: '/admin/roles' }
-               
-            ]
+// En AppMenu.vue - método onMounted
+onMounted(async () => {
+    try {
+        // 1. Obtener permisos del usuario
+        const response = await rolesService.getMenuPermissions();
+        
+        // Manejar diferentes estructuras de respuesta
+        if (response && response.permisos) {
+            userPermissions.value = response.permisos;
+        } else if (Array.isArray(response)) {
+            userPermissions.value = response;
+        } else if (response && response.data && response.data.permisos) {
+            userPermissions.value = response.data.permisos;
+        } else {
+            userPermissions.value = [];
         }
-    ];
+        
+        console.log('Permisos del usuario:', userPermissions.value);
+        
+        // 2. Filtrar menú basado en permisos
+        model.value = filterMenuByPermissions(fullMenu);
+        
+    } catch (error) {
+        console.error('Error al cargar permisos:', error);
+        // Fallback a lógica antigua por roles
+        const rol = authService.getUserRole();
+        setMenuByRole(rol);
+    }
+});
 
+const filterMenuByPermissions = (menu) => {
+    return menu
+        .map(section => {
+            // Filtrar items de la sección
+            const filteredItems = section.items.filter(item => {
+                if (!item.permission) return true; // Si no requiere permiso, mostrarlo
+                return rolesService.hasPermission(userPermissions.value, item.permission);
+            });
+            
+            // Solo mostrar sección si tiene al menos un item visible
+            if (filteredItems.length > 0) {
+                return {
+                    ...section,
+                    items: filteredItems
+                };
+            }
+            return null;
+        })
+        .filter(section => section !== null); // Eliminar secciones vacías
+};
 
+const setMenuByRole = (rol) => {
+    // Tu lógica anterior como fallback
+    if (rol === 'super_admin') {
+        model.value = fullMenu;
     } else if (rol === 'vendedor') {
         model.value = [
             {
@@ -99,10 +201,10 @@ if (rol === 'super_admin') {
                 ]
             }
         ];
-    }else {
-        console.log('Rol no reconocido:', rol);
+    } else {
+        model.value = [];
     }
-});
+};
 </script>
 
 <template>

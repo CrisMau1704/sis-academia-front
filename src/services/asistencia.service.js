@@ -34,6 +34,8 @@ index(page = 1, perPage = 100, search = '', filters = {}) {
     marcar(data) {
         return Api().post('/asistencias/marcar', data);
     },
+
+    
     
     // 3. Justificar falta
     justificar(data) {
