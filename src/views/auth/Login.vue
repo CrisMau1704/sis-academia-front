@@ -17,7 +17,7 @@
                     <div class="logo-wrapper">
                         <img 
                             src="/public/demo/images/logo1.jpeg"
-                            alt="King Boxi Academy"
+                            alt="Alianza Bolivia MMA"
                             class="academy-logo"
                         />
                         <div class="logo-ring"></div>
@@ -27,8 +27,8 @@
                     <!-- Títulos con temática marcial -->
                     <div class="brand-text">
                         <h1 class="academy-title">
-                            <span class="title-main">KING BOXI</span>
-                            <span class="title-sub">ACADEMY</span>
+                            <span class="title-main">ALIANZA BOLIVIA</span>
+                            <span class="title-sub">MMA</span>
                         </h1>
                         <p class="academy-tagline">
                             <i class="pi pi-shield" style="margin-right: 8px;"></i>
@@ -578,20 +578,18 @@ setInterval(() => {
 }
 
 .title-main {
-    display: block;
-    font-size: 2.8rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 50%, #45B7D1 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    letter-spacing: 1px;
+     display: block;
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: #CBD5E1;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 5px;
 }
 
 .title-sub {
     display: block;
-    font-size: 1.4rem;
+    font-size: 2.4rem;
     font-weight: 600;
     color: #CBD5E1;
     letter-spacing: 4px;
@@ -860,7 +858,7 @@ setInterval(() => {
     }
     
     .title-sub {
-        font-size: 1.1rem;
+        font-size: 2.2rem;
     }
     
     .form-options {

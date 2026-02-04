@@ -1,5 +1,5 @@
 <template>
-    <div class="dashboard-container">
+  <div class="dashboard-container">
     <!-- Header -->
     <div class="dashboard-header">
       <div class="flex align-items-center">
@@ -29,7 +29,7 @@
                   <i class="pi pi-users"></i>
                 </div>
                 <div>
-                  <div class="text-sm text-500">Clientes Activos</div>
+                  <div class="text-sm text-500">Estudiantes Activos</div>
                   <div class="font-bold">{{ estadisticas.inscripcionesActivas }}</div>
                 </div>
               </div>
@@ -58,7 +58,7 @@
                 </div>
                 <div>
                   <div class="text-sm text-500">Recaudación Total</div>
-                  <div class="font-bold text-green-600">${{ formatMonto(estadisticas.recaudacionTotal) }}</div>
+                  <div class="font-bold text-green-600">Bs.{{ formatMonto(estadisticas.recaudacionTotal) }}</div>
                 </div>
               </div>
             </template>
@@ -66,11 +66,11 @@
               <div class="mt-2">
                 <div class="flex justify-content-between">
                   <small class="text-500">Este mes</small>
-                  <small class="font-bold text-green-600">${{ formatMonto(estadisticas.recaudacionMes) }}</small>
+                  <small class="font-bold text-green-600">Bs.{{ formatMonto(estadisticas.recaudacionMes) }}</small>
                 </div>
                 <div class="flex justify-content-between mt-1">
                   <small class="text-500">Promedio/pago</small>
-                  <small class="font-bold">${{ formatMonto(estadisticas.promedioPago) }}</small>
+                  <small class="font-bold">Bs.{{ formatMonto(estadisticas.promedioPago) }}</small>
                 </div>
               </div>
             </template>
@@ -83,7 +83,7 @@
             <template #title>
               <div class="flex align-items-center">
                 <div class="card-icon bg-orange-100 text-orange-600 p-2 rounded-circle mr-2">
-                  <i class="pi pi-clock"></i>
+                  <i class="pi pi-exclamation-triangle"></i>
                 </div>
                 <div>
                   <div class="text-sm text-500">Situación de Pagos</div>
@@ -93,12 +93,12 @@
             </template>
             <template #content>
               <div class="mt-2">
-                <div class="flex justify-content-between">
-                  <small class="text-500">Monto en mora</small>
-                  <small class="font-bold text-red-600">${{ formatMonto(estadisticas.montoEnMora) }}</small>
+                <div class="flex justify-content-between mb-2">
+                  <small class="text-500">Pagos en mora:</small>
+                  <small class="font-bold text-red-600">Bs.{{ formatMonto(estadisticas.pagosVencidosMonto || estadisticas.montoEnMora) }}</small>
                 </div>
-                <div class="flex justify-content-between mt-1">
-                  <small class="text-500">Activos por vencer</small>
+                <div class="flex justify-content-between">
+                  <small class="text-500">Por vencer (7 días):</small>
                   <small class="font-bold">{{ estadisticas.inscripcionesPorVencer }}</small>
                 </div>
               </div>
@@ -189,10 +189,10 @@
                 </div>
                 <div class="panel-content">
                   <div class="estado-item" v-for="(item, key) in [
-                    { label: 'Recaudación total', value: `$${formatMonto(estadisticas.recaudacionTotal)}`, color: 'bg-green-500', icon: 'pi pi-money-bill' },
-                    { label: 'Recaudación mes', value: `$${formatMonto(estadisticas.recaudacionMes)}`, color: 'bg-teal-500', icon: 'pi pi-calendar' },
-                    { label: 'Monto en mora', value: `$${formatMonto(estadisticas.montoEnMora)}`, color: 'bg-red-500', icon: 'pi pi-exclamation-circle' },
-                    { label: 'Promedio pago', value: `$${formatMonto(estadisticas.promedioPago)}`, color: 'bg-blue-500', icon: 'pi pi-chart-line' }
+                    { label: 'Recaudación total', value: `Bs.${formatMonto(estadisticas.recaudacionTotal)}`, color: 'bg-green-500', icon: 'pi pi-money-bill' },
+                    { label: 'Recaudación mes', value: `Bs.${formatMonto(estadisticas.recaudacionMes)}`, color: 'bg-teal-500', icon: 'pi pi-calendar' },
+                    { label: 'Monto en mora', value: `Bs.${formatMonto(estadisticas.montoEnMora)}`, color: 'bg-red-500', icon: 'pi pi-exclamation-circle' },
+                    { label: 'Promedio pago', value: `Bs.${formatMonto(estadisticas.promedioPago)}`, color: 'bg-blue-500', icon: 'pi pi-chart-line' }
                   ]" :key="key">
                     <div class="flex align-items-center">
                       <div class="estado-icon" :class="item.color">
@@ -234,7 +234,20 @@
                 <ProgressSpinner style="width: 50px; height: 50px" />
                 <p class="text-500 mt-3">Cargando datos del gráfico...</p>
               </div>
-              <Chart v-else :type="'line'" :data="chartDataRecaudacion" :options="chartOptions" :height="250" />
+              
+              <!-- CORRECCIÓN PRINCIPAL: Usar div con v-else-if y verificar datos -->
+              <div v-else-if="chartDataRecaudacion.labels && chartDataRecaudacion.labels.length > 0">
+                <Chart 
+                  :key="chartKey"
+                  :type="'line'" 
+                  :data="chartDataRecaudacion" 
+                  :options="chartOptions" 
+                  :height="250" />
+              </div>
+              
+              <div v-else class="text-center p-5">
+                <p class="text-500">No hay datos para mostrar</p>
+              </div>
             </template>
           </Card>
         </div>
@@ -253,7 +266,7 @@
                 <div class="quick-stat-item">
                   <div class="flex justify-content-between">
                     <span class="text-500">Promedio por pago:</span>
-                    <span class="font-bold text-green-600">${{ formatMonto(estadisticas.promedioPago) }}</span>
+                    <span class="font-bold text-green-600">Bs.{{ formatMonto(estadisticas.promedioPago) }}</span>
                   </div>
                   <ProgressBar :value="calcularProgresoPromedio()" :showValue="false" class="mt-2" />
                 </div>
@@ -330,7 +343,7 @@
                 <Column header="Modalidad">
                   <template #body="slotProps">
                     <div class="font-medium">{{ slotProps.data.modalidad?.nombre }}</div>
-                    <small class="text-500">${{ slotProps.data.modalidad?.precio_mensual }}/mes</small>
+                    <small class="text-500">Bs.{{ slotProps.data.modalidad?.precio_mensual }}/mes</small>
                   </template>
                 </Column>
                 <Column header="Estado" style="width: 100px">
@@ -375,7 +388,7 @@
                 <Column header="Monto" style="width: 100px">
                   <template #body="slotProps">
                     <div class="text-right">
-                      <div class="font-bold text-green-600">${{ formatMonto(slotProps.data.monto) }}</div>
+                      <div class="font-bold text-green-600">Bs.{{ formatMonto(slotProps.data.monto) }}</div>
                       <small class="text-500 capitalize">{{ slotProps.data.metodo_pago }}</small>
                     </div>
                   </template>
@@ -415,7 +428,7 @@
                   <Tag :value="modalidad.inscripciones" severity="info" />
                 </div>
                 <div class="text-500 mb-1">{{ modalidad.clases_mensuales }} clases/mes</div>
-                <div class="text-green-600 font-bold mb-2">${{ formatMonto(modalidad.precio_mensual) }}</div>
+                <div class="text-green-600 font-bold mb-2">Bs.{{ formatMonto(modalidad.precio_mensual) }}</div>
                 <ProgressBar :value="modalidad.porcentaje" :showValue="false" class="mb-2" />
                 <small class="text-500">{{ modalidad.inscripciones }} inscripciones ({{ modalidad.porcentaje
                 }}%)</small>
@@ -460,14 +473,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 
 // Importar servicios
 import inscripcionService from '@/services/inscripcion.service';
 import pagoService from '@/services/pago.service';
-import dashboardService from '@/services/dashboard.service'; // Si tienes un servicio específico
 
 // Importar componentes PrimeVue
 import Card from 'primevue/card';
@@ -482,10 +494,10 @@ import Dropdown from 'primevue/dropdown';
 import Badge from 'primevue/badge';
 import Chart from 'primevue/chart';
 import ProgressSpinner from 'primevue/progressspinner';
-import Toast from 'primevue/toast';
 
 const router = useRouter();
 const toast = useToast();
+const chartKey = ref(0);
 
 // ========== ESTADOS PRINCIPALES ==========
 const cargando = ref(false);
@@ -501,22 +513,21 @@ const estadisticas = ref({
   inscripcionesActivas: 0,
   inscripcionesEnMora: 0,
   inscripcionesPorVencer: 0,
-  tendenciaInscripciones: 0,
 
   // Pagos
   recaudacionTotal: 0,
   recaudacionMes: 0,
   pagosPendientes: 0,
   pagosVencidos: 0,
-  totalPendiente: 0,
+  pagosVencidosMonto: 0,
   promedioPago: 0,
-  tendenciaRecaudacion: 0,
-  tendenciaPagosPendientes: 0,
-  tendenciaMora: 0,
 
   // Otros
   clasesHoy: 0,
-  tasaRenovacion: 0
+  tasaRenovacion: 0,
+  montoEnMora: 0,
+  totalPagos: 0,
+  pagosPagados: 0
 });
 
 // ========== DATOS PARA LISTAS ==========
@@ -538,12 +549,13 @@ const chartDataRecaudacion = ref({
   labels: [],
   datasets: [
     {
-      label: 'Recaudación ($)',
+      label: 'Recaudación (Bs.)',
       data: [],
       fill: true,
       borderColor: '#10b981',
       backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      tension: 0.4
+      tension: 0.4,
+      borderWidth: 2
     }
   ]
 });
@@ -554,15 +566,33 @@ const chartOptions = ref({
   plugins: {
     legend: {
       display: false
+    },
+    tooltip: {
+      callbacks: {
+        label: function(context) {
+          return `Bs. ${context.parsed.y.toLocaleString('es-ES', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}`;
+        }
+      }
     }
   },
   scales: {
     y: {
       beginAtZero: true,
       ticks: {
-        callback: function (value) {
-          return '$' + value.toLocaleString();
+        callback: function(value) {
+          return `Bs. ${value.toLocaleString('es-ES')}`;
         }
+      },
+      grid: {
+        color: 'rgba(0, 0, 0, 0.05)'
+      }
+    },
+    x: {
+      grid: {
+        color: 'rgba(0, 0, 0, 0.05)'
       }
     }
   }
@@ -575,15 +605,18 @@ async function cargarDatos() {
   try {
     console.log('📊 Cargando datos del dashboard...');
 
-    // Cargar todos los datos en paralelo para mayor velocidad
-    await Promise.all([
-      cargarEstadisticasGenerales(),
-      cargarUltimasInscripciones(),
-      cargarUltimosPagos(),
-      cargarResumenModalidades(),
-      cargarAlertasImportantes(),
-      cargarDatosGrafico()
-    ]);
+    // Inicializar datos del gráfico primero
+    inicializarDatosGrafico();
+    
+    // Cargar todos los datos
+    await cargarEstadisticasGenerales();
+    await cargarUltimasInscripciones();
+    await cargarUltimosPagos();
+    await cargarResumenModalidades();
+    await cargarAlertasImportantes();
+    
+    // Cargar datos del gráfico al final
+    await cargarDatosGrafico();
 
     ultimaActualizacion.value = new Date().toLocaleString('es-ES');
 
@@ -608,202 +641,380 @@ async function cargarDatos() {
   }
 }
 
+// ========== FUNCIÓN NUEVA: Inicializar datos del gráfico ==========
+function inicializarDatosGrafico() {
+  chartDataRecaudacion.value = {
+    labels: [],
+    datasets: [
+      {
+        label: 'Recaudación (Bs.)',
+        data: [],
+        fill: true,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        borderWidth: 2
+      }
+    ]
+  };
+  chartKey.value++; // Forzar re-render del chart
+}
+
 async function cargarEstadisticasGenerales() {
   try {
     console.log('📊 CARGANDO ESTADÍSTICAS DEL SISTEMA...');
     
-    // Obtener todos los datos
-    const [responseInscripciones, responsePagos] = await Promise.all([
-      inscripcionService.index(1, 1000),
-      pagoService.index(1, 1000)
+    const [responsePagos, responseInscripciones] = await Promise.all([
+      pagoService.index(1, 1000),
+      inscripcionService.index(1, 1000, '', {
+        include: 'estudiante,modalidad'
+      })
     ]);
     
-    // Extraer datos
-    const inscripciones = extraerDatos(responseInscripciones);
-    const pagos = extraerDatos(responsePagos);
+    let datosPagos = [];
+    if (responsePagos.data) {
+      if (Array.isArray(responsePagos.data)) {
+        datosPagos = responsePagos.data;
+      } else if (responsePagos.data.data && Array.isArray(responsePagos.data.data)) {
+        datosPagos = responsePagos.data.data;
+      } else if (responsePagos.data.success && Array.isArray(responsePagos.data.data)) {
+        datosPagos = responsePagos.data.data;
+      }
+    }
     
-    console.log(`👥 ${inscripciones.length} inscripciones | 💰 ${pagos.length} pagos`);
+    let datosInscripciones = [];
+    if (responseInscripciones.data) {
+      if (Array.isArray(responseInscripciones.data)) {
+        datosInscripciones = responseInscripciones.data;
+      } else if (responseInscripciones.data.data && Array.isArray(responseInscripciones.data.data)) {
+        datosInscripciones = responseInscripciones.data.data;
+      } else if (responseInscripciones.data.success && Array.isArray(responseInscripciones.data.data)) {
+        datosInscripciones = responseInscripciones.data.data;
+      }
+    }
     
-    // ========== CALCULAR POR INSCRIPCIONES ==========
-    const hoy = new Date();
+    console.log(`✅ Cargados ${datosPagos.length} pagos y ${datosInscripciones.length} inscripciones`);
     
-    // 1. FILTRAR INSCRIPCIONES POR ESTADO
-    const inscripcionesPorEstado = {
-      activas: inscripciones.filter(i => (i.estado || '').toLowerCase() === 'activo'),
-      en_mora: inscripciones.filter(i => (i.estado || '').toLowerCase() === 'en_mora'),
-      pendientes: inscripciones.filter(i => (i.estado || '').toLowerCase() === 'pendiente'),
-      suspendidas: inscripciones.filter(i => (i.estado || '').toLowerCase() === 'suspendido'),
-      terminadas: inscripciones.filter(i => (i.estado || '').toLowerCase() === 'terminado')
-    };
-    
-    console.log('📊 DISTRIBUCIÓN POR ESTADO:');
-    Object.entries(inscripcionesPorEstado).forEach(([estado, arr]) => {
-      console.log(`  ${estado}: ${arr.length} inscripciones`);
+    // Procesar datos
+    const inscripcionesMap = {};
+    datosInscripciones.forEach(insc => {
+      inscripcionesMap[insc.id] = insc;
     });
     
-    // 2. CALCULAR MONETOS POR ESTADO
-    const montosPorEstado = {
-      activas: sumarMontos(inscripcionesPorEstado.activas),
-      en_mora: sumarMontos(inscripcionesPorEstado.en_mora),
-      pendientes: sumarMontos(inscripcionesPorEstado.pendientes)
-    };
+    const pagosProcesados = datosPagos.map(pago => {
+      try {
+        const inscripcion = inscripcionesMap[pago.inscripcion_id];
+        
+        let diasMora = 0;
+        if ((pago.estado === 'pendiente' || pago.estado === 'vencido') && pago.fecha_vencimiento) {
+          const fechaVencimiento = new Date(pago.fecha_vencimiento);
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+          fechaVencimiento.setHours(0, 0, 0, 0);
+          diasMora = Math.max(0, Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24)));
+        }
+        
+        let estadoFinal = (pago.estado || 'pagado').toLowerCase();
+        if (estadoFinal === 'pendiente' && diasMora > 0) {
+          estadoFinal = 'vencido';
+        }
+        
+        return {
+          ...pago,
+          monto: parseFloat(pago.monto || 0),
+          inscripcion: inscripcion || {
+            id: pago.inscripcion_id,
+            estado: 'desconocido',
+            monto_mensual: 0
+          },
+          dias_mora: diasMora,
+          estado: estadoFinal
+        };
+      } catch (error) {
+        console.error(`Error procesando pago ${pago.id}:`, error);
+        return null;
+      }
+    }).filter(pago => pago !== null);
     
-    // 3. INSCRIPCIONES POR VENCER (activas que terminan en 7 días)
-    const inscripcionesPorVencer = inscripcionesPorEstado.activas.filter(i => {
-      if (!i.fecha_fin) return false;
-      const fechaFin = new Date(i.fecha_fin);
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
+    
+    let totalRecaudado = 0;
+    let pagosMes = 0;
+    let totalPagos = pagosProcesados.length;
+    let pagosPendientes = 0;
+    let pagosVencidos = 0;
+    let montoPendiente = 0;
+    let montoVencido = 0;
+    let montoEnMora = 0;
+    let inscripcionesEnMora = 0;
+    let totalDeudaMora = 0;
+    
+    pagosProcesados.forEach(pago => {
+      const monto = parseFloat(pago.monto || 0);
+      
+      if (pago.estado === 'pagado') {
+        totalRecaudado += monto;
+        
+        if (pago.fecha_pago) {
+          const fechaPago = new Date(pago.fecha_pago);
+          if (fechaPago >= primerDiaMes && fechaPago <= ultimoDiaMes) {
+            pagosMes += monto;
+          }
+        }
+      }
+      
+      if (pago.estado === 'pendiente') {
+        pagosPendientes++;
+        montoPendiente += monto;
+      }
+      
+      if (pago.estado === 'vencido') {
+        pagosVencidos++;
+        montoVencido += monto;
+        montoEnMora += monto;
+      }
+    });
+    
+    const deudaPorInscripcion = {};
+    
+    pagosProcesados.forEach(pago => {
+      if (!deudaPorInscripcion[pago.inscripcion_id]) {
+        deudaPorInscripcion[pago.inscripcion_id] = {
+          monto_total: parseFloat(pago.inscripcion?.monto_mensual || 0),
+          pagado: 0,
+          pendiente: 0,
+          vencido: 0
+        };
+      }
+      
+      const monto = parseFloat(pago.monto || 0);
+      
+      if (pago.estado === 'pagado') {
+        deudaPorInscripcion[pago.inscripcion_id].pagado += monto;
+      } else if (pago.estado === 'pendiente') {
+        deudaPorInscripcion[pago.inscripcion_id].pendiente += monto;
+      } else if (pago.estado === 'vencido') {
+        deudaPorInscripcion[pago.inscripcion_id].vencido += monto;
+      }
+    });
+    
+    Object.entries(deudaPorInscripcion).forEach(([inscId, deuda]) => {
+      const deudaReal = deuda.monto_total - deuda.pagado;
+      if (deudaReal > 0) {
+        totalDeudaMora += deudaReal;
+        inscripcionesEnMora++;
+      }
+    });
+    
+    const inscripcionesActivas = datosInscripciones.filter(i => 
+      (i.estado || '').toLowerCase() === 'activo'
+    );
+    
+    const inscripcionesPorVencer = datosInscripciones.filter(insc => {
+      if (!insc.fecha_fin || (insc.estado || '').toLowerCase() !== 'activo') return false;
+      const fechaFin = new Date(insc.fecha_fin);
       const diasRestantes = Math.ceil((fechaFin - hoy) / (1000 * 60 * 60 * 24));
       return diasRestantes <= 7 && diasRestantes > 0;
     });
     
-    // 4. INSCRIPCIONES VENCIDAS (activas con fecha pasada)
-    const inscripcionesVencidas = inscripcionesPorEstado.activas.filter(i => {
-      if (!i.fecha_fin) return false;
-      const fechaFin = new Date(i.fecha_fin);
-      return fechaFin < hoy;
-    });
-    
-    // ========== CALCULAR POR PAGOS ==========
-    
-    // 1. PAGOS POR ESTADO (si existen otros estados)
-    const pagosPorEstado = {
-      pagados: pagos.filter(p => (p.estado || '').toLowerCase() === 'pagado'),
-      pendientes: pagos.filter(p => (p.estado || '').toLowerCase() === 'pendiente'),
-      vencidos: pagos.filter(p => (p.estado || '').toLowerCase() === 'vencido')
-    };
-    
-    // 2. RECAUDACIÓN TOTAL
-    const recaudacionTotal = pagosPorEstado.pagados.reduce((sum, pago) => 
-      sum + (parseFloat(pago.monto) || 0), 0);
-    
-    // 3. RECAUDACIÓN MES ACTUAL
-    const recaudacionMes = pagosPorEstado.pagados.filter(p => {
-      if (!p.fecha_pago) return false;
-      const fechaPago = new Date(p.fecha_pago);
-      return fechaPago.getMonth() === hoy.getMonth() && 
-             fechaPago.getFullYear() === hoy.getFullYear();
-    }).reduce((sum, pago) => sum + (parseFloat(pago.monto) || 0), 0);
-    
-    // 4. PROMEDIO DE PAGO
-    const promedioPago = pagosPorEstado.pagados.length > 0 ? 
-      recaudacionTotal / pagosPorEstado.pagados.length : 0;
-    
-    // ========== TENDENCIAS (simplificadas) ==========
-    const calcularTendencia = (actual, historico) => {
-      if (!historico || historico === 0) return actual > 0 ? 100 : 0;
-      return Math.round(((actual - historico) / historico) * 100);
-    };
-    
-    // ========== ACTUALIZAR ESTADÍSTICAS ==========
     estadisticas.value = {
-      // === INSCRIPCIONES ===
-      totalInscripciones: inscripciones.length,
-      inscripcionesActivas: inscripcionesPorEstado.activas.length,
-      inscripcionesEnMora: inscripcionesPorEstado.en_mora.length,
+      totalInscripciones: datosInscripciones.length,
+      inscripcionesActivas: inscripcionesActivas.length,
+      inscripcionesEnMora: inscripcionesEnMora,
       inscripcionesPorVencer: inscripcionesPorVencer.length,
-      inscripcionesVencidas: inscripcionesVencidas.length,
-      montoEnMora: montosPorEstado.en_mora,
-      montoActivas: montosPorEstado.activas,
-      montoPendientes: montosPorEstado.pendientes,
       
-      // === PAGOS ===
-      recaudacionTotal,
-      recaudacionMes,
-      promedioPago,
-      totalPagos: pagos.length,
-      pagosPagados: pagosPorEstado.pagados.length,
-      pagosPendientes: pagosPorEstado.pendientes.length,
-      pagosVencidos: pagosPorEstado.vencidos.length,
+      montoEnMora: totalDeudaMora,
+      pagosVencidos: pagosVencidos,
+      pagosVencidosMonto: montoVencido,
       
-      // === TENDENCIAS (valores de ejemplo - ajustar según datos históricos) ===
-      tendenciaInscripciones: calcularTendencia(inscripciones.length, Math.round(inscripciones.length * 0.8)),
-      tendenciaRecaudacion: calcularTendencia(recaudacionTotal, Math.round(recaudacionTotal * 0.9)),
-      tendenciaMora: calcularTendencia(inscripcionesPorEstado.en_mora.length, 0),
-      tendenciaPagosPendientes: calcularTendencia(pagosPorEstado.pendientes.length, 0),
+      recaudacionTotal: totalRecaudado,
+      recaudacionMes: pagosMes,
+      promedioPago: totalPagos > 0 ? totalRecaudado / totalPagos : 0,
       
-      // === OTROS ===
-      clasesHoy: calcularClasesHoy(inscripcionesPorEstado.activas),
-      tasaRenovacion: Math.round((inscripcionesPorEstado.activas.length / inscripciones.length) * 100),
-      tasaMora: Math.round((inscripcionesPorEstado.en_mora.length / inscripciones.length) * 100)
+      totalPagos: totalPagos,
+      pagosPagados: pagosProcesados.filter(p => p.estado === 'pagado').length,
+      pagosPendientes: pagosPendientes,
+      
+      clasesHoy: calcularClasesHoy(inscripcionesActivas),
+      tasaRenovacion: Math.round((inscripcionesActivas.length / 
+        Math.max(datosInscripciones.length, 1)) * 100)
     };
     
-    console.log('✅ ESTADÍSTICAS ACTUALIZADAS:', estadisticas.value);
+    console.log('✅ ESTADÍSTICAS FINALES DEL DASHBOARD:', estadisticas.value);
     
   } catch (error) {
-    console.error('❌ ERROR:', error);
-    mostrarEstadisticasPorDefecto();
+    console.error('❌ ERROR cargando estadísticas:', error);
   }
 }
 
-// Función auxiliar para extraer datos de respuesta
-function extraerDatos(response) {
-  if (!response.data) return [];
+async function cargarDatosGrafico() {
+  cargandoGrafico.value = true;
+  chartKey.value++; // Incrementar key para forzar re-render
   
-  if (Array.isArray(response.data)) {
-    return response.data;
-  } else if (response.data.data && Array.isArray(response.data.data)) {
-    return response.data.data;
-  } else if (response.data.success && Array.isArray(response.data.data)) {
-    return response.data.data;
+  try {
+    // 1. Obtener todos los pagos
+    const response = await pagoService.index(1, 1000);
+    let todosPagos = [];
+    
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        todosPagos = response.data;
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        todosPagos = response.data.data;
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        todosPagos = response.data.data;
+      }
+    }
+    
+    console.log(`📊 ${todosPagos.length} pagos cargados para gráfico`);
+    
+    // 2. Filtrar solo pagos pagados
+    const pagosPagados = todosPagos.filter(p => 
+      (p.estado || '').toLowerCase() === 'pagado' && p.fecha_pago
+    );
+    
+    // 3. Determinar el rango de fechas según el periodo seleccionado
+    const hoy = new Date();
+    let fechaInicio = new Date();
+    
+    switch (periodoGrafico.value) {
+      case '3m':
+        fechaInicio.setMonth(hoy.getMonth() - 3);
+        break;
+      case '1y':
+        fechaInicio.setFullYear(hoy.getFullYear() - 1);
+        break;
+      case 'all':
+        if (pagosPagados.length > 0) {
+          const fechas = pagosPagados.map(p => new Date(p.fecha_pago));
+          fechaInicio = new Date(Math.min(...fechas));
+        } else {
+          fechaInicio.setMonth(hoy.getMonth() - 6);
+        }
+        break;
+      default: // '6m'
+        fechaInicio.setMonth(hoy.getMonth() - 6);
+    }
+    
+    // 4. Agrupar pagos por mes
+    const datosPorMes = {};
+    
+    pagosPagados.forEach(pago => {
+      const fechaPago = new Date(pago.fecha_pago);
+      
+      if (fechaPago >= fechaInicio && fechaPago <= hoy) {
+        const año = fechaPago.getFullYear();
+        const mes = fechaPago.getMonth();
+        
+        const clave = `${año}-${mes}`;
+        
+        if (!datosPorMes[clave]) {
+          datosPorMes[clave] = {
+            año: año,
+            mes: mes,
+            total: 0
+          };
+        }
+        
+        datosPorMes[clave].total += parseFloat(pago.monto || 0);
+      }
+    });
+    
+    // 5. Ordenar por fecha
+    const mesesOrdenados = Object.values(datosPorMes)
+      .sort((a, b) => {
+        if (a.año !== b.año) return a.año - b.año;
+        return a.mes - b.mes;
+      });
+    
+    // 6. Preparar datos para el gráfico
+    const labels = [];
+    const datos = [];
+    
+    mesesOrdenados.forEach(item => {
+      const fecha = new Date(item.año, item.mes, 1);
+      const nombreMes = fecha.toLocaleDateString('es-ES', { month: 'short' });
+      const nombreMesCapitalizado = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+      
+      labels.push(`${nombreMesCapitalizado} ${item.año}`);
+      datos.push(item.total);
+    });
+    
+    // 7. Actualizar datos reactivamente
+    if (labels.length === 0) {
+      chartDataRecaudacion.value = {
+        labels: ['Sin datos'],
+        datasets: [{
+          label: 'Recaudación (Bs.)',
+          data: [0],
+          fill: true,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          borderWidth: 2
+        }]
+      };
+    } else {
+      chartDataRecaudacion.value = {
+        labels: [...labels],
+        datasets: [{
+          label: 'Recaudación (Bs.)',
+          data: [...datos],
+          fill: true,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          borderWidth: 2
+        }]
+      };
+    }
+    
+    // 8. IMPORTANTE: Esperar a que Vue actualice el DOM
+    await nextTick();
+    
+    console.log(`✅ Gráfico con ${labels.length} meses de datos`);
+    
+  } catch (error) {
+    console.error('❌ Error cargando datos del gráfico:', error);
+    
+    // Datos de fallback
+    chartDataRecaudacion.value = {
+      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+      datasets: [{
+        label: 'Recaudación (Bs.)',
+        data: [1500, 1800, 1200, 2100, 1900, 2200],
+        fill: true,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        borderWidth: 2
+      }]
+    };
+    
+    await nextTick();
+    
+  } finally {
+    cargandoGrafico.value = false;
   }
-  
-  return [];
 }
 
-// Función auxiliar para sumar montos de inscripciones
-function sumarMontos(inscripciones) {
-  return inscripciones.reduce((sum, insc) => {
-    return sum + (parseFloat(insc.monto_mensual) || 0);
-  }, 0);
-}
-
-// Función auxiliar para calcular clases hoy
-
-
-// Función para mostrar estadísticas por defecto
-function mostrarEstadisticasPorDefecto() {
-  estadisticas.value = {
-    totalInscripciones: 0,
-    inscripcionesActivas: 0,
-    inscripcionesEnMora: 0,
-    inscripcionesPorVencer: 0,
-    inscripcionesVencidas: 0,
-    montoEnMora: 0,
-    montoActivas: 0,
-    montoPendientes: 0,
-    recaudacionTotal: 0,
-    recaudacionMes: 0,
-    promedioPago: 0,
-    totalPagos: 0,
-    pagosPagados: 0,
-    pagosPendientes: 0,
-    pagosVencidos: 0,
-    tendenciaInscripciones: 0,
-    tendenciaRecaudacion: 0,
-    tendenciaMora: 0,
-    tendenciaPagosPendientes: 0,
-    clasesHoy: 0,
-    tasaRenovacion: 0,
-    tasaMora: 0
-  };
-}
-
-// Función para calcular tendencia real basada en datos históricos
-
+// ========== WATCHERS ==========
+watch(periodoGrafico, async () => {
+  await cargarDatosGrafico();
+});
 
 // Función simplificada para calcular clases hoy
 function calcularClasesHoy(inscripciones) {
   try {
     const hoy = new Date();
-    const diaSemana = hoy.getDay(); // 0 = Domingo, 1 = Lunes, etc.
-
-    // Mapeo de índice de día a nombre en español
+    const diaSemana = hoy.getDay();
     const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const diaHoy = diasSemana[diaSemana];
 
     let clasesHoy = 0;
 
-    // Solo considerar inscripciones activas
     const inscripcionesActivas = inscripciones.filter(i => {
       const estado = (i.estado || '').toLowerCase().trim();
       return estado === 'activo';
@@ -814,7 +1025,6 @@ function calcularClasesHoy(inscripciones) {
         inscripcion.horarios.forEach(horario => {
           if (horario.dia_semana) {
             const diaHorario = horario.dia_semana.toLowerCase();
-            // Comparar días
             if (diaHorario.includes(diaHoy) || diaHoy.includes(diaHorario)) {
               clasesHoy++;
             }
@@ -829,10 +1039,6 @@ function calcularClasesHoy(inscripciones) {
     return 0;
   }
 }
-
-
-
-
 
 async function cargarUltimasInscripciones() {
   cargandoInscripciones.value = true;
@@ -897,18 +1103,12 @@ async function cargarUltimosPagos() {
 
 async function cargarResumenModalidades() {
   try {
-    console.log('📊 Cargando resumen de modalidades...');
-
-    // Usa el método index que SÍ existe
     const response = await inscripcionService.index(1, 1000, '', {
       include: 'modalidad'
     });
 
-    console.log('📦 Respuesta de modalidades:', response);
-
     let datos = [];
 
-    // Extraer datos según estructura de respuesta
     if (response.data) {
       if (Array.isArray(response.data)) {
         datos = response.data;
@@ -919,7 +1119,6 @@ async function cargarResumenModalidades() {
       }
     }
 
-    // Procesar datos para resumen
     const modalidadesMap = new Map();
 
     datos.forEach(inscripcion => {
@@ -947,21 +1146,16 @@ async function cargarResumenModalidades() {
         Math.round((modalidad.inscripciones / totalInscripciones) * 100) : 0
     })).slice(0, 4);
 
-    console.log(`✅ ${resumenModalidades.value.length} modalidades procesadas`);
-
   } catch (error) {
     console.error('❌ Error cargando resumen de modalidades:', error);
     resumenModalidades.value = [];
   }
 }
 
-
-
 async function cargarAlertasImportantes() {
   try {
     const hoy = new Date();
 
-    // 1. Alertas de pagos vencidos
     const responsePagos = await pagoService.index(1, 50, '', {
       estado: 'pendiente'
     });
@@ -981,7 +1175,6 @@ async function cargarAlertasImportantes() {
       return fechaVencimiento < hoy;
     });
 
-    // 2. Alertas de inscripciones por vencer
     const responseInscripciones = await inscripcionService.index(1, 50, '', {
       estado: 'activo'
     });
@@ -1002,10 +1195,8 @@ async function cargarAlertasImportantes() {
       return diffDias <= 3 && diffDias >= 0;
     });
 
-    // 3. Construir array de alertas
     alertasImportantes.value = [];
 
-    // Agregar alertas de pagos vencidos
     if (pagosVencidos.length > 0) {
       alertasImportantes.value.push({
         tipo: 'pago_vencido',
@@ -1015,12 +1206,11 @@ async function cargarAlertasImportantes() {
         accion: {
           texto: 'Ver pagos',
           icono: 'pi pi-credit-card',
-          ruta: '/pagos'
+          ruta: '/admin/historialpagos'
         }
       });
     }
 
-    // Agregar alertas de inscripciones por vencer
     if (inscripcionesPorVencer.length > 0) {
       alertasImportantes.value.push({
         tipo: 'inscripcion_por_vencer',
@@ -1030,12 +1220,11 @@ async function cargarAlertasImportantes() {
         accion: {
           texto: 'Renovar',
           icono: 'pi pi-refresh',
-          ruta: '/inscripciones'
+          ruta: '/admin/inscripciones'
         }
       });
     }
 
-    // Agregar alerta si hay muchas inscripciones en mora
     if (estadisticas.value.inscripcionesEnMora > 5) {
       alertasImportantes.value.push({
         tipo: 'mora_alta',
@@ -1045,7 +1234,7 @@ async function cargarAlertasImportantes() {
         accion: {
           texto: 'Gestionar',
           icono: 'pi pi-exclamation-triangle',
-          ruta: '/inscripciones?estado=en_mora'
+          ruta: '/admin/inscripciones?estado=en_mora'
         }
       });
     }
@@ -1056,72 +1245,19 @@ async function cargarAlertasImportantes() {
   }
 }
 
-async function cargarDatosGrafico() {
-  cargandoGrafico.value = true;
-  try {
-    // Obtener datos de los últimos 6 meses
-    const meses = [];
-    const datos = [];
-
-    const hoy = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const fecha = new Date();
-      fecha.setMonth(hoy.getMonth() - i);
-
-      const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
-      meses.push(mes.charAt(0).toUpperCase() + mes.slice(1));
-
-      // Aquí deberías obtener datos reales de recaudación por mes
-      // Por ahora usaremos datos de ejemplo
-      datos.push(Math.floor(Math.random() * 5000) + 1000);
-    }
-
-    chartDataRecaudacion.value = {
-      labels: meses,
-      datasets: [
-        {
-          label: 'Recaudación ($)',
-          data: datos,
-          fill: true,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          tension: 0.4
-        }
-      ]
-    };
-
-  } catch (error) {
-    console.error('Error cargando datos del gráfico:', error);
-  } finally {
-    cargandoGrafico.value = false;
-  }
-}
-
 // ========== FUNCIONES AUXILIARES ==========
-function getTrendClass(valor) {
-  if (valor > 0) return 'trend-up';
-  if (valor < 0) return 'trend-down';
-  return 'trend-neutral';
-}
-
-function getTrendIcon(valor) {
-  if (valor > 0) return 'pi pi-arrow-up text-green-500';
-  if (valor < 0) return 'pi pi-arrow-down text-red-500';
-  return 'pi pi-minus text-gray-500';
-}
-
 function calcularProgresoPromedio() {
-  const max = 500; // Suponiendo que $500 es el máximo esperado
+  const max = 500;
   return Math.min(100, (estadisticas.value.promedioPago / max) * 100);
 }
 
 function calcularProgresoClases() {
-  const max = 50; // Suponiendo que 50 clases es el máximo en un día
+  const max = 50;
   return Math.min(100, (estadisticas.value.clasesHoy / max) * 100);
 }
 
 function calcularProgresoVencimientos() {
-  const max = 20; // Suponiendo que 20 inscripciones por vencer es preocupante
+  const max = 20;
   return Math.min(100, (estadisticas.value.inscripcionesPorVencer / max) * 100);
 }
 
@@ -1161,8 +1297,6 @@ function getNombreCompleto(estudiante) {
 }
 
 function getNombreEstudiante(pago) {
-  // Esta función debería obtener el nombre del estudiante desde la inscripción
-  // Por ahora devolvemos un texto genérico
   return `Estudiante #${pago.estudiante_id || pago.inscripcion_id}`;
 }
 
@@ -1228,7 +1362,6 @@ function formatFechaCorta(fecha) {
 }
 
 function irAInscripciones() {
-  // Usa la ruta completa con /admin
   router.push('/admin/inscripciones');
 }
 
@@ -1238,9 +1371,14 @@ function irAPagos() {
 
 // ========== INICIALIZACIÓN ==========
 onMounted(() => {
-  cargarDatos();
-
-  // Configurar actualización automática cada 5 minutos
+  // Inicializar datos del gráfico primero
+  inicializarDatosGrafico();
+  
+  // Pequeño delay para asegurar que Chart.js esté listo
+  setTimeout(() => {
+    cargarDatos();
+  }, 100);
+  
   setInterval(() => {
     if (!cargando.value) {
       cargarDatos();

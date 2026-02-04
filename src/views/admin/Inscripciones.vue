@@ -42,7 +42,7 @@
             <template #content>
               <div class="stat-content">
                 <i class="pi pi-money-bill stat-icon text-green-500"></i>
-                <span class="stat-value">${{ estadisticas.ingresosMes }}</span>
+                <span class="stat-value">Bs.{{ estadisticas.ingresosMes }}</span>
               </div>
             </template>
           </Card>
@@ -171,13 +171,6 @@
 
                 <!-- Estado detallado si está en mora -->
                 <div v-if="slotProps.data.estado === 'en_mora'" class="mt-1">
-                  <div class="flex align-items-center gap-1">
-                    <i class="pi pi-money-bill text-red-500" style="font-size: 0.8rem"></i>
-                    <small class="text-xs text-red-500 font-semibold">
-                      Saldo pendiente: ${{ slotProps.data.saldo_pendiente || 0 }}
-                    </small>
-                  </div>
-
                   <!-- Mostrar días de mora -->
                   <small v-if="slotProps.data.dias_mora" class="text-xs text-orange-500">
                     <i class="pi pi-clock mr-1"></i>
@@ -245,8 +238,8 @@
                 }" @click="registrarPago(slotProps.data)" v-tooltip="getTooltipPago(slotProps.data)"
                   :disabled="slotProps.data.saldo_pendiente <= 0 && slotProps.data.estado !== 'en_mora'" />
 
-              
-                
+
+
               </div>
             </template>
           </Column>
@@ -365,9 +358,10 @@
                     <h5>Estudiante Seleccionado</h5>
                     <div class="info-box">
                       <Avatar :label="getIniciales(estudianteSeleccionado)" size="large" shape="circle" class="mb-2" />
-                      <h6>{{ estudianteSeleccionado.nombres }} {{ estudianteSeleccionado.apellidos }}</h6>
-                      <p class="text-500 mb-1">{{ estudianteSeleccionado.ci }}</p>
-                      <p class="text-500">{{ estudianteSeleccionado.telefono }}</p>
+                      <h6>Nombre completo: {{ estudianteSeleccionado.nombres }} {{ estudianteSeleccionado.apellidos }}
+                      </h6>
+                      <p class="text-500 mb-1"> CI: {{ estudianteSeleccionado.ci }}</p>
+                      <p class="text-500">Celular: {{ estudianteSeleccionado.telefono }}</p>
                       <Divider />
                       <h6>Inscripciones Activas</h6>
                       <div v-if="inscripcionesActivasEstudiante.length > 0">
@@ -594,7 +588,7 @@
               <!-- Horarios seleccionados -->
               <div v-if="horariosSeleccionados.length > 0" class="mt-4 p-3 border-round bg-green-50">
                 <div class="flex justify-content-between align-items-center mb-3">
-                  <h5 class="mt-0 mb-0">✅ Horarios seleccionados ({{ horariosSeleccionados.length }})</h5>>
+                  <h5 class="mt-0 mb-0">✅ Horarios seleccionados ({{ horariosSeleccionados.length }})</h5>
                   <div class="text-lg font-bold text-green-600">Total: ${{ getPrecioTotal() }}</div>
                 </div>
 
@@ -632,346 +626,629 @@
         </StepperPanel>
 
         <!-- Paso 4: Confirmar y Pagar -->
-        <StepperPanel header="Confirmar y Pagar">
-          <template #content="{ prevCallback }">
-            <div class="p-3">
-              <h4>Confirmar Inscripción y Pago</h4>
+      <!-- Paso 4: Confirmar y Pagar -->
+<StepperPanel header="Confirmar y Pagar">
+  <template #content="{ prevCallback }">
+    <div class="p-3">
+      <h4>Confirmar Inscripción y Pago</h4>
 
-              <!-- Mostrar información de la modalidad seleccionada -->
-              <div v-if="modalidadSeleccionada" class="mb-4 p-3 border-round bg-blue-50">
-                <div class="flex justify-content-between align-items-center">
+      <!-- BOTÓN PARA ACTIVAR/DESACTIVAR MODO PRUEBA -->
+      <div class="mb-4">
+        <Button 
+          :label="esPrueba ? '❌ Desactivar Clase de Prueba' : '🎯 Activar Clase de Prueba'" 
+          :icon="esPrueba ? 'pi pi-times' : 'pi pi-star'" 
+          :severity="esPrueba ? 'danger' : 'warning'" 
+          @click="toggleModoPrueba" 
+          class="mb-3 w-full" 
+          outlined
+        />
+      </div>
+
+      <!-- Mostrar información de la modalidad seleccionada -->
+      <div v-if="modalidadSeleccionada" class="mb-4 p-3 border-round" :class="esPrueba ? 'bg-orange-50' : 'bg-blue-50'">
+        <div class="flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mt-0 mb-1">{{ modalidadSeleccionada.nombre }}</h5>
+            <div class="flex align-items-center gap-2">
+              <template v-if="esPrueba">
+                <Tag value="🎯 CLASE DE PRUEBA" severity="warning" />
+                <Tag :value="`1 clase/día`" severity="info" />
+                <Tag :value="`Bs.${montoPrueba}`" severity="success" />
+              </template>
+              <template v-else>
+                <Tag :value="`${modalidadSeleccionada.clases_mensuales} clases/mes`" severity="info" />
+                <Tag :value="`$${modalidadSeleccionada.precio_mensual}`" severity="success" />
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid mb-4">
+        <div class="col-12 md:col-7">
+          <Card class="mb-3">
+            <template #title>
+              <template v-if="esPrueba">🎯 Resumen de la Clase de Prueba</template>
+              <template v-else>📋 Resumen de la Inscripción</template>
+            </template>
+            <template #content>
+              <div class="mb-4">
+                <h6 class="mt-0 mb-2">👤 Estudiante</h6>
+                <div class="flex align-items-center">
+                  <Avatar :label="getIniciales(estudianteSeleccionado)" class="mr-2" />
                   <div>
-                    <h5 class="mt-0 mb-1">{{ modalidadSeleccionada.nombre }}</h5>
-                    <div class="flex align-items-center gap-2">
-                      <Tag :value="`${modalidadSeleccionada.clases_mensuales} clases/mes`" severity="info" />
-                      <Tag :value="`$${modalidadSeleccionada.precio_mensual}`" severity="success" />
+                    <div class="font-bold">{{ estudianteSeleccionado?.nombres }} {{
+                      estudianteSeleccionado?.apellidos }}</div>
+                    <small class="text-500">CI: {{ estudianteSeleccionado?.ci }}</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <h6 class="mt-0 mb-2">📅 Horarios seleccionados</h6>
+                <div class="grid">
+                  <div v-for="(horario, index) in horariosSeleccionadosDetalles" :key="horario.id"
+                    class="col-12 md:col-6 mb-2">
+                    <div class="p-2 border-round border-1 surface-border" :class="esPrueba ? 'bg-orange-50' : 'bg-gray-50'">
+                      <div class="flex justify-content-between align-items-center">
+                        <div class="font-bold">{{ horario.dia_semana }}</div>
+                        <Tag :value="`#${index + 1}`" :severity="esPrueba ? 'warning' : 'info'" />
+                      </div>
+                      <div class="text-sm">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</div>
+                      <div class="text-xs text-500">
+                        {{ horario.entrenador_nombre }} | {{ horario.sucursal_nombre }}
+                      </div>
+                      <!-- Advertencia si es prueba y tiene más de 1 horario -->
+                      <div v-if="esPrueba && horariosSeleccionadosDetalles.length > 1" 
+                           class="mt-2 p-1 bg-red-50 border-round">
+                        <small class="text-red-600">
+                          <i class="pi pi-exclamation-triangle mr-1"></i>
+                          Clase de prueba: Solo se aplicará al primer horario
+                        </small>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="grid mb-4">
-                <div class="col-12 md:col-7">
-                  <Card class="mb-3">
-                    <template #title>📋 Resumen de la Inscripción</template>
-                    <template #content>
-                      <div class="mb-4">
-                        <h6 class="mt-0 mb-2">👤 Estudiante</h6>
-                        <div class="flex align-items-center">
-                          <Avatar :label="getIniciales(estudianteSeleccionado)" class="mr-2" />
-                          <div>
-                            <div class="font-bold">{{ estudianteSeleccionado?.nombres }} {{
-                              estudianteSeleccionado?.apellidos }}</div>
-                            <small class="text-500">CI: {{ estudianteSeleccionado?.ci }}</small>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="mb-4">
-                        <h6 class="mt-0 mb-2">📅 Horarios seleccionados</h6>
-                        <div class="grid">
-                          <div v-for="(horario, index) in horariosSeleccionadosDetalles" :key="horario.id"
-                            class="col-12 md:col-6 mb-2">
-                            <div class="p-2 border-round border-1 surface-border bg-gray-50">
-                              <div class="flex justify-content-between align-items-center">
-                                <div class="font-bold">{{ horario.dia_semana }}</div>
-                                <Tag :value="`#${index + 1}`" severity="info" />
-                              </div>
-                              <div class="text-sm">{{ horario.hora_inicio }} - {{ horario.hora_fin }}</div>
-                              <div class="text-xs text-500">
-                                {{ horario.entrenador_nombre }} | {{ horario.sucursal_nombre }}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Información de cálculo de clases -->
-                      <div class="mb-4 p-3 border-round bg-green-50">
-                        <h6 class="mt-0 mb-2">📊 Cálculo de Clases</h6>
-                        <div class="grid">
-                          <div class="col-12 md:col-4">
-                            <div class="field">
-                              <label class="text-500 block mb-1">Clases por mes</label>
-                              <div class="font-bold">{{ modalidadSeleccionada?.clases_mensuales || '--' }}</div>
-                            </div>
-                          </div>
-                          <div class="col-12 md:col-4">
-                            <div class="field">
-                              <label class="text-500 block mb-1">Duración</label>
-                              <div class="font-bold">{{ calcularMesesDuracion() }} meses</div>
-                            </div>
-                          </div>
-                          <div class="col-12 md:col-4">
-                            <div class="field">
-                              <label class="text-500 block mb-1">Clases totales</label>
-                              <div class="font-bold text-green-600">{{ calcularClasesTotales() }}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="grid">
-                        <div class="col-12 md:col-6">
-                          <div class="field mb-3">
-                            <label for="fecha_inicio" class="text-500 block mb-1">Fecha de inicio *</label>
-                            <Calendar v-model="inscripcionForm.fecha_inicio" dateFormat="dd/mm/yy" class="w-full"
-                              :minDate="hoy" showIcon />
-                          </div>
-                        </div>
-                        <div class="col-12 md:col-6">
-                          <div class="field mb-3">
-                            <label for="fecha_fin" class="text-500 block mb-1">Fecha de fin *</label>
-                            <Calendar v-model="inscripcionForm.fecha_fin" dateFormat="dd/mm/yy" class="w-full"
-                              :minDate="inscripcionForm.fecha_inicio || hoy" showIcon />
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </Card>
-                </div>
-
-                <!-- SECCIÓN DE PAGO COMPLETA -->
-                <div class="col-12 md:col-5">
-                  <Card class="mb-3">
-                    <template #title>💰 Información de Pago</template>
-                    <template #content>
-                      <div class="space-y-4">
-                        <!-- Mostrar precio total -->
-                        <div>
-                          <label class="text-500 block mb-1">Precio Total de la Modalidad</label>
-                          <div class="text-2xl font-bold text-green-600">
-                            ${{ getPrecioTotal() }}
-                          </div>
-                          <small class="text-500">{{ calcularMesesDuracion() }} mes(es) × ${{
-                            modalidadSeleccionada?.precio_mensual || 0 }}/mes</small>
-                        </div>
-
-                        <!-- Opción para dividir pago -->
-                        <div class="field-checkbox mb-3">
-                          <Checkbox v-model="dividirPago" :binary="true" inputId="dividir_pago"
-                            :disabled="pagoForm.monto >= getPrecioTotal()" />
-                          <label for="dividir_pago" class="ml-2 cursor-pointer">
-                            <span class="font-medium">Dividir pago en 2 partes</span>
-                            <small class="text-500 block">Pagar mitad ahora y mitad después</small>
-                          </label>
-                        </div>
-
-                        <!-- Campo para ingresar el monto del pago -->
-                        <div class="field">
-                          <label for="monto_pago" class="text-500 block mb-1">
-                            <span v-if="dividirPago">Monto a Pagar Ahora *</span>
-                            <span v-else>Monto a Pagar *</span>
-                          </label>
-                          <div class="p-inputgroup">
-                            <span class="p-inputgroup-addon">$</span>
-                            <InputNumber v-model="pagoForm.monto" :min="0" :max="getPrecioTotal()" :step="10"
-                              class="w-full" :class="{
-                                'p-invalid': !pagoForm.monto || pagoForm.monto <= 0 || pagoForm.monto > getPrecioTotal(),
-                                'border-yellow-300': dividirPago && pagoForm.monto < getPrecioTotal() / 2
-                              }" :placeholder="dividirPago ? 'Ej: 300' : 'Ingrese el monto'" />
-
-                            <!-- Botón para sugerir mitad -->
-                            <Button v-if="dividirPago" label="Mitad" @click="pagoForm.monto = getPrecioTotal() / 2"
-                              class="p-button-outlined p-button-sm" :disabled="pagoForm.monto >= getPrecioTotal()" />
-                          </div>
-
-                          <!-- Mensajes de validación y saldo -->
-                          <div class="mt-2">
-                            <small v-if="!pagoForm.monto || pagoForm.monto <= 0" class="p-error block">
-                              Ingrese un monto válido
-                            </small>
-                            <small v-else-if="pagoForm.monto > getPrecioTotal()" class="p-error block">
-                              El monto no puede ser mayor a ${{ getPrecioTotal() }}
-                            </small>
-
-                            <!-- Mostrar información de división -->
-                            <div v-if="dividirPago && pagoForm.monto > 0" class="text-sm">
-                              <div class="flex justify-between text-500 mt-1">
-                                <span>Total a pagar:</span>
-                                <span class="font-bold">${{ getPrecioTotal() }}</span>
-                              </div>
-                              <div class="flex justify-between mt-1"
-                                :class="pagoForm.monto < getPrecioTotal() / 2 ? 'text-yellow-600' : 'text-green-600'">
-                                <span>Pagando ahora:</span>
-                                <span class="font-bold">${{ pagoForm.monto }}</span>
-                              </div>
-                              <div class="flex justify-between mt-1 text-blue-600">
-                                <span>Saldo pendiente:</span>
-                                <span class="font-bold">${{ (getPrecioTotal() - pagoForm.monto).toFixed(2) }}</span>
-                              </div>
-
-                              <!-- Advertencia si paga menos de la mitad -->
-                              <div v-if="pagoForm.monto < getPrecioTotal() / 2"
-                                class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                                <i class="pi pi-exclamation-triangle text-yellow-600 mr-2"></i>
-                                <span class="text-yellow-700 text-xs">
-                                  Está pagando menos de la mitad. Se creará una segunda cuota de ${{ (getPrecioTotal() -
-                                    pagoForm.monto).toFixed(2) }}
-                                </span>
-                              </div>
-                            </div>
-
-                            <!-- Mostrar si es pago completo -->
-                            <div v-else-if="pagoForm.monto > 0" class="text-sm">
-                              <div class="flex justify-between mt-1">
-                                <span class="text-500">Total:</span>
-                                <span class="font-bold text-green-600">${{ getPrecioTotal() }}</span>
-                              </div>
-                              <div v-if="pagoForm.monto === getPrecioTotal()" class="text-green-600 text-xs mt-1">
-                                <i class="pi pi-check-circle mr-1"></i> Pago completo
-                              </div>
-                              <div v-else-if="pagoForm.monto < getPrecioTotal()" class="text-blue-600 text-xs mt-1">
-                                <i class="pi pi-info-circle mr-1"></i> Pago parcial (saldo: ${{ (getPrecioTotal() -
-                                  pagoForm.monto).toFixed(2) }})
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Método de pago -->
-                        <div class="field">
-                          <label for="metodo_pago" class="text-500 block mb-1">Método de Pago *</label>
-                          <Dropdown v-model="pagoForm.metodo_pago" :options="metodosPago" optionLabel="label"
-                            optionValue="value" placeholder="Seleccione método" class="w-full"
-                            :class="{ 'p-invalid': !pagoForm.metodo_pago }" />
-                          <small v-if="!pagoForm.metodo_pago" class="p-error">Seleccione un método de pago</small>
-                        </div>
-
-                        <!-- Fecha de pago -->
-                        <div class="field">
-                          <label for="fecha_pago" class="text-500 block mb-1">Fecha de Pago</label>
-                          <Calendar v-model="pagoForm.fecha_pago" dateFormat="dd/mm/yy" class="w-full"
-                            :maxDate="new Date()" showIcon />
-                        </div>
-
-                        <!-- Observaciones -->
-                        <div class="field">
-                          <label for="observacion" class="text-500 block mb-1">Observaciones (Opcional)</label>
-                          <Textarea v-model="pagoForm.observacion" rows="2" class="w-full"
-                            :placeholder="getPlaceholderObservacion()" />
-                        </div>
-
-                        <!-- Resumen del pago dividido -->
-                        <div v-if="dividirPago && pagoForm.monto > 0 && pagoForm.monto < getPrecioTotal()"
-                          class="p-3 border-round bg-blue-50 border-1 border-blue-200">
-                          <h6 class="mt-0 mb-2 flex align-items-center">
-                            <i class="pi pi-calendar-plus text-blue-500 mr-2"></i>
-                            <span>Plan de Pago</span>
-                          </h6>
-                          <div class="grid">
-                            <div class="col-12 md:col-6">
-                              <div class="text-sm">
-                                <div class="font-bold text-blue-700">Primera cuota</div>
-                                <div>Monto: ${{ pagoForm.monto }}</div>
-                                <div>Fecha: {{ formatFecha(pagoForm.fecha_pago || new Date()) }}</div>
-                                <div>Estado:
-                                  <Tag value="Pagando ahora" severity="success" class="ml-1" />
-                                </div>
-                              </div>
-                            </div>
-                            <div class="col-12 md:col-6">
-                              <div class="text-sm">
-                                <div class="font-bold text-blue-700">Segunda cuota</div>
-                                <div>Monto: ${{ (getPrecioTotal() - pagoForm.monto).toFixed(2) }}</div>
-                                <div>Fecha: {{ calcularFechaSegundaCuota() }}</div>
-                                <div>Estado:
-                                  <Tag value="Pendiente" severity="warning" class="ml-1" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <small class="text-500 block mt-2">
-                            <i class="pi pi-info-circle mr-1"></i>
-                            La segunda cuota se creará automáticamente como pendiente
-                          </small>
-                        </div>
-
-                        <Divider />
-                        <div class="text-sm">
-                          <div class="flex align-items-center mb-2">
-                            <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                            <span>{{ modalidadSeleccionada?.clases_mensuales || 12 }} clases mensuales</span>
-                          </div>
-                          <div class="flex align-items-center mb-2">
-                            <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                            <span>{{ modalidadSeleccionada?.permisos_maximos || 3 }} permisos</span>
-                          </div>
-                          <div class="flex align-items-center">
-                            <i class="pi pi-check-circle text-green-500 mr-2"></i>
-                            <span>Acceso a instalaciones</span>
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </Card>
+              <!-- Información de cálculo de clases -->
+              <div v-if="!esPrueba" class="mb-4 p-3 border-round bg-green-50">
+                <h6 class="mt-0 mb-2">📊 Cálculo de Clases</h6>
+                <div class="grid">
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Clases por mes</label>
+                      <div class="font-bold">{{ modalidadSeleccionada?.clases_mensuales || '--' }}</div>
+                    </div>
+                  </div>
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Duración</label>
+                      <div class="font-bold">{{ calcularMesesDuracion() }} meses</div>
+                    </div>
+                  </div>
+                  <div class="col-12 md:col-4">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Clases totales</label>
+                      <div class="font-bold text-green-600">{{ calcularClasesTotales() }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Resumen Final -->
-              <!-- En el paso 4: Confirmar y Pagar, actualiza esta sección -->
-              <Card class="mb-4">
-                <template #title>✅ Resumen Final</template>
-                <template #content>
-                  <div class="grid">
-                    <div class="col-12 md:col-4">
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Modalidad:</span>
-                        <span class="font-bold">{{ modalidadSeleccionada?.nombre || '--' }}</span>
-                      </div>
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Horarios:</span>
-                        <span class="font-bold">{{ horariosSeleccionados.length }}</span>
-                      </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Duración:</span>
-                        <span class="font-bold">{{ calcularMesesDuracion() }} meses</span>
-                      </div>
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Período:</span>
-                        <span class="font-bold">{{ formatFecha(inscripcionForm.fecha_inicio) }} - {{
-                          formatFecha(inscripcionForm.fecha_fin) }}</span>
-                      </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Clases mod:</span>
-                        <span class="font-bold">{{ modalidadSeleccionada?.clases_mensuales || '12' }}/mes</span>
-                      </div>
-                      <div class="flex justify-content-between mb-2">
-                        <span class="text-500">Clases estimadas:</span>
-                        <span class="font-bold text-green-600">{{getDistribucionEstimada().reduce((sum, d) => sum +
-                          d.clases, 0)}}</span>
-                      </div>
+              <!-- Para modo prueba: información específica -->
+              <div v-if="esPrueba" class="mb-4 p-3 border-round bg-orange-50">
+                <h6 class="mt-0 mb-2">🎯 Información de la Clase de Prueba</h6>
+                <div class="grid">
+                  <div class="col-12 md:col-6">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Duración</label>
+                      <div class="font-bold">1 día</div>
                     </div>
                   </div>
-                  <Divider />
-                  <div class="mt-2">
-                    <div class="text-500 mb-1">Distribución real estimada (basada en fechas):</div>
-                    <div class="flex flex-wrap gap-2">
-                      <Chip v-for="(dist, index) in getDistribucionEstimada()" :key="index"
-                        :label="`${dist.horario.dia_semana}: ${dist.clases} clases`" severity="info" />
+                  <div class="col-12 md:col-6">
+                    <div class="field">
+                      <label class="text-500 block mb-1">Clases incluidas</label>
+                      <div class="font-bold text-orange-600">1 clase</div>
                     </div>
-                    <small class="text-500 mt-1 block">
-                      * Clases estimadas para el período seleccionado. La modalidad ofrece {{
-                        modalidadSeleccionada?.clases_mensuales || 12 }} clases mensuales.
+                  </div>
+                  <div class="col-12">
+                    <small class="text-500">
+                      <i class="pi pi-info-circle mr-1"></i>
+                      El estudiante podrá asistir a 1 clase en el horario seleccionado
                     </small>
                   </div>
-                </template>
-              </Card>
+                </div>
+              </div>
 
-              <div class="flex justify-content-between mt-4">
-                <Button label="Atrás" severity="secondary" @click="pasoActual = 2;" />
-                <Button label="✅ Confirmar Inscripción y Pago" severity="success" @click="guardarInscripcionYpago"
-                  :loading="guardando"
-                  :disabled="!pagoForm.metodo_pago || !inscripcionForm.fecha_inicio || !inscripcionForm.fecha_fin || !pagoForm.monto || pagoForm.monto <= 0" />
+              <div class="grid">
+                <div class="col-12 md:col-6">
+                  <div class="field mb-3">
+                    <label for="fecha_inicio" class="text-500 block mb-1">Fecha de inicio *</label>
+                    <Calendar v-model="inscripcionForm.fecha_inicio" dateFormat="dd/mm/yy" class="w-full"
+                      :minDate="hoy" showIcon :disabled="esPrueba" />
+                    <small v-if="esPrueba" class="text-500">
+                      <i class="pi pi-info-circle mr-1"></i>
+                      Fecha automática: hoy
+                    </small>
+                  </div>
+                </div>
+                <div class="col-12 md:col-6">
+                  <div class="field mb-3">
+                    <label for="fecha_fin" class="text-500 block mb-1">Fecha de fin *</label>
+                    <Calendar v-model="inscripcionForm.fecha_fin" dateFormat="dd/mm/yy" class="w-full"
+                      :minDate="inscripcionForm.fecha_inicio || hoy" showIcon :disabled="esPrueba" />
+                    <small v-if="esPrueba" class="text-500">
+                      <i class="pi pi-info-circle mr-1"></i>
+                      Fecha automática: mañana
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
+
+        <!-- SECCIÓN DE PAGO COMPLETA CON DESCUENTO Y PRUEBA -->
+        <div class="col-12 md:col-5">
+          <Card class="mb-3">
+            <template #title>
+              <template v-if="esPrueba">💰 Pago de Clase de Prueba</template>
+              <template v-else>💰 Información de Pago</template>
+            </template>
+            <template #content>
+              <div class="space-y-4">
+                <!-- Mostrar precio total -->
+                <div>
+                  <label class="text-500 block mb-1">
+                    <template v-if="esPrueba">Precio de la Clase de Prueba</template>
+                    <template v-else>Precio Total de la Modalidad</template>
+                  </label>
+                  <div class="text-2xl font-bold" :class="esPrueba ? 'text-orange-600' : 'text-green-600'">
+                    <template v-if="esPrueba">
+                      Bs.{{ montoPrueba }}
+                    </template>
+                    <template v-else>
+                      ${{ getPrecioTotal() }}
+                    </template>
+                  </div>
+                  <small class="text-500">
+                    <template v-if="esPrueba">
+                      1 día × Bs.{{ montoPrueba }}/día
+                    </template>
+                    <template v-else>
+                      {{ calcularMesesDuracion() }} mes(es) × ${{
+                        modalidadSeleccionada?.precio_mensual || 0 }}/mes
+                    </template>
+                  </small>
+                </div>
+
+                <!-- SECCIÓN DE MONTO DE PRUEBA -->
+                <div v-if="esPrueba" class="field mb-3">
+                  <label class="text-500 block mb-1">Monto de la prueba (Bolivianos) *</label>
+                  <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon">Bs.</span>
+                    <InputNumber v-model="montoPrueba" :min="0" :max="1000" :step="5" class="w-full"
+                      placeholder="Ej: 30" mode="currency" currency="BOB" locale="es-BO" />
+                    <Button label="30" @click="montoPrueba = 30" class="p-button-outlined p-button-sm" />
+                    <Button label="50" @click="montoPrueba = 50" class="p-button-outlined p-button-sm" />
+                  </div>
+                  <small class="text-500">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    Monto sugerido: Bs.30 para clases de prueba
+                  </small>
+                </div>
+
+                <!-- ========== SECCIÓN DE DESCUENTO (solo si no es prueba) ========== -->
+                <div v-if="!esPrueba" class="field mb-3">
+                  <label class="text-500 block mb-1">Descuento (Opcional)</label>
+                  <div class="flex gap-2 align-items-center mb-2">
+                    <div class="p-inputgroup" style="flex: 1">
+                      <span class="p-inputgroup-addon">%</span>
+                      <InputNumber v-model="descuentoPorcentaje" :min="0" :max="100" :step="1" class="w-full"
+                        placeholder="Porcentaje" @input="calcularDescuento()" :disabled="descuentoMonto > 0" />
+                    </div>
+                    <span class="text-500 text-xs">o</span>
+                    <div class="p-inputgroup" style="flex: 1">
+                      <span class="p-inputgroup-addon">$</span>
+                      <InputNumber v-model="descuentoMonto" :min="0" :max="getPrecioTotal()" :step="10"
+                        class="w-full" placeholder="Monto fijo" @input="calcularDescuento()"
+                        :disabled="descuentoPorcentaje > 0" />
+                    </div>
+                    <Button icon="pi pi-times" class="p-button-rounded p-button-text p-button-sm"
+                      @click="limpiarDescuento" :disabled="!descuentoAplicado" v-tooltip="'Quitar descuento'" />
+                  </div>
+
+                  <!-- Mostrar descuento aplicado -->
+                  <div v-if="descuentoAplicado > 0" class="p-2 border-round bg-blue-50">
+                    <div class="flex justify-content-between text-sm mb-1">
+                      <span class="text-500">Subtotal:</span>
+                      <span>${{ subtotal.toFixed(2) }}</span>
+                    </div>
+                    <div class="flex justify-content-between text-sm mb-1">
+                      <span class="text-500">Descuento:</span>
+                      <span class="font-bold text-red-600">- ${{ descuentoAplicado.toFixed(2) }}</span>
+                    </div>
+                    <div class="flex justify-content-between text-sm mt-2 pt-1 border-top-1">
+                      <span class="text-500 font-medium">Total con descuento:</span>
+                      <span class="font-bold text-lg text-green-600">${{ calcularPrecioConDescuento().toFixed(2)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Opción para dividir pago (solo si no es prueba) -->
+                <div v-if="!esPrueba" class="field-checkbox mb-3">
+                  <Checkbox v-model="dividirPago" :binary="true" inputId="dividir_pago"
+                    :disabled="pagoForm.monto >= calcularPrecioConDescuento()" />
+                  <label for="dividir_pago" class="ml-2 cursor-pointer">
+                    <span class="font-medium">Dividir pago en 2 partes</span>
+                    <small class="text-500 block">Pagar mitad ahora y mitad después</small>
+                  </label>
+                </div>
+
+                <!-- Campo para ingresar el monto del pago -->
+                <div class="field">
+                  <label for="monto_pago" class="text-500 block mb-1">
+                    <template v-if="esPrueba">Monto a Pagar *</template>
+                    <template v-else-if="dividirPago">Monto a Pagar Ahora *</template>
+                    <template v-else>Monto a Pagar *</template>
+                  </label>
+                  <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon" v-if="!esPrueba">$</span>
+                    <span class="p-inputgroup-addon" v-else>Bs.</span>
+                    
+                    <InputNumber v-model="pagoForm.monto" 
+                      :min="0" 
+                      :max="esPrueba ? montoPrueba : calcularPrecioConDescuento()"
+                      :step="esPrueba ? 5 : 10" 
+                      class="w-full" 
+                      :class="{
+                        'p-invalid': !pagoForm.monto || pagoForm.monto <= 0 || pagoForm.monto > (esPrueba ? montoPrueba : calcularPrecioConDescuento()),
+                        'border-yellow-300': dividirPago && pagoForm.monto < calcularPrecioConDescuento() / 2
+                      }"
+                      :placeholder="esPrueba ? `Ej: ${montoPrueba}` : (dividirPago ? `Ej: ${(calcularPrecioConDescuento() / 2).toFixed(0)}` : `Ej: ${calcularPrecioConDescuento().toFixed(0)}`)" />
+
+                    <!-- Botón para sugerir monto -->
+                    <Button v-if="esPrueba && montoPrueba"
+                      :label="`Pagar Bs.${montoPrueba}`"
+                      @click="pagoForm.monto = montoPrueba"
+                      class="p-button-outlined p-button-sm"
+                      :disabled="pagoForm.monto >= montoPrueba" />
+                    
+                    <Button v-else-if="dividirPago"
+                      :label="`Mitad ($${(calcularPrecioConDescuento() / 2).toFixed(0)})`"
+                      @click="pagoForm.monto = calcularPrecioConDescuento() / 2"
+                      class="p-button-outlined p-button-sm"
+                      :disabled="pagoForm.monto >= calcularPrecioConDescuento()" />
+                  </div>
+
+                  <!-- Mensajes de validación y saldo -->
+                  <div class="mt-2">
+                    <small v-if="!pagoForm.monto || pagoForm.monto <= 0" class="p-error block">
+                      Ingrese un monto válido
+                    </small>
+                    <small v-else-if="!esPrueba && pagoForm.monto > calcularPrecioConDescuento()" class="p-error block">
+                      El monto no puede ser mayor a ${{ calcularPrecioConDescuento().toFixed(2) }}
+                    </small>
+                    <small v-else-if="esPrueba && pagoForm.monto > montoPrueba" class="p-error block">
+                      El monto no puede ser mayor a Bs.{{ montoPrueba }}
+                    </small>
+
+                    <!-- Mostrar información de división (solo si no es prueba) -->
+                    <div v-if="!esPrueba && dividirPago && pagoForm.monto > 0" class="text-sm">
+                      <div class="flex justify-between text-500 mt-1">
+                        <span>Total a pagar{{ descuentoAplicado > 0 ? ' (con descuento)' : '' }}:</span>
+                        <span class="font-bold">${{ calcularPrecioConDescuento().toFixed(2) }}</span>
+                      </div>
+                      <div class="flex justify-between mt-1"
+                        :class="pagoForm.monto < calcularPrecioConDescuento() / 2 ? 'text-yellow-600' : 'text-green-600'">
+                        <span>Pagando ahora:</span>
+                        <span class="font-bold">${{ pagoForm.monto }}</span>
+                      </div>
+                      <div class="flex justify-between mt-1 text-blue-600">
+                        <span>Saldo pendiente:</span>
+                        <span class="font-bold">${{ (calcularPrecioConDescuento() - pagoForm.monto).toFixed(2)
+                        }}</span>
+                      </div>
+
+                      <!-- Advertencia si paga menos de la mitad -->
+                      <div v-if="pagoForm.monto < calcularPrecioConDescuento() / 2"
+                        class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                        <i class="pi pi-exclamation-triangle text-yellow-600 mr-2"></i>
+                        <span class="text-yellow-700 text-xs">
+                          Está pagando menos de la mitad. Se creará una segunda cuota de ${{
+                            (calcularPrecioConDescuento() -
+                              pagoForm.monto).toFixed(2) }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Mostrar si es pago completo (solo si no es prueba) -->
+                    <div v-else-if="!esPrueba && pagoForm.monto > 0" class="text-sm">
+                      <div class="flex justify-between mt-1">
+                        <span class="text-500">Total{{ descuentoAplicado > 0 ? ' (con descuento)' : ''
+                          }}:</span>
+                        <span class="font-bold text-green-600">${{ calcularPrecioConDescuento().toFixed(2)
+                        }}</span>
+                      </div>
+                      <div v-if="pagoForm.monto === calcularPrecioConDescuento()"
+                        class="text-green-600 text-xs mt-1">
+                        <i class="pi pi-check-circle mr-1"></i> Pago completo
+                      </div>
+                      <div v-else-if="pagoForm.monto < calcularPrecioConDescuento()"
+                        class="text-blue-600 text-xs mt-1">
+                        <i class="pi pi-info-circle mr-1"></i> Pago parcial (saldo: ${{
+                          (calcularPrecioConDescuento() -
+                            pagoForm.monto).toFixed(2) }})
+                      </div>
+                    </div>
+
+                    <!-- Mostrar información de pago de prueba -->
+                    <div v-else-if="esPrueba && pagoForm.monto > 0" class="text-sm">
+                      <div class="flex justify-between mt-1">
+                        <span class="text-500">Total clase de prueba:</span>
+                        <span class="font-bold text-orange-600">Bs.{{ montoPrueba }}</span>
+                      </div>
+                      <div v-if="pagoForm.monto === montoPrueba"
+                        class="text-green-600 text-xs mt-1">
+                        <i class="pi pi-check-circle mr-1"></i> Pago completo
+                      </div>
+                      <div v-else-if="pagoForm.monto < montoPrueba"
+                        class="text-blue-600 text-xs mt-1">
+                        <i class="pi pi-info-circle mr-1"></i> Pago parcial (saldo: Bs.{{
+                          (montoPrueba - pagoForm.monto).toFixed(2) }})
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Método de pago -->
+                <div class="field">
+                  <label for="metodo_pago" class="text-500 block mb-1">Método de Pago *</label>
+                  <Dropdown v-model="pagoForm.metodo_pago" :options="metodosPago" optionLabel="label"
+                    optionValue="value" placeholder="Seleccione método" class="w-full"
+                    :class="{ 'p-invalid': !pagoForm.metodo_pago }" />
+                  <small v-if="!pagoForm.metodo_pago" class="p-error">Seleccione un método de pago</small>
+                </div>
+
+                <!-- Fecha de pago -->
+                <div class="field">
+                  <label for="fecha_pago" class="text-500 block mb-1">Fecha de Pago</label>
+                  <Calendar v-model="pagoForm.fecha_pago" dateFormat="dd/mm/yy" class="w-full"
+                    :maxDate="new Date()" showIcon />
+                </div>
+
+                <!-- Observaciones -->
+                <div class="field">
+                  <label for="observacion" class="text-500 block mb-1">Observaciones (Opcional)</label>
+                  <Textarea v-model="pagoForm.observacion" rows="2" class="w-full"
+                    :placeholder="getPlaceholderObservacion()" />
+                </div>
+
+                <!-- Resumen del pago dividido (solo si no es prueba) -->
+                <div v-if="!esPrueba && dividirPago && pagoForm.monto > 0 && pagoForm.monto < calcularPrecioConDescuento()"
+                  class="p-3 border-round bg-blue-50 border-1 border-blue-200">
+                  <h6 class="mt-0 mb-2 flex align-items-center">
+                    <i class="pi pi-calendar-plus text-blue-500 mr-2"></i>
+                    <span>Plan de Pago</span>
+                  </h6>
+                  <div class="grid">
+                    <div class="col-12 md:col-6">
+                      <div class="text-sm">
+                        <div class="font-bold text-blue-700">Primera cuota</div>
+                        <div>Monto: ${{ pagoForm.monto }}</div>
+                        <div>Fecha: {{ formatFecha(pagoForm.fecha_pago || new Date()) }}</div>
+                        <div>Estado:
+                          <Tag value="Pagando ahora" severity="success" class="ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 md:col-6">
+                      <div class="text-sm">
+                        <div class="font-bold text-blue-700">Segunda cuota</div>
+                        <div>Monto: ${{ (calcularPrecioConDescuento() - pagoForm.monto).toFixed(2) }}</div>
+                        <div>Fecha: {{ calcularFechaSegundaCuota() }}</div>
+                        <div>Estado:
+                          <Tag value="Pendiente" severity="warning" class="ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <small class="text-500 block mt-2">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    La segunda cuota se creará automáticamente como pendiente
+                  </small>
+                </div>
+
+                <!-- Resumen de beneficios (solo si no es prueba) -->
+                <div v-if="!esPrueba">
+                  <Divider />
+                  <div class="text-sm">
+                    <div class="flex align-items-center mb-2">
+                      <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                      <span>{{ modalidadSeleccionada?.clases_mensuales || 12 }} clases mensuales</span>
+                    </div>
+                    <div class="flex align-items-center mb-2">
+                      <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                      <span>{{ modalidadSeleccionada?.permisos_maximos || 3 }} permisos</span>
+                    </div>
+                    <div class="flex align-items-center">
+                      <i class="pi pi-check-circle text-green-500 mr-2"></i>
+                      <span>Acceso a instalaciones</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Resumen de beneficios para prueba -->
+                <div v-else>
+                  <Divider />
+                  <div class="text-sm">
+                    <div class="flex align-items-center mb-2">
+                      <i class="pi pi-check-circle text-orange-500 mr-2"></i>
+                      <span>1 clase de prueba incluida</span>
+                    </div>
+                    <div class="flex align-items-center mb-2">
+                      <i class="pi pi-check-circle text-orange-500 mr-2"></i>
+                      <span>Válido por 24 horas</span>
+                    </div>
+                    <div class="flex align-items-center">
+                      <i class="pi pi-check-circle text-orange-500 mr-2"></i>
+                      <span>Acceso limitado a instalaciones</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </Card>
+        </div>
+      </div>
+
+      <!-- Resumen Final actualizado -->
+      <Card class="mb-4">
+        <template #title>
+          <template v-if="esPrueba">✅ Resumen Final - Clase de Prueba</template>
+          <template v-else>✅ Resumen Final</template>
+        </template>
+        <template #content>
+          <div class="grid">
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Modalidad:</span>
+                <span class="font-bold">{{ modalidadSeleccionada?.nombre || '--' }}</span>
+              </div>
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Horarios:</span>
+                <span class="font-bold">{{ horariosSeleccionados.length }}</span>
               </div>
             </div>
-          </template>
-        </StepperPanel>
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Duración:</span>
+                <span class="font-bold">
+                  <template v-if="esPrueba">1 día</template>
+                  <template v-else>{{ calcularMesesDuracion() }} meses</template>
+                </span>
+              </div>
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Período:</span>
+                <span class="font-bold">{{ formatFecha(inscripcionForm.fecha_inicio) }} - {{
+                  formatFecha(inscripcionForm.fecha_fin) }}</span>
+              </div>
+            </div>
+            <div class="col-12 md:col-4">
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">
+                  <template v-if="esPrueba">Clase incl.:</template>
+                  <template v-else>Clases mod:</template>
+                </span>
+                <span class="font-bold">
+                  <template v-if="esPrueba">1 clase</template>
+                  <template v-else>{{ modalidadSeleccionada?.clases_mensuales || '12' }}/mes</template>
+                </span>
+              </div>
+              <div class="flex justify-content-between mb-2">
+                <span class="text-500">Clases totales:</span>
+                <span class="font-bold" :class="esPrueba ? 'text-orange-600' : 'text-green-600'">
+                  <template v-if="esPrueba">1</template>
+                  <template v-else>{{ getDistribucionEstimada().reduce((sum, d) => sum + d.clases, 0) }}</template>
+                </span>
+              </div>
+            </div>
+          </div>
 
+          <!-- Resumen financiero -->
+          <Divider />
+          <div class="mt-2 p-3 border-round" :class="esPrueba ? 'bg-orange-50' : 'bg-green-50'">
+            <h6 class="mt-0 mb-2" :class="esPrueba ? 'text-orange-700' : 'text-green-700'">
+              <template v-if="esPrueba">💵 Resumen de Pago - Prueba</template>
+              <template v-else>💵 Resumen Financiero</template>
+            </h6>
+            <div class="space-y-2">
+              <div v-if="!esPrueba" class="flex justify-content-between">
+                <span class="text-500">Subtotal:</span>
+                <span class="font-bold">${{ getPrecioTotal().toFixed(2) }}</span>
+              </div>
+
+              <div v-if="!esPrueba && descuentoAplicado > 0" class="flex justify-content-between">
+                <span class="text-500">Descuento:</span>
+                <span class="font-bold text-red-600">- ${{ descuentoAplicado.toFixed(2) }}</span>
+              </div>
+
+              <div class="flex justify-content-between pt-2 border-top-1">
+                <span class="text-500 font-bold">
+                  <template v-if="esPrueba">Total a pagar:</template>
+                  <template v-else>Total a pagar:</template>
+                </span>
+                <span class="font-bold text-xl" :class="esPrueba ? 'text-orange-600' : 'text-green-600'">
+                  <template v-if="esPrueba">Bs.{{ montoPrueba.toFixed(2) }}</template>
+                  <template v-else>${{ calcularPrecioConDescuento().toFixed(2) }}</template>
+                </span>
+              </div>
+
+              <div v-if="pagoForm.monto > 0" class="flex justify-content-between pt-2 border-top-1">
+                <span class="text-500">Pagando ahora:</span>
+                <span class="font-bold" :class="esPrueba ? 'text-orange-500' : 'text-blue-600'">
+                  <template v-if="esPrueba">Bs.{{ pagoForm.monto.toFixed(2) }}</template>
+                  <template v-else>${{ pagoForm.monto.toFixed(2) }}</template>
+                </span>
+              </div>
+
+              <div v-if="!esPrueba && pagoForm.monto < calcularPrecioConDescuento()" class="flex justify-content-between">
+                <span class="text-500">Saldo pendiente:</span>
+                <span class="font-bold text-orange-600">${{ (calcularPrecioConDescuento() -
+                  pagoForm.monto).toFixed(2) }}</span>
+              </div>
+              
+              <div v-if="esPrueba && pagoForm.monto < montoPrueba" class="flex justify-content-between">
+                <span class="text-500">Saldo pendiente:</span>
+                <span class="font-bold text-orange-600">Bs.{{ (montoPrueba - pagoForm.monto).toFixed(2) }}</span>
+              </div>
+            </div>
+
+            <small class="text-500 block mt-2">
+              <i class="pi pi-info-circle mr-1"></i>
+              <template v-if="esPrueba">
+                Clase de prueba válida por 24 horas. No incluye permisos adicionales.
+              </template>
+              <template v-else-if="descuentoAplicado > 0">
+                Se aplicó un descuento de ${{ descuentoAplicado.toFixed(2) }}
+              </template>
+              <template v-else>
+                Sin descuento aplicado
+              </template>
+            </small>
+          </div>
+
+          <!-- Distribución de clases (solo si no es prueba) -->
+          <div v-if="!esPrueba">
+            <Divider />
+            <div class="mt-2">
+              <div class="text-500 mb-1">Distribución real estimada (basada en fechas):</div>
+              <div class="flex flex-wrap gap-2">
+                <Chip v-for="(dist, index) in getDistribucionEstimada()" :key="index"
+                  :label="`${dist.horario.dia_semana}: ${dist.clases} clases`" severity="info" />
+              </div>
+              <small class="text-500 mt-1 block">
+                * Clases estimadas para el período seleccionado. La modalidad ofrece {{
+                  modalidadSeleccionada?.clases_mensuales || 12 }} clases mensuales.
+              </small>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <div class="flex justify-content-between mt-4">
+        <Button label="Atrás" severity="secondary" @click="pasoActual = 2;" />
+        <Button :label="esPrueba ? '✅ Confirmar Clase de Prueba' : '✅ Confirmar Inscripción y Pago'" 
+                :severity="esPrueba ? 'warning' : 'success'" 
+                @click="guardarInscripcionYpago"
+                :loading="guardando"
+                :disabled="!pagoForm.metodo_pago || !inscripcionForm.fecha_inicio || !inscripcionForm.fecha_fin || !pagoForm.monto || pagoForm.monto <= 0" />
+      </div>
+    </div>
+  </template>
+</StepperPanel>
 
 
       </Stepper>
@@ -1472,7 +1749,7 @@
       <template #footer>
         <Button label="Cancelar" severity="secondary" @click="cancelarRegistroPago" />
         <Button label="Registrar Pago" severity="success" @click="registrarPagoReal"
-      :disabled="!montoPago || montoPago <= 0 || !metodoPago" />
+          :disabled="!montoPago || montoPago <= 0 || !metodoPago" />
       </template>
     </Dialog>
 
@@ -1563,6 +1840,15 @@ const renovacionForm = ref({
   motivo: 'Renovación mensual'
 });
 
+const esPrueba = ref(false);
+const montoPrueba = ref(30);
+
+
+const descuentoPorcentaje = ref(0);
+const descuentoMonto = ref(0);
+const descuentoAplicado = ref(0);
+const subtotal = ref(0);
+const totalFinal = ref(0);
 
 const cargandoHorarios = ref(false);
 const cargandoModalidades = ref(false);
@@ -2020,6 +2306,7 @@ function validarYContinuar() {
 }
 
 // FUNCIONES PRINCIPALES
+// FUNCIONES PRINCIPALES
 async function cargarDatos() {
   cargando.value = true;
   try {
@@ -2042,19 +2329,35 @@ async function cargarDatos() {
 
     console.log(`📥 Datos extraídos: ${datosInscripciones.length} inscripciones`);
 
+    // ========== FILTRO DE ESTUDIANTES INACTIVOS ==========
+    // Filtrar inscripciones de estudiantes inactivos
+    const totalAntes = datosInscripciones.length;
+    datosInscripciones = datosInscripciones.filter(inscripcion => {
+      const estudianteActivo = inscripcion.estudiante?.estado === 'activo';
+      
+      if (!estudianteActivo) {
+        console.log(`❌ Filtrando inscripción ${inscripcion.id}: Estudiante ${inscripcion.estudiante?.nombres || 'Desconocido'} está inactivo`);
+        return false;
+      }
+      return true;
+    });
+    
+    console.log(`✅ Después de filtrar estudiantes inactivos: ${datosInscripciones.length} de ${totalAntes} inscripciones`);
+    // ========== FIN FILTRO ==========
+
     // Procesar datos básicos
     inscripciones.value = procesarInscripciones(datosInscripciones);
 
     // ========== NUEVO: CARGAR PAGOS PENDIENTES ==========
     console.log('💰 Cargando pagos pendientes para todas las inscripciones...');
-    
+
     // Usar Promise.all para cargar pagos en paralelo (más rápido)
     const promesasPagos = inscripciones.value.map(async (inscripcion) => {
       await cargarPagosPendientesParaInscripcion(inscripcion);
     });
-    
+
     await Promise.all(promesasPagos);
-    
+
     console.log(`✅ Pagos cargados para ${inscripciones.value.length} inscripciones`);
 
     // ========== NUEVO: VERIFICAR ALERTAS ==========
@@ -2099,19 +2402,20 @@ async function cargarDatos() {
       activas: estadisticas.value.totalActivas,
       enMora: inscripciones.value.filter(i => i.estado === 'en_mora').length,
       porVencer: estadisticas.value.porVencer,
-      alertas: inscripcionesConAlerta.length
+      alertas: inscripcionesConAlerta.length,
+      estudiantesInactivosFiltrados: totalAntes - datosInscripciones.length
     });
 
   } catch (error) {
     console.error('❌ Error cargando datos:', error);
-    
+
     let mensajeError = 'No se pudieron cargar las inscripciones';
     if (error.response) {
       console.error('📥 Detalles del error:', {
         status: error.response.status,
         data: error.response.data
       });
-      
+
       if (error.response.status === 401) {
         mensajeError = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
       } else if (error.response.status === 500) {
@@ -2120,14 +2424,14 @@ async function cargarDatos() {
         mensajeError = error.response.data.message;
       }
     }
-    
+
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: mensajeError,
       life: 5000
     });
-    
+
     // Si hay error pero tenemos datos viejos, mantenerlos
     if (inscripciones.value.length > 0) {
       console.warn('⚠️ Usando datos almacenados debido a error de carga');
@@ -2148,7 +2452,7 @@ async function cargarDatos() {
 async function cargarPagosPendientesParaInscripcion(inscripcion) {
   try {
     console.log(`💰 Cargando pagos para inscripción ${inscripcion.id}...`);
-    
+
     // DEBUG: Mostrar información de la inscripción
     console.log('📊 Info inscripción:', {
       id: inscripcion.id,
@@ -2174,7 +2478,7 @@ async function cargarPagosPendientesParaInscripcion(inscripcion) {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!apiResponse.ok) throw new Error('API falló');
       response = { data: await apiResponse.json() };
     }
@@ -2182,7 +2486,7 @@ async function cargarPagosPendientesParaInscripcion(inscripcion) {
     console.log('📥 Respuesta de pagos:', response);
 
     let todosLosPagos = [];
-    
+
     // Extraer datos con más opciones
     if (response && response.data) {
       // Opción 1: Respuesta estándar Laravel
@@ -2221,7 +2525,7 @@ async function cargarPagosPendientesParaInscripcion(inscripcion) {
     }
 
     // Filtrar pagos pendientes y vencidos
-    const pagosPendientes = todosLosPagos.filter(pago => 
+    const pagosPendientes = todosLosPagos.filter(pago =>
       pago.estado === 'pendiente' || pago.estado === 'vencido'
     );
 
@@ -2252,8 +2556,8 @@ async function cargarPagosPendientesParaInscripcion(inscripcion) {
     }
 
     // Determinar si hay segunda cuota pendiente
-    const segundaCuota = pagosPendientes.find(p => 
-      p.es_parcial === true || 
+    const segundaCuota = pagosPendientes.find(p =>
+      p.es_parcial === true ||
       p.numero_cuota === 2 ||
       (p.observacion && (
         p.observacion.toLowerCase().includes('segunda') ||
@@ -2296,7 +2600,7 @@ async function cargarPagosPendientesParaInscripcion(inscripcion) {
 
   } catch (error) {
     console.error(`❌ Error cargando pagos para inscripción ${inscripcion.id}:`, error);
-    
+
     // Marcar como error en la inscripción
     const index = inscripciones.value.findIndex(i => i.id === inscripcion.id);
     if (index !== -1) {
@@ -2320,7 +2624,7 @@ function calcularDiasMoraPorPagos(pagosPendientes) {
 
   pagosPendientes.forEach(pago => {
     let fechaReferencia = null;
-    
+
     // Usar fecha_vencimiento si existe, sino usar fecha_creacion
     if (pago.fecha_vencimiento) {
       fechaReferencia = new Date(pago.fecha_vencimiento);
@@ -2331,12 +2635,12 @@ function calcularDiasMoraPorPagos(pagosPendientes) {
     } else {
       return; // No hay fecha de referencia
     }
-    
+
     fechaReferencia.setHours(0, 0, 0, 0);
-    
+
     const diffMs = hoy - fechaReferencia;
     const diasMora = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diasMora > mayorDiasMora) {
       mayorDiasMora = diasMora;
     }
@@ -2365,7 +2669,7 @@ function procesarInscripciones(data) {
 
       // Determinar estado inicial
       let estadoFinal = (insc.estado || 'activo').toLowerCase();
-      
+
       // Si el backend ya indica que está en mora, respetarlo
       if (estadoFinal === 'en_mora' || estadoFinal === 'mora') {
         estadoFinal = 'en_mora';
@@ -2394,7 +2698,7 @@ function procesarInscripciones(data) {
       // Calcular clases asistidas y totales
       const clasesAsistidas = parseInt(insc.clases_asistidas) || 0;
       let clasesTotales = parseInt(insc.clases_totales) || 0;
-      
+
       // Si no tiene clases_totales, calcular basado en modalidad
       if (clasesTotales === 0 && insc.modalidad?.clases_mensuales) {
         const mesesDuracion = calcularMesesDuracionInscripcion(insc);
@@ -2407,7 +2711,7 @@ function procesarInscripciones(data) {
       }
 
       // Verificar si es segunda cuota
-      const esSegundaCuota = insc.es_segunda_cuota || 
+      const esSegundaCuota = insc.es_segunda_cuota ||
         (insc.observaciones && insc.observaciones.toLowerCase().includes('segunda')) ||
         false;
 
@@ -2417,59 +2721,59 @@ function procesarInscripciones(data) {
         id: parseInt(insc.id) || 0,
         estudiante_id: parseInt(insc.estudiante_id) || 0,
         modalidad_id: parseInt(insc.modalidad_id) || 0,
-        
+
         // Fechas
         fecha_inicio: insc.fecha_inicio || null,
         fecha_fin: insc.fecha_fin || null,
         dias_restantes: diasRestantes,
-        
+
         // Estado
         estado: estadoFinal,
         estado_pago: estadoPago,
-        
+
         // Información financiera
         monto_mensual: parseFloat(insc.monto_mensual) || 0,
         saldo_pendiente: saldoPendiente,
         total_pagado: totalPagado,
         dias_mora: diasMora,
         es_segunda_cuota: esSegundaCuota,
-        
+
         // Clases
         clases_totales: clasesTotales,
         clases_asistidas: clasesAsistidas,
         clases_restantes_calculadas: clasesRestantesCalculadas,
-        
+
         // Permisos
         permisos_usados: parseInt(insc.permisos_usados) || 0,
-        permisos_disponibles: parseInt(insc.permisos_disponibles) || 
+        permisos_disponibles: parseInt(insc.permisos_disponibles) ||
           (insc.modalidad?.permisos_maximos || 3),
-        
+
         // Relaciones (asegurar que existan)
-        estudiante: insc.estudiante || { 
-          nombres: 'Desconocido', 
-          apellidos: '', 
+        estudiante: insc.estudiante || {
+          nombres: 'Desconocido',
+          apellidos: '',
           ci: '',
           telefono: '',
           correo: ''
         },
-        modalidad: insc.modalidad || { 
-          nombre: 'Sin modalidad', 
-          clases_mensuales: 12, 
+        modalidad: insc.modalidad || {
+          nombre: 'Sin modalidad',
+          clases_mensuales: 12,
           precio_mensual: 0,
           permisos_maximos: 3
         },
-        
+
         // Arrays
         horarios: Array.isArray(insc.horarios) ? insc.horarios : [],
         inscripcion_horarios: Array.isArray(insc.inscripcion_horarios) ? insc.inscripcion_horarios : [],
         pagos_pendientes: Array.isArray(insc.pagos_pendientes) ? insc.pagos_pendientes : [],
-        
+
         // Metadata
         created_at: insc.created_at || null,
         updated_at: insc.updated_at || null,
         observaciones: insc.observaciones || ''
       };
-      
+
     } catch (error) {
       console.error(`❌ Error procesando inscripción ${insc.id}:`, error);
       return null;
@@ -2803,21 +3107,15 @@ function calcularFechaSegundaCuota() {
   return formatFecha(fecha);
 }
 
-// Placeholder dinámico para observaciones
-function getPlaceholderObservacion() {
-  if (dividirPago.value && pagoForm.value.monto > 0 && pagoForm.value.monto < getPrecioTotal()) {
-    return `Ej: Pago parcial. Primera cuota de $${pagoForm.value.monto} de $${getPrecioTotal()}. Saldo pendiente: $${(getPrecioTotal() - pagoForm.value.monto).toFixed(2)}`;
-  }
-  return 'Notas sobre el pago...';
-}
-
-// Watch para cuando cambie dividirPago
 watch(dividirPago, (newVal) => {
   if (newVal) {
-    // Sugerir la mitad automáticamente
-    if (!pagoForm.value.monto || pagoForm.value.monto === getPrecioTotal()) {
-      pagoForm.value.monto = getPrecioTotal() / 2;
+    // Al activar división, calcular la mitad del precio con descuento
+    if (!pagoForm.value.monto || pagoForm.value.monto === calcularPrecioConDescuento()) {
+      pagoForm.value.monto = calcularPrecioConDescuento() / 2;
     }
+  } else {
+    // Al desactivar división, poner el total con descuento
+    pagoForm.value.monto = calcularPrecioConDescuento();
   }
 });
 
@@ -3063,19 +3361,19 @@ function getTooltipPago(inscripcion) {
   if (inscripcion.estado === 'en_mora') {
     return `¡EN MORA! Click para pagar saldo pendiente`;
   }
-  
+
   if (inscripcion.saldo_pendiente > 0) {
     // Verificar si probablemente es segunda cuota
     const montoMensual = parseFloat(inscripcion.monto_mensual) || 0;
     const saldoPendiente = parseFloat(inscripcion.saldo_pendiente) || 0;
-    
+
     if (saldoPendiente < montoMensual && saldoPendiente > 0) {
       return `Pagar segunda cuota: $${saldoPendiente.toFixed(2)}`;
     }
-    
+
     return `Pagar saldo pendiente: $${saldoPendiente.toFixed(2)}`;
   }
-  
+
   return '✅ Pagos al día';
 }
 // También asegúrate de tener esta función:
@@ -3298,6 +3596,13 @@ async function confirmarRenovacion() {
       motivo: renovacionForm.value.motivo || 'Renovación mensual',
       metodo_pago: 'efectivo', // O agrega un campo en el formulario
       monto_pago: calcularTotalRenovacion(),
+      
+      // AÑADE ESTOS CAMPOS DE DESCUENTO (igual que en guardarInscripcionYpago)
+      descuento_porcentaje: descuentoPorcentaje.value || 0,
+      descuento_monto: descuentoMonto.value || 0,
+      subtotal: calcularTotalRenovacion(), // ← IMPORTANTE: Esto faltaba
+      total_final: calcularTotalRenovacion(), // ← IMPORTANTE: Esto faltaba
+      
       // Incluir IDs importantes
       modalidad_id: inscripcionARenovar.value.modalidad_id ||
         inscripcionARenovar.value.modalidad?.id,
@@ -3338,7 +3643,6 @@ async function confirmarRenovacion() {
     renovando.value = false;
   }
 }
-
 // Función de fallback para crear renovación manualmente
 async function crearRenovacionManual(datosRenovacion) {
   try {
@@ -3518,11 +3822,32 @@ function quitarHorario(horarioId) {
   horariosSeleccionadosDetalles.value = horariosSeleccionadosDetalles.value.filter(h => h.id !== horarioId);
 }
 
+// ACTUALIZA la función getPrecioTotal():
+
 function getPrecioTotal() {
   if (!modalidadSeleccionada.value) return 0;
 
-  const meses = calcularMesesDuracion();
-  return modalidadSeleccionada.value.precio_mensual * meses;
+  if (esPrueba.value) {
+    return montoPrueba.value; // ← Retorna monto de prueba
+  }
+
+  const meses = calcularMesesExactos(
+    inscripcionForm.value.fecha_inicio,
+    inscripcionForm.value.fecha_fin
+  );
+
+  const precioMensual = parseFloat(modalidadSeleccionada.value.precio_mensual) || 0;
+  const total = precioMensual * meses;
+
+  console.log('💰 Precio total calculado:', {
+    meses: meses,
+    precioMensual: precioMensual,
+    total: total,
+    fechaInicio: inscripcionForm.value.fecha_inicio,
+    fechaFin: inscripcionForm.value.fecha_fin
+  });
+
+  return total;
 }
 
 function getModalidadNombre() {
@@ -3745,6 +4070,108 @@ function formatHora(hora) {
   return '--:--';
 }
 
+function activarModoPrueba() {
+  esPrueba.value = !esPrueba.value;
+  
+  if (esPrueba.value) {
+    // Configurar para prueba
+    const fecha = new Date();
+    const fechaFin = new Date();
+    fechaFin.setDate(fechaFin.getDate() + 1);
+    
+    inscripcionForm.value.fecha_inicio = fecha;
+    inscripcionForm.value.fecha_fin = fechaFin;
+    
+    // Limitar a 1 horario
+    if (horariosSeleccionados.value.length > 1) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Clase de prueba',
+        detail: 'Solo puede seleccionar 1 horario para prueba',
+        life: 3000
+      });
+      horariosSeleccionados.value = [horariosSeleccionados.value[0]];
+    }
+    
+    // Establecer monto
+    pagoForm.value.monto = montoPrueba.value;
+    
+    toast.add({
+      severity: 'info',
+      summary: 'Modo prueba activado',
+      detail: 'Configurado para 1 día - 1 clase - Bs.' + montoPrueba.value,
+      life: 3000
+    });
+  }
+}
+
+function determinarTipoPago(montoPago, precioTotal, esDividido, tieneDescuento, precioConDescuento) {
+  console.log('🔍 Determinando tipo de pago:', {
+    montoPago,
+    precioTotal,
+    precioConDescuento,
+    esDividido,
+    tieneDescuento,
+    esPagoCompletoSinDescuento: parseFloat(montoPago) >= parseFloat(precioTotal),
+    esPagoCompletoConDescuento: parseFloat(montoPago) >= parseFloat(precioConDescuento)
+  });
+
+  // ========== REGLA 1: SI HAY DESCUENTO ==========
+  if (tieneDescuento) {
+    const montoConDescuento = parseFloat(precioConDescuento);
+    
+    // Si paga exactamente (o más) del total con descuento → ES PAGO COMPLETO
+    if (parseFloat(montoPago) >= montoConDescuento - 0.01) { // Tolerancia de 1 centavo
+      return {
+        es_parcial: false,
+        numero_cuota: null,
+        tipo: 'completo_con_descuento'
+      };
+    }
+    
+    // Si paga menos del total con descuento
+    if (esDividido) {
+      return {
+        es_parcial: true,
+        numero_cuota: 1,
+        tipo: 'primera_cuota_con_descuento'
+      };
+    }
+    
+    return {
+      es_parcial: true,
+      numero_cuota: 1,
+      tipo: 'parcial_con_descuento'
+    };
+  }
+  
+  // ========== REGLA 2: SIN DESCUENTO ==========
+  const esPagoCompleto = parseFloat(montoPago) >= parseFloat(precioTotal);
+
+  if (esPagoCompleto) {
+    return {
+      es_parcial: false,
+      numero_cuota: null,
+      tipo: 'completo'
+    };
+  }
+
+  if (esDividido) {
+    return {
+      es_parcial: true,
+      numero_cuota: 1,
+      tipo: 'primera_cuota'
+    };
+  }
+
+  // Pago parcial pero no dividido
+  return {
+    es_parcial: true,
+    numero_cuota: 1,
+    tipo: 'parcial_simple'
+  };
+}
+
 // Función para obtener día de semana
 function getDiaSemana(horario) {
   if (!horario) return 'Sin día';
@@ -3771,6 +4198,121 @@ async function guardarInscripcionYpago() {
   const horariosBackup = [...horariosSeleccionadosDetalles.value];
   const montoBackup = pagoForm.value.monto;
   const metodoPagoBackup = pagoForm.value.metodo_pago;
+
+  // ========== FUNCIÓN AUXILIAR: Determinar tipo de pago CON DESCUENTO ==========
+  function determinarTipoPago(montoPago, precioTotal, esDividido, tieneDescuento, precioConDescuento) {
+    console.log('🔍 Determinando tipo de pago:', {
+      montoPago,
+      precioTotal,
+      precioConDescuento,
+      esDividido,
+      tieneDescuento,
+      esPagoCompletoSinDescuento: parseFloat(montoPago) >= parseFloat(precioTotal),
+      esPagoCompletoConDescuento: parseFloat(montoPago) >= parseFloat(precioConDescuento)
+    });
+
+    // ========== REGLA 1: SI HAY DESCUENTO ==========
+    if (tieneDescuento) {
+      const montoConDescuento = parseFloat(precioConDescuento);
+      
+      // Si paga exactamente (o más) del total con descuento → ES PAGO COMPLETO
+      if (parseFloat(montoPago) >= montoConDescuento - 0.01) { // Tolerancia de 1 centavo
+        return {
+          es_parcial: false,
+          numero_cuota: null,
+          tipo: 'completo_con_descuento'
+        };
+      }
+      
+      // Si paga menos del total con descuento
+      if (esDividido) {
+        return {
+          es_parcial: true,
+          numero_cuota: 1,
+          tipo: 'primera_cuota_con_descuento'
+        };
+      }
+      
+      return {
+        es_parcial: true,
+        numero_cuota: 1,
+        tipo: 'parcial_con_descuento'
+      };
+    }
+    
+    // ========== REGLA 2: SIN DESCUENTO ==========
+    const esPagoCompleto = parseFloat(montoPago) >= parseFloat(precioTotal);
+
+    if (esPagoCompleto) {
+      return {
+        es_parcial: false,
+        numero_cuota: null,
+        tipo: 'completo'
+      };
+    }
+
+    if (esDividido) {
+      return {
+        es_parcial: true,
+        numero_cuota: 1,
+        tipo: 'primera_cuota'
+      };
+    }
+
+    // Pago parcial pero no dividido
+    return {
+      es_parcial: true,
+      numero_cuota: 1,
+      tipo: 'parcial_simple'
+    };
+  }
+
+  // ========== FUNCIÓN PARA VALIDAR CONSISTENCIA DEL PAGO ==========
+  function validarConsistenciaPago(monto, total, precioConDescuento, esParcial, esDividido, tieneDescuento) {
+    const errores = [];
+
+    // Determinar cuál total usar para validación
+    const totalAValidar = tieneDescuento ? precioConDescuento : total;
+
+    // Regla 1: Si es pago completo, no puede ser marcado como parcial
+    if (parseFloat(monto) >= parseFloat(totalAValidar) - 0.01 && esParcial) {
+      errores.push('Un pago completo no puede marcarse como parcial');
+    }
+
+    // Regla 2: Si es dividido, debe ser parcial y menor al total
+    if (esDividido && parseFloat(monto) >= parseFloat(totalAValidar)) {
+      errores.push('Un pago dividido debe ser menor al total');
+    }
+
+    // Regla 3: Si es dividido y el monto es 0 o negativo
+    if (esDividido && parseFloat(monto) <= 0) {
+      errores.push('El monto de la primera cuota debe ser mayor a 0');
+    }
+
+    return {
+      valido: errores.length === 0,
+      errores
+    };
+  }
+
+  // ========== FUNCIÓN PARA FORMATO DE FECHAS ==========
+  const formatDateToYMD = (date) => {
+    if (!date) return null;
+
+    const d = new Date(date);
+
+    if (isNaN(d.getTime())) {
+      console.error('❌ Fecha inválida:', date);
+      return null;
+    }
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    const fechaFormateada = `${year}-${month}-${day}`;
+    return fechaFormateada;
+  };
 
   // ========== VALIDACIONES INICIALES ==========
   if (!estudianteSeleccionado.value || !estudianteSeleccionado.value.id) {
@@ -3813,9 +4355,70 @@ async function guardarInscripcionYpago() {
     return;
   }
 
+  // ========== VALIDACIONES ESPECIALES PARA PRUEBA ==========
+  if (esPrueba.value) {
+    // Validar que el monto de pago no sea mayor al de prueba
+    if (parseFloat(pagoForm.value.monto) > parseFloat(montoPrueba.value)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: `El monto no puede ser mayor a Bs.${montoPrueba.value}`,
+        life: 4000
+      });
+      return;
+    }
+    
+    // Validar que no haya descuento en pruebas
+    if (descuentoAplicado.value > 0) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Prueba sin descuento',
+        detail: 'Las clases de prueba no permiten descuentos',
+        life: 3000
+      });
+      limpiarDescuento();
+    }
+    
+    // Validar que no haya división de pago en pruebas
+    if (dividirPago.value) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Prueba pago completo',
+        detail: 'Las clases de prueba deben pagarse completas',
+        life: 3000
+      });
+      dividirPago.value = false;
+    }
+    
+    // Validar máximo de horarios para prueba
+    if (horariosSeleccionados.value.length > 1) {
+      toast.add({
+        severity: 'error',
+        summary: 'Prueba limitada',
+        detail: 'La clase de prueba solo permite 1 horario',
+        life: 4000
+      });
+      return;
+    }
+  }
+
+  // ========== CALCULAR PRECIOS ==========
+  const precioTotal = getPrecioTotal();
+  const precioConDescuento = calcularPrecioConDescuento();
+  const montoPagoForm = pagoForm.value.monto || 0;
+  const tieneDescuento = descuentoAplicado.value > 0;
+
+  console.log('💰 DEPURACIÓN PRECIOS:');
+  console.log('Precio total sin descuento:', precioTotal);
+  console.log('Precio con descuento:', precioConDescuento);
+  console.log('Monto del pago:', montoPagoForm);
+  console.log('¿Tiene descuento?', tieneDescuento);
+  console.log('Descuento aplicado:', descuentoAplicado.value);
+  console.log('¿Es prueba?', esPrueba.value);
+
   // ========== VALIDACIÓN ESPECIAL PARA PAGOS DIVIDIDOS ==========
   if (dividirPago.value) {
-    if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
+    if (!montoPagoForm || montoPagoForm <= 0) {
       toast.add({
         severity: 'error',
         summary: 'Error',
@@ -3825,7 +4428,7 @@ async function guardarInscripcionYpago() {
       return;
     }
 
-    if (pagoForm.value.monto >= getPrecioTotal()) {
+    if (parseFloat(montoPagoForm) >= parseFloat(precioConDescuento)) {
       toast.add({
         severity: 'warn',
         summary: '¿Seguro?',
@@ -3836,89 +4439,8 @@ async function guardarInscripcionYpago() {
     }
   }
 
-  // ========== FUNCIÓN PARA FORMATO DE FECHAS ==========
-  const formatDateToYMD = (date) => {
-    if (!date) return null;
-
-    const d = new Date(date);
-
-    if (isNaN(d.getTime())) {
-      console.error('❌ Fecha inválida:', date);
-      const hoy = new Date();
-      const year = hoy.getFullYear();
-      const month = String(hoy.getMonth() + 1).padStart(2, '0');
-      const day = String(hoy.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  };
-
-  // ========== OBTENER Y VALIDAR FECHAS ==========
-  const fechaInicioFormateada = formatDateToYMD(inscripcionForm.value.fecha_inicio);
-
-  // En la función que calcula la fecha de fin por defecto:
-  const calcularFechaFinPorDefecto = (fechaInicio) => {
-    const fecha = new Date(fechaInicio);
-
-    // Verificar si hay horarios de domingo seleccionados
-    const tieneHorariosDomingo = horariosSeleccionadosDetalles.value.some(h =>
-      h.dia_semana?.toLowerCase().includes('domingo')
-    );
-
-    if (tieneHorariosDomingo) {
-      // Para domingos, asegurar al menos 7 días
-      fecha.setDate(fecha.getDate() + 7);
-    } else {
-      // Para otros casos, 1 mes por defecto
-      fecha.setMonth(fecha.getMonth() + 1);
-    }
-
-    fecha.setDate(fecha.getDate() - 1); // Ajustar para que sea exacto
-    return fecha;
-  };
-
-  const fechaFinFormateada = inscripcionForm.value.fecha_fin
-    ? formatDateToYMD(inscripcionForm.value.fecha_fin)
-    : formatDateToYMD(calcularFechaFinPorDefecto(inscripcionForm.value.fecha_inicio));
-
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  const fechaInicioDate = new Date(inscripcionForm.value.fecha_inicio);
-  fechaInicioDate.setHours(0, 0, 0, 0);
-
-  if (fechaInicioDate < hoy) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: `La fecha de inicio (${fechaInicioDate.toLocaleDateString('es-ES')}) no puede ser anterior a hoy (${hoy.toLocaleDateString('es-ES')})`,
-      life: 4000
-    });
-    return;
-  }
-
-  if (inscripcionForm.value.fecha_fin) {
-    const fechaFinDate = new Date(inscripcionForm.value.fecha_fin);
-    fechaFinDate.setHours(0, 0, 0, 0);
-
-    if (fechaFinDate <= fechaInicioDate) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: `La fecha fin (${fechaFinDate.toLocaleDateString('es-ES')}) debe ser posterior a la fecha inicio (${fechaInicioDate.toLocaleDateString('es-ES')})`,
-        life: 4000
-      });
-      return;
-    }
-  }
-
   // ========== VALIDACIÓN DE PAGO ==========
-  if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
+  if (!montoPagoForm || montoPagoForm <= 0) {
     toast.add({
       severity: 'error',
       summary: 'Error',
@@ -3928,11 +4450,15 @@ async function guardarInscripcionYpago() {
     return;
   }
 
-  if (pagoForm.value.monto > getPrecioTotal()) {
+  // Validar contra el precio correcto (con o sin descuento)
+  const precioMaximo = esPrueba.value ? montoPrueba.value : (tieneDescuento ? precioConDescuento : precioTotal);
+  if (parseFloat(montoPagoForm) > parseFloat(precioMaximo)) {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: `El monto no puede ser mayor a $${getPrecioTotal()}`,
+      detail: esPrueba.value 
+        ? `El monto no puede ser mayor a Bs.${precioMaximo.toFixed(2)}`
+        : `El monto no puede ser mayor a $${precioMaximo.toFixed(2)}`,
       life: 4000
     });
     return;
@@ -3948,6 +4474,115 @@ async function guardarInscripcionYpago() {
     return;
   }
 
+  // ========== OBTENER Y VALIDAR FECHAS ==========
+  let fechaInicioFormateada, fechaFinFormateada;
+
+  if (esPrueba.value) {
+    // Para pruebas: fecha automática de hoy a mañana
+    const hoy = new Date();
+    const manana = new Date();
+    manana.setDate(manana.getDate() + 1);
+    
+    fechaInicioFormateada = formatDateToYMD(hoy);
+    fechaFinFormateada = formatDateToYMD(manana);
+  } else {
+    // Para inscripciones normales: usar las fechas del formulario
+    fechaInicioFormateada = formatDateToYMD(inscripcionForm.value.fecha_inicio);
+
+    const calcularFechaFinPorDefecto = (fechaInicio) => {
+      const fecha = new Date(fechaInicio);
+      fecha.setHours(12, 0, 0, 0);
+
+      const tieneHorariosDomingo = horariosSeleccionadosDetalles.value.some(h =>
+        h.dia_semana?.toLowerCase().includes('domingo')
+      );
+
+      if (tieneHorariosDomingo) {
+        fecha.setDate(fecha.getDate() + 6);
+      } else {
+        fecha.setMonth(fecha.getMonth() + 1);
+      }
+
+      fecha.setDate(fecha.getDate() - 1);
+      return fecha;
+    };
+
+    fechaFinFormateada = inscripcionForm.value.fecha_fin
+      ? formatDateToYMD(inscripcionForm.value.fecha_fin)
+      : formatDateToYMD(calcularFechaFinPorDefecto(inscripcionForm.value.fecha_inicio));
+  }
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  let fechaInicioDate;
+
+if (esPrueba.value) {
+  // Para pruebas, usar la fecha de hoy directamente
+  fechaInicioDate = new Date();
+} else {
+  // Para inscripciones normales, usar la fecha del formulario
+  fechaInicioDate = new Date(inscripcionForm.value.fecha_inicio);
+}
+
+fechaInicioDate.setHours(0, 0, 0, 0);
+
+  if (fechaInicioDate < hoy) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `La fecha de inicio no puede ser anterior a hoy`,
+      life: 4000
+    });
+    return;
+  }
+
+  if (!esPrueba.value && inscripcionForm.value.fecha_fin) {
+    const fechaFinDate = new Date(inscripcionForm.value.fecha_fin);
+    fechaFinDate.setHours(0, 0, 0, 0);
+
+    if (fechaFinDate <= fechaInicioDate) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: `La fecha fin debe ser posterior a la fecha inicio`,
+        life: 4000
+      });
+      return;
+    }
+  }
+
+  // ========== DETERMINAR TIPO DE PAGO ==========
+  const pagoTipo = determinarTipoPago(
+    montoPagoForm,
+    precioTotal,
+    dividirPago.value,
+    tieneDescuento,
+    precioConDescuento
+  );
+
+  console.log('📊 Tipo de pago determinado:', pagoTipo);
+
+  // ========== VALIDAR CONSISTENCIA DEL PAGO ==========
+  const validacionPago = validarConsistenciaPago(
+    montoPagoForm,
+    precioTotal,
+    precioConDescuento,
+    pagoTipo.es_parcial,
+    dividirPago.value,
+    tieneDescuento
+  );
+
+  if (!validacionPago.valido) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error en datos del pago',
+      detail: validacionPago.errores.join('\n'),
+      life: 5000
+    });
+    return;
+  }
+
   // ========== INICIAR PROCESO ==========
   guardando.value = true;
 
@@ -3955,187 +4590,188 @@ async function guardarInscripcionYpago() {
   let totalClasesGeneradas = 0;
   let pagoRegistrado = false;
   let pagoGrupoId = null;
-  let estadoInscripcion = 'activo'; // Estado inicial
+  let estadoInscripcion = 'activo';
 
   try {
-    // ========== PASO 1: DETERMINAR ESTADO INICIAL ==========
-    console.log('🔄 PASO 1: Determinando estado inicial...');
+    // ========== DETERMINAR ESTADO INICIAL ==========
+    console.log('🔄 Determinando estado inicial...');
 
-    // IMPORTANTE: Si paga menos del total, la inscripción queda EN MORA
-    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
-      estadoInscripcion = 'en_mora';
-      console.log('⚠️ Inscripción quedará en estado: EN MORA (pago dividido)');
-
-      // Informar al usuario
-      toast.add({
-        severity: 'warn',
-        summary: 'Estado de Inscripción',
-        detail: 'La inscripción quedará en "EN MORA" hasta pagar la segunda cuota',
-        life: 5000
-      });
-    } else if (pagoForm.value.monto < getPrecioTotal()) {
-      // Si paga parcial pero no marcó "dividir pago", también queda en mora
-      estadoInscripcion = 'en_mora';
-      console.log('⚠️ Inscripción quedará en estado: EN MORA (pago parcial)');
-    } else {
+    // ========== ¡¡¡CORRECCIÓN IMPORTANTE!!! ==========
+    // SI ES PRUEBA, SIEMPRE estado ACTIVO
+    if (esPrueba.value) {
+      estadoInscripcion = 'activo';
+      console.log('🎯 Clase de prueba quedará en estado: ACTIVO');
+    } 
+    // Si es pago COMPLETO (con o sin descuento), estado es ACTIVO
+    else if (pagoTipo.tipo.includes('completo')) {
       estadoInscripcion = 'activo';
       console.log('✅ Inscripción quedará en estado: ACTIVO (pago completo)');
+    } else {
+      estadoInscripcion = 'en_mora';
+      console.log('⚠️ Inscripción quedará en estado: EN MORA (pago parcial)');
     }
 
-    // ========== PASO 2: CREAR INSCRIPCIÓN ==========
-    console.log('🔄 PASO 2: Creando inscripción...');
+    // ========== CREAR INSCRIPCIÓN ==========
+    console.log('🔄 Creando inscripción...');
 
-    // Calcular clases totales
-    const clasesReales = calcularClasesReales(
-      fechaInicioFormateada,
-      fechaFinFormateada,
-      horariosSeleccionadosDetalles.value
-    );
-
-    // Si no se pudo calcular, usar un mínimo
-    const clasesTotales = clasesReales > 0 ?
-      clasesReales :
-      Math.min(
-        calcularClasesTotales(),
-        modalidadSeleccionada.value.clases_mensuales || 12
-      );
-
-    console.log('📊 Clases calculadas:', {
-      modalidad: modalidadSeleccionada.value.clases_mensuales,
-      calculadasPorModalidad: calcularClasesTotales(),
-      realesPorFechas: clasesReales,
-      final: clasesTotales
-    });
-
-    // ========== PASO 2.1: CALCULAR DISTRIBUCIÓN POR HORARIO ==========
-    console.log('🔄 Calculando distribución por horario...');
-
+    let clasesTotales = 0;
     let distribucionClases = [];
-    try {
-      distribucionClases = calcularDistribucionPorHorario(
+    let datosInscripcion = {};
+
+    // ========== LÓGICA SEPARADA PARA PRUEBA VS NORMAL ==========
+    if (esPrueba.value) {
+      // ========== CONFIGURACIÓN PARA PRUEBA ==========
+      console.log('🎯 Configurando inscripción de prueba...');
+      
+      // Para pruebas: SOLO 1 CLASE
+      clasesTotales = 1;
+      
+      // Para pruebas: distribución simple (1 clase por horario)
+      distribucionClases = horariosSeleccionadosDetalles.value.map(horario => ({
+        horario_id: horario.id,
+        dia_semana: horario.dia_semana,
+        clases_totales: 1,
+        tiene_clases: true,
+        es_prueba: true
+      }));
+      
+      // IMPORTANTE: Para prueba, usar montoPrueba, NO precio_mensual
+      const montoPruebaFinal = montoPrueba.value;
+      
+      // Datos de la inscripción PARA PRUEBA
+      datosInscripcion = {
+        estudiante_id: estudianteSeleccionado.value.id,
+        modalidad_id: modalidadSeleccionada.value.id,
+        fecha_inicio: fechaInicioFormateada,
+        fecha_fin: fechaFinFormateada,
+        monto_mensual: montoPruebaFinal, // ← Bs.30, NO $300
+        clases_totales: 1, // ← SOLO 1 clase
+        clases_asistidas: 0,
+        permisos_usados: 0,
+        permisos_disponibles: 0, // ← Sin permisos para prueba
+        estado: 'activo', // ← Estado ACTIVO
+        horarios: horariosSeleccionados.value,
+        distribucion_horarios: distribucionClases.map(d => ({
+          horario_id: d.horario_id,
+          clases_totales: 1,
+          clases_asistidas: 0,
+          clases_restantes: 1,
+          estado: 'activo'
+        })),
+        sucursal_id: horariosSeleccionadosDetalles.value[0]?.sucursal_id,
+        entrenador_id: horariosSeleccionadosDetalles.value[0]?.entrenador_id,
+        observaciones: `CLASE DE PRUEBA - ${estudianteSeleccionado.value?.nombres} - Bs.${montoPruebaFinal} - ${fechaInicioFormateada}`
+      };
+      
+      console.log('📊 Datos de inscripción (prueba):', datosInscripcion);
+      
+    } else {
+      // ========== CONFIGURACIÓN NORMAL ==========
+      console.log('📋 Configurando inscripción normal...');
+      
+      const clasesReales = calcularClasesReales(
         fechaInicioFormateada,
         fechaFinFormateada,
         horariosSeleccionadosDetalles.value
       );
 
-      // Validar que la distribución sea válida
-      if (!distribucionClases || distribucionClases.length === 0) {
-        throw new Error('No se pudo calcular la distribución de clases');
-      }
+      clasesTotales = clasesReales > 0 ?
+        clasesReales :
+        Math.min(
+          calcularClasesTotales(),
+          modalidadSeleccionada.value.clases_mensuales || 12
+        );
 
-      // Verificar que todos los horarios tengan al menos 1 clase
-      const horariosSinClases = distribucionClases.filter(d => d.clases_totales < 1);
-      if (horariosSinClases.length > 0) {
-        const mensajeHorarios = horariosSinClases.map(d => {
-          const horario = horariosSeleccionadosDetalles.value.find(h => h.id === d.horario_id);
-          return `"${horario?.dia_semana || 'Sin día'}" (ID: ${d.horario_id})`;
-        }).join(', ');
+      // ========== CALCULAR DISTRIBUCIÓN POR HORARIO ==========
+      console.log('🔄 Calculando distribución por horario...');
 
-        throw new Error(`Los siguientes horarios no tienen clases en el período seleccionado: ${mensajeHorarios}. Por favor, extienda la fecha de fin.`);
-      }
+      try {
+        distribucionClases = calcularDistribucionPorHorario(
+          fechaInicioFormateada,
+          fechaFinFormateada,
+          horariosSeleccionadosDetalles.value,
+          false // ← NO es prueba
+        );
 
-      console.log('📊 Distribución calculada:', distribucionClases);
+        if (!distribucionClases || distribucionClases.length === 0) {
+          throw new Error('No se pudo calcular la distribución de clases');
+        }
 
-      // Mostrar resumen en consola
-      distribucionClases.forEach((dist, index) => {
-        console.log(`📅 Horario ${index + 1}: ${dist.horario_id} - ${dist.clases_totales} clases`);
-      });
-    } catch (distError) {
-      console.error('❌ Error en distribución:', distError);
+        const horariosSinClases = distribucionClases.filter(d => d.clases_totales < 1);
+        if (horariosSinClases.length > 0) {
+          const mensajeHorarios = horariosSinClases.map(d => {
+            const horario = horariosSeleccionadosDetalles.value.find(h => h.id === d.horario_id);
+            return `"${horario?.dia_semana || 'Sin día'}" (ID: ${d.horario_id})`;
+          }).join(', ');
 
-      // Mostrar error específico al usuario
-      if (distError.message.includes('Período insuficiente') || distError.message.includes('no tienen clases')) {
-        toast.add({
-          severity: 'error',
-          summary: 'Período insuficiente',
-          detail: distError.message,
-          life: 8000
-        });
-      } else {
+          throw new Error(`Los siguientes horarios no tienen clases en el período seleccionado: ${mensajeHorarios}`);
+        }
+
+      } catch (distError) {
+        console.error('❌ Error en distribución:', distError);
         toast.add({
           severity: 'error',
           summary: 'Error en distribución',
           detail: distError.message || 'No se pudo calcular la distribución de clases',
           life: 5000
         });
+
+        guardando.value = false;
+        return;
       }
 
-      guardando.value = false;
-      return;
+      // ========== VALIDAR PERÍODO SUFICIENTE ==========
+      const validacionPeriodo = validarPeriodoSuficiente(
+        fechaInicioFormateada,
+        fechaFinFormateada,
+        horariosSeleccionadosDetalles.value,
+        false // ← NO es prueba
+      );
+
+      if (!validacionPeriodo.valido) {
+        toast.add({
+          severity: 'error',
+          summary: 'Período insuficiente',
+          detail: validacionPeriodo.mensaje,
+          life: 6000
+        });
+        guardando.value = false;
+        return;
+      }
+
+      // ========== PREPARAR DATOS DE INSCRIPCIÓN ==========
+      console.log('🔄 Preparando datos de inscripción...');
+
+      const distribucionParaBackend = distribucionClases.map(d => ({
+        horario_id: d.horario_id,
+        clases_totales: d.clases_totales,
+        clases_asistidas: 0,
+        clases_restantes: d.clases_totales,
+        estado: 'activo'
+      }));
+
+      datosInscripcion = {
+        estudiante_id: estudianteSeleccionado.value.id,
+        modalidad_id: modalidadSeleccionada.value.id,
+        fecha_inicio: fechaInicioFormateada,
+        fecha_fin: fechaFinFormateada,
+        monto_mensual: modalidadSeleccionada.value.precio_mensual, // ← Precio normal
+        clases_totales: clasesTotales,
+        clases_asistidas: 0,
+        permisos_usados: 0,
+        permisos_disponibles: modalidadSeleccionada.value.permisos_maximos || 3,
+        estado: estadoInscripcion,
+        horarios: horariosSeleccionados.value,
+        distribucion_horarios: distribucionParaBackend,
+        sucursal_id: horariosSeleccionadosDetalles.value[0]?.sucursal_id,
+        entrenador_id: horariosSeleccionadosDetalles.value[0]?.entrenador_id,
+        observaciones: pagoTipo.tipo.includes('completo') ? 'Pago completo' : 'Pago parcial'
+      };
     }
 
-    // ========== PASO 2.2: VALIDAR QUE EL PERÍODO SEA SUFICIENTE ==========
-    const validacionPeriodo = validarPeriodoSuficiente(
-      fechaInicioFormateada,
-      fechaFinFormateada,
-      horariosSeleccionadosDetalles.value
-    );
+    console.log('📤 Enviando datos de inscripción...');
 
-    if (!validacionPeriodo.valido) {
-      toast.add({
-        severity: 'error',
-        summary: 'Período insuficiente',
-        detail: validacionPeriodo.mensaje,
-        life: 6000
-      });
-      guardando.value = false;
-      return;
-    }
-
-    // ========== PASO 2.3: PREPARAR DATOS DE INSCRIPCIÓN ==========
-    console.log('🔄 Preparando datos de inscripción...');
-
-    // Asegurar que distribucionClases tenga el formato correcto para el backend
-    const distribucionParaBackend = distribucionClases.map(d => ({
-      horario_id: d.horario_id,
-      clases_totales: d.clases_totales,
-      clases_asistidas: 0,
-      clases_restantes: d.clases_totales,
-      estado: 'activo'
-    }));
-
-    // Verificar nuevamente que todos tengan al menos 1 clase
-    const tieneCeroClases = distribucionParaBackend.some(d => d.clases_totales < 1);
-    if (tieneCeroClases) {
-      console.error('❌ ERROR CRÍTICO: Algunos horarios tienen 0 clases después del mapeo');
-      distribucionParaBackend.forEach((d, i) => {
-        if (d.clases_totales < 1) {
-          console.error(`  - Índice ${i}: horario_id=${d.horario_id}, clases_totales=${d.clases_totales}`);
-        }
-      });
-
-      toast.add({
-        severity: 'error',
-        summary: 'Error en cálculo',
-        detail: 'No se pudieron calcular correctamente las clases para todos los horarios',
-        life: 5000
-      });
-      guardando.value = false;
-      return;
-    }
-
-    const datosInscripcion = {
-      estudiante_id: estudianteSeleccionado.value.id,
-      modalidad_id: modalidadSeleccionada.value.id,
-      fecha_inicio: fechaInicioFormateada,
-      fecha_fin: fechaFinFormateada,
-      monto_mensual: modalidadSeleccionada.value.precio_mensual,
-      clases_totales: clasesTotales,
-      clases_asistidas: 0,
-      permisos_usados: 0,
-      permisos_disponibles: modalidadSeleccionada.value.permisos_maximos || 3,
-      estado: estadoInscripcion, // ← ESTADO CORREGIDO (activo o en_mora)
-      horarios: horariosSeleccionados.value,
-      distribucion_horarios: distribucionParaBackend,
-      sucursal_id: horariosSeleccionadosDetalles.value[0]?.sucursal_id,
-      entrenador_id: horariosSeleccionadosDetalles.value[0]?.entrenador_id,
-      observaciones: dividirPago.value ? 'Pago dividido en 2 cuotas' : 'Pago completo'
-    };
-
-    console.log('📤 Enviando datos de inscripción...', datosInscripcion);
-    console.log('📊 Distribución enviada:', distribucionParaBackend);
-
-    // ========== PASO 2.4: CREAR INSCRIPCIÓN ==========
+    // ========== CREAR INSCRIPCIÓN ==========
     const responseInscripcion = await inscripcionService.store(datosInscripcion);
 
     console.log('📥 Respuesta del servidor (inscripción):', responseInscripcion.data);
@@ -4145,14 +4781,9 @@ async function guardarInscripcionYpago() {
     }
 
     if (responseInscripcion.data.success === false) {
-      // Verificar si es error de validación específico
-      if (responseInscripcion.data.message?.includes('clases_totales field must be at least 1')) {
-        throw new Error('Error de validación: Algunos horarios tienen 0 clases. Por favor, extienda el período.');
-      }
       throw new Error(responseInscripcion.data.message || 'Error al crear la inscripción');
     }
 
-    // Obtener ID de la inscripción
     inscripcionId = responseInscripcion.data.inscripcion_id ||
       responseInscripcion.data.id ||
       (responseInscripcion.data.data && responseInscripcion.data.data.id);
@@ -4163,69 +4794,120 @@ async function guardarInscripcionYpago() {
 
     console.log('✅ Inscripción creada con ID:', inscripcionId);
 
-    // Obtener datos de clases generadas desde la respuesta
     totalClasesGeneradas = responseInscripcion.data.data?.clases_generadas || 0;
 
-    // ========== PASO 3: VERIFICAR SI SE GENERARON CLASES PROGRAMADAS ==========
-    console.log('🔄 PASO 3: Verificando clases programadas...');
+    // ========== CREAR PAGO(S) ==========
+    console.log('🔄 Creando pago(s)...');
 
-    if (totalClasesGeneradas > 0) {
-      console.log(`✅ ${totalClasesGeneradas} clases ya generadas automáticamente por el backend`);
+    // Generar ID único para grupo de pagos (solo si es primera cuota dividida)
+    if (!esPrueba.value && pagoTipo.tipo.includes('primera_cuota')) {
+      pagoGrupoId = Date.now().toString();
+      console.log('💰 Grupo de pago ID:', pagoGrupoId);
+    }
+
+    // ========== PREPARAR DATOS DEL PAGO ==========
+    let datosPagoPrimero = {};
+    
+    if (esPrueba.value) {
+      // ========== PAGO PARA PRUEBA ==========
+      console.log('💰 Preparando pago para prueba...');
+      
+      datosPagoPrimero = {
+        inscripcion_id: inscripcionId,
+        estudiante_id: estudianteSeleccionado.value.id,
+        monto: parseFloat(montoPrueba.value), // ← Bs.30
+        
+        // IMPORTANTE: Para prueba, subtotal y total_final son IGUALES al monto
+        descuento_porcentaje: 0,
+        descuento_monto: 0,
+        subtotal: parseFloat(montoPrueba.value), // ← Bs.30
+        total_final: parseFloat(montoPrueba.value), // ← Bs.30
+        
+        metodo_pago: pagoForm.value.metodo_pago,
+        fecha_pago: pagoForm.value.fecha_pago ?
+          formatDateToYMD(pagoForm.value.fecha_pago) :
+          formatDateToYMD(new Date()),
+        observacion: `CLASE DE PRUEBA: ${estudianteSeleccionado.value?.nombres} - Bs.${montoPrueba.value}`,
+        estado: 'pagado',
+        referencia: `PRUEBA-${inscripcionId}-${Date.now().toString().slice(-6)}`,
+        es_parcial: false, // ← Para prueba es pago completo
+        numero_cuota: null,
+        pago_grupo_id: null
+      };
+      
     } else {
-      console.log('⚠️ No se detectaron clases generadas en la respuesta del backend');
-      // El resto del código de verificación se mantiene igual...
-    }
+      // ========== PAGO NORMAL ==========
+      let observacion = '';
+      
+      if (pagoTipo.tipo === 'completo_con_descuento') {
+        observacion = `Pago COMPLETO con descuento de $${montoPagoForm}`;
+      } else if (pagoTipo.tipo === 'completo') {
+        observacion = `Pago completo de $${montoPagoForm}`;
+      } else if (pagoTipo.tipo.includes('primera_cuota')) {
+        observacion = `Primera cuota de $${montoPagoForm} de $${precioConDescuento.toFixed(2)}`;
+      } else {
+        observacion = `Pago parcial de $${montoPagoForm} de $${precioConDescuento.toFixed(2)}`;
+      }
 
-    // ========== PASO 4: CREAR PAGO(S) ==========
-    console.log('🔄 PASO 4: Creando pago(s)...');
+      // Agregar info de descuento si aplica
+      if (tieneDescuento) {
+        observacion += `. Descuento aplicado: $${descuentoAplicado.value.toFixed(2)}`;
+        if (descuentoPorcentaje.value > 0) {
+          observacion += ` (${descuentoPorcentaje.value}%)`;
+        }
+      }
 
-    // Generar ID único para grupo de pagos (si es dividido)
-    pagoGrupoId = Date.now().toString(); // Convertir a string
+      // Si hay observación adicional del usuario, agregarla
+      if (pagoForm.value.observacion) {
+        observacion += `. ${pagoForm.value.observacion}`;
+      }
 
-    // PRIMER PAGO (siempre se crea)
-    const datosPagoPrimero = {
-      inscripcion_id: inscripcionId,
-      estudiante_id: estudianteSeleccionado.value.id,
-      monto: parseFloat(pagoForm.value.monto),
-      metodo_pago: pagoForm.value.metodo_pago,
-      fecha_pago: pagoForm.value.fecha_pago ?
-        formatDateToYMD(pagoForm.value.fecha_pago) :
-        formatDateToYMD(new Date()),
-      observacion: pagoForm.value.observacion ||
-        (dividirPago.value && pagoForm.value.monto < getPrecioTotal() ?
-          `Primera cuota de $${pagoForm.value.monto} de $${getPrecioTotal()}` :
-          `Pago por inscripción #${inscripcionId}`),
-      estado: 'pagado',
-      referencia: `PAGO-INSCRIPCION-${inscripcionId}-${Date.now().toString().slice(-6)}`
-    };
+      datosPagoPrimero = {
+        inscripcion_id: inscripcionId,
+        estudiante_id: estudianteSeleccionado.value.id,
+        monto: parseFloat(montoPagoForm),
+        
+        // CAMPOS DE DESCUENTO
+        descuento_porcentaje: descuentoPorcentaje.value,
+        descuento_monto: descuentoAplicado.value,
+        subtotal: precioTotal, // Precio sin descuento
+        total_final: precioConDescuento, // Precio con descuento
+        
+        metodo_pago: pagoForm.value.metodo_pago,
+        fecha_pago: pagoForm.value.fecha_pago ?
+          formatDateToYMD(pagoForm.value.fecha_pago) :
+          formatDateToYMD(new Date()),
+        observacion: observacion,
+        estado: 'pagado',
+        referencia: `PAGO-${inscripcionId}-${Date.now().toString().slice(-6)}`,
+        es_parcial: pagoTipo.es_parcial,
+        numero_cuota: pagoTipo.numero_cuota
+      };
 
-    // Agregar campos para pagos divididos
-    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
-      datosPagoPrimero.es_parcial = true;
-      datosPagoPrimero.pago_grupo_id = String(pagoGrupoId); 
-      datosPagoPrimero.numero_cuota = 1;
-    }
-
-    console.log('💰 Enviando datos del primer pago...', datosPagoPrimero);
-
-    const responsePago = await pagoService.store(datosPagoPrimero);
-
-    console.log('📥 Respuesta del servidor (primer pago):', responsePago.data);
-
-    if (responsePago.data) {
-      if (responsePago.data.success === true || responsePago.data.id) {
-        pagoRegistrado = true;
-        console.log('✅ Primer pago registrado exitosamente');
-      } else if (responsePago.data.success === false) {
-        console.warn('⚠️ El pago no se registró correctamente:', responsePago.data.message);
+      // Solo agregar pago_grupo_id si es primera cuota
+      if (pagoTipo.tipo.includes('primera_cuota')) {
+        datosPagoPrimero.pago_grupo_id = pagoGrupoId;
       }
     }
 
-    // SEGUNDO PAGO (solo si es dividido y hay saldo)
-    if (dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
-      const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
+    console.log('📤 Datos del pago:', datosPagoPrimero);
 
-      // Calcular fecha de vencimiento (15 días después por defecto)
+    // ========== ENVIAR PAGO ==========
+    const responsePago = await pagoService.store(datosPagoPrimero);
+
+    console.log('📥 Respuesta del servidor (pago):', responsePago.data);
+
+    if (responsePago.data?.success === true || responsePago.data?.id) {
+      pagoRegistrado = true;
+      console.log('✅ Pago registrado exitosamente');
+    } else {
+      throw new Error(responsePago.data?.message || 'Error al registrar el pago');
+    }
+
+    // ========== CREAR SEGUNDO PAGO PENDIENTE (solo si es primera cuota dividida y NO es prueba) ==========
+    if (!esPrueba.value && pagoTipo.tipo.includes('primera_cuota') && parseFloat(montoPagoForm) < parseFloat(precioConDescuento)) {
+      const saldoPendiente = parseFloat(precioConDescuento) - parseFloat(montoPagoForm);
+
       const fechaVencimiento = new Date(pagoForm.value.fecha_pago || new Date());
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
 
@@ -4235,213 +4917,119 @@ async function guardarInscripcionYpago() {
         monto: saldoPendiente,
         metodo_pago: null,
         fecha_pago: null,
-        fecha_vencimiento: formatDateToYMD(fechaVencimiento), // ← FECHA DE VENCIMIENTO
-        observacion: `Segunda cuota pendiente. Vence el ${formatFecha(fechaVencimiento)}. Total: $${getPrecioTotal()}, Pagado: $${pagoForm.value.monto}`,
-        estado: 'pendiente', // ← ESTADO PENDIENTE (NO 'vencido' todavía)
-        referencia: `SALDO-${inscripcionId}-${pagoGrupoId}`,
+        fecha_vencimiento: formatDateToYMD(fechaVencimiento),
+        observacion: `Segunda cuota pendiente. Vence el ${formatFecha(fechaVencimiento)}. Total: $${precioConDescuento.toFixed(2)}, Pagado: $${montoPagoForm}`,
+        estado: 'pendiente',
+        referencia: `CUOTA2-${inscripcionId}`,
         es_parcial: true,
+        numero_cuota: 2,
         pago_grupo_id: pagoGrupoId,
-        numero_cuota: 2
+        // Campos de descuento para la segunda cuota (deben ser los mismos)
+        descuento_porcentaje: descuentoPorcentaje.value,
+        descuento_monto: descuentoAplicado.value,
+        subtotal: precioTotal,
+        total_final: precioConDescuento
       };
 
-      console.log('💰 Creando segundo pago pendiente...', datosPagoSegundo);
+      console.log('💰 Creando segundo pago pendiente:', datosPagoSegundo);
 
       try {
         await pagoService.store(datosPagoSegundo);
         console.log('✅ Segundo pago (pendiente) registrado');
-
-        // Agregar al contador de pagos registrados
-        pagoRegistrado = true;
-
-        // Mostrar información específica sobre el pago pendiente
-        toast.add({
-          severity: 'info',
-          summary: 'Segunda cuota creada',
-          detail: `Cuota pendiente de $${saldoPendiente.toFixed(2)} con vencimiento ${formatFecha(fechaVencimiento)}`,
-          life: 6000
-        });
       } catch (pagoError) {
-        console.warn('⚠️ No se pudo registrar el segundo pago pendiente:', pagoError.message);
-        // Continuar aunque falle el segundo pago
-      }
-    }
-
-    // ========== PASO 5: VERIFICAR Y ACTUALIZAR ESTADO FINAL ==========
-    console.log('🔄 PASO 5: Verificando estado final...');
-
-    // Si hay saldo pendiente pero no se marcó como dividido, también actualizar estado
-    if (!dividirPago.value && pagoForm.value.monto < getPrecioTotal()) {
-      const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
-
-      // Crear pago pendiente automáticamente
-      const datosPagoPendiente = {
-        inscripcion_id: inscripcionId,
-        estudiante_id: estudianteSeleccionado.value.id,
-        monto: saldoPendiente,
-        metodo_pago: null,
-        fecha_pago: null,
-        fecha_vencimiento: formatDateToYMD(new Date(new Date().setDate(new Date().getDate() + 7))), // 7 días
-        observacion: `Saldo pendiente de pago parcial. Total: $${getPrecioTotal()}, Pagado: $${pagoForm.value.monto}`,
-        estado: 'pendiente',
-        referencia: `SALDO-PARCIAL-${inscripcionId}`,
-        es_parcial: true,
-        numero_cuota: 1
-      };
-
-      try {
-        await pagoService.store(datosPagoPendiente);
-        console.log('✅ Pago pendiente registrado para saldo parcial');
-      } catch (error) {
-        console.warn('⚠️ No se pudo registrar pago pendiente:', error.message);
+        console.warn('⚠️ No se pudo registrar el segundo pago:', pagoError.message);
       }
     }
 
     // ========== ÉXITO - PROCESO COMPLETADO ==========
     cerrarDialogoCompleto();
 
-    // Preparar mensaje de éxito detallado
-    let mensajeDetalle = `✅ Inscripción #${inscripcionId} creada exitosamente para ${estudianteBackup?.nombres || 'el estudiante'}.`;
-
-    if (totalClasesGeneradas > 0) {
-      mensajeDetalle += ` ${totalClasesGeneradas} clases programadas generadas.`;
+    // Preparar mensaje de éxito
+    let mensajeDetalle = '';
+    
+    if (esPrueba.value) {
+      mensajeDetalle = `🎯 Clase de prueba #${inscripcionId} creada exitosamente para ${estudianteBackup?.nombres || 'el estudiante'}.`;
+      mensajeDetalle += `\n💰 Estado: ACTIVO`;
+      mensajeDetalle += `\n💳 Pago: Bs.${montoBackup.toFixed(2)} (${metodoPagoBackup})`;
+      mensajeDetalle += `\n📅 Válido: ${formatFecha(new Date(fechaInicioFormateada))}`;
     } else {
-      mensajeDetalle += ` Las clases se generarán automáticamente.`;
-    }
+      mensajeDetalle = `✅ Inscripción #${inscripcionId} creada exitosamente para ${estudianteBackup?.nombres || 'el estudiante'}.`;
 
-    // Mensaje específico según tipo de pago y estado
-    const saldoPendiente = getPrecioTotal() - pagoForm.value.monto;
-
-    if (saldoPendiente > 0) {
-      mensajeDetalle += `\n💰 Estado: <span class="font-bold text-red-500">EN MORA</span>`;
-      mensajeDetalle += `\n💳 Pagado: $${pagoForm.value.monto} (${metodoPagoBackup})`;
-      mensajeDetalle += `\n📅 Saldo pendiente: <span class="font-bold text-red-500">$${saldoPendiente.toFixed(2)}</span>`;
-
-      if (dividirPago.value) {
-        mensajeDetalle += `\n📋 Segunda cuota vence en 15 días`;
+      if (totalClasesGeneradas > 0) {
+        mensajeDetalle += ` ${totalClasesGeneradas} clases programadas.`;
       }
-    } else {
-      mensajeDetalle += `\n💰 Estado: <span class="font-bold text-green-500">ACTIVO</span>`;
-      mensajeDetalle += `\n💳 Pago completo: $${montoBackup} (${metodoPagoBackup})`;
+
+      // Calcular saldo pendiente contra el precio CORRECTO (con descuento)
+      const saldoPendiente = precioConDescuento - montoPagoForm;
+
+      if (saldoPendiente <= 0.01) { // Tolerancia de 1 centavo
+        mensajeDetalle += `\n💰 Estado: ACTIVO`;
+        mensajeDetalle += `\n💳 Pago completo: $${montoBackup.toFixed(2)} (${metodoPagoBackup})`;
+        if (tieneDescuento) {
+          mensajeDetalle += `\n🎉 Descuento aplicado: $${descuentoAplicado.value.toFixed(2)}`;
+        }
+      } else {
+        mensajeDetalle += `\n💰 Estado: EN MORA`;
+        mensajeDetalle += `\n💳 Pagado: $${montoBackup.toFixed(2)} (${metodoPagoBackup})`;
+        mensajeDetalle += `\n📅 Saldo pendiente: $${saldoPendiente.toFixed(2)}`;
+        
+        if (tieneDescuento) {
+          mensajeDetalle += `\nℹ️ Total con descuento: $${precioConDescuento.toFixed(2)}`;
+        }
+      }
     }
 
-    // Mostrar mensaje de éxito principal
+    // Mostrar mensaje de éxito
+    const severidad = esPrueba.value ? 'success' : (saldoPendiente <= 0.01 ? 'success' : 'warn');
+    const resumen = esPrueba.value ? '¡Clase de Prueba Creada!' : (saldoPendiente <= 0.01 ? '¡Registro Completado!' : '¡Inscripción creada!');
+
     toast.add({
-      severity: saldoPendiente > 0 ? 'warn' : 'success',
-      summary: saldoPendiente > 0 ? '¡Inscripción creada (EN MORA)!' : '¡Registro Completado!',
+      severity: severidad,
+      summary: resumen,
       detail: mensajeDetalle,
       life: 8000
     });
 
-    // Mostrar resumen en consola
-    console.log('🎉 RESUMEN DEL REGISTRO:', {
-      inscripcionId: inscripcionId,
-      estudiante: estudianteBackup ? `${estudianteBackup.nombres} ${estudianteBackup.apellidos}` : 'Desconocido',
-      modalidad: modalidadBackup?.nombre || 'Desconocida',
-      horarios: horariosBackup.length,
-      periodo: `${fechaInicioFormateada} al ${fechaFinFormateada}`,
-      clasesTotales: clasesTotales,
-      clasesGeneradas: totalClasesGeneradas,
-      montoPagado: montoBackup,
-      saldoPendiente: saldoPendiente,
-      estadoInscripcion: estadoInscripcion,
-      metodoPago: metodoPagoBackup,
-      pagoDividido: dividirPago.value,
-      pagoGrupoId: pagoGrupoId,
-      pagoRegistrado: pagoRegistrado,
-      fecha: new Date().toLocaleString()
-    });
-
-    // ========== RECARGAR DATOS DESPUÉS DE 2 SEGUNDOS ==========
+    // ========== RECARGAR DATOS ==========
     setTimeout(() => {
       cargarDatos();
-      console.log('🔄 Datos recargados después del registro');
     }, 2000);
 
   } catch (error) {
     console.error('❌ ERROR EN EL PROCESO:', error);
 
     let mensajeError = 'Error al procesar la solicitud';
-    let detallesError = '';
-
+    
     if (error.response) {
-      console.error('📥 Datos del error del servidor:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-
-      if (error.response.data) {
-        if (error.response.data.errors) {
-          const errores = Object.values(error.response.data.errors).flat();
-          mensajeError = 'Errores de validación:';
-          detallesError = errores.join(', ');
-        }
-        else if (error.response.data.conflictos || error.response.data.horarios_llenos) {
-          mensajeError = error.response.data.message || 'Conflicto detectado';
-          if (error.response.data.conflictos) {
-            detallesError = 'El estudiante ya está inscrito en alguno de los horarios seleccionados';
-          } else if (error.response.data.horarios_llenos) {
-            detallesError = 'Algunos horarios ya están llenos';
-          }
-        }
-        else if (error.response.data.message) {
-          mensajeError = error.response.data.message;
-        } else if (error.response.data.error) {
-          mensajeError = error.response.data.error;
-        }
+      if (error.response.data?.errors) {
+        const errores = Object.values(error.response.data.errors).flat();
+        mensajeError = 'Errores de validación: ' + errores.join(', ');
+      } else if (error.response.data?.message) {
+        mensajeError = error.response.data.message;
       }
-
-      // Mensajes específicos por código de error
-      if (error.response.status === 422) {
-        mensajeError = 'Datos inválidos en el formulario';
-      } else if (error.response.status === 401) {
-        mensajeError = 'Sesión expirada. Por favor inicie sesión nuevamente';
-      } else if (error.response.status === 403) {
-        mensajeError = 'No tiene permisos para realizar esta acción';
-      } else if (error.response.status === 404) {
-        mensajeError = 'Recurso no encontrado';
-      } else if (error.response.status === 409) {
-        mensajeError = 'Conflicto: ' + (error.response.data.message || 'Recurso ya existe');
-      } else if (error.response.status === 500) {
-        mensajeError = 'Error interno del servidor';
-      }
-
-    } else if (error.request) {
-      mensajeError = 'Error de conexión con el servidor';
-      detallesError = 'Verifique su conexión a internet e intente nuevamente';
-    } else {
-      mensajeError = error.message || 'Error desconocido en el proceso';
+    } else if (error.message) {
+      mensajeError = error.message;
     }
-
-    const mensajeFinal = detallesError ? `${mensajeError}: ${detallesError}` : mensajeError;
 
     toast.add({
       severity: 'error',
       summary: 'Error en el Proceso',
-      detail: mensajeFinal,
+      detail: mensajeError,
       life: 8000
     });
 
-    // Si hay un ID de inscripción pero falló algo después, mostrar opción para continuar
-    if (inscripcionId && !pagoRegistrado) {
-      console.warn(`⚠️ Inscripción #${inscripcionId} creada pero pago no registrado. Se puede registrar después.`);
-
-      setTimeout(() => {
-        toast.add({
-          severity: 'warn',
-          summary: 'Acción pendiente',
-          detail: `La inscripción #${inscripcionId} se creó pero el pago no se registró. Puede registrar el pago manualmente.`,
-          life: 10000
-        });
-      }, 2000);
-    }
-
   } finally {
-    // ========== FINALIZAR ==========
     guardando.value = false;
-    console.log('🏁 Proceso de guardado finalizado');
   }
 }
+
+function esModalidadDePrueba(modalidad) {
+  if (!modalidad) return false;
+  const nombre = modalidad.nombre?.toLowerCase() || '';
+  const descripcion = modalidad.descripcion?.toLowerCase() || '';
+  return nombre.includes('prueba') || descripcion.includes('prueba');
+}
+
 
 // Agrega esta función en tu script
 async function actualizarEstadoInscripcionPorPagos(inscripcionId) {
@@ -4502,6 +5090,92 @@ function getEstadoRenovacion(inscripcion) {
     return `Vencida hace ${Math.abs(diasRestantes)} días`;
   }
 }
+
+function calcularDescuento() {
+  const precioTotal = getPrecioTotal();
+  let descuento = 0;
+
+  // Si hay porcentaje, calcular monto
+  if (descuentoPorcentaje.value > 0) {
+    descuento = precioTotal * (descuentoPorcentaje.value / 100);
+    descuentoMonto.value = descuento;
+  }
+  // Si hay monto, calcular porcentaje
+  else if (descuentoMonto.value > 0) {
+    descuento = descuentoMonto.value;
+    descuentoPorcentaje.value = (descuento / precioTotal) * 100;
+  }
+
+  // Limitar el descuento al precio total
+  descuentoAplicado.value = Math.min(descuento, precioTotal);
+  subtotal.value = precioTotal;
+  totalFinal.value = precioTotal - descuentoAplicado.value;
+
+  // ========== ¡¡¡CORRECCIÓN IMPORTANTE!!! ==========
+  // Si NO está dividiendo el pago, ajustar el monto al total con descuento
+  if (!dividirPago.value) {
+    // Si el monto actual es mayor al nuevo total con descuento, ajustarlo
+    if (pagoForm.value.monto > totalFinal.value) {
+      pagoForm.value.monto = totalFinal.value;
+    }
+    // Si no hay monto establecido, sugerir el total con descuento
+    else if (!pagoForm.value.monto || pagoForm.value.monto <= 0) {
+      pagoForm.value.monto = totalFinal.value;
+    }
+  }
+
+  console.log('Descuento calculado:', {
+    precioTotal,
+    descuentoAplicado: descuentoAplicado.value,
+    totalFinal: totalFinal.value,
+    montoActual: pagoForm.value.monto,
+    dividirPago: dividirPago.value
+  });
+}
+
+// Función para limpiar descuento
+function limpiarDescuento() {
+  descuentoPorcentaje.value = 0;
+  descuentoMonto.value = 0;
+  descuentoAplicado.value = 0;
+  const precioTotal = getPrecioTotal();
+  subtotal.value = precioTotal;
+  totalFinal.value = precioTotal;
+
+  // Si NO está dividiendo el pago, ajustar el monto al precio original
+  if (!dividirPago.value) {
+    pagoForm.value.monto = precioTotal;
+  }
+}
+
+// Función para obtener precio con descuento
+function calcularPrecioConDescuento() {
+  // ========== SI ES PRUEBA ==========
+  if (esPrueba.value) {
+    console.log('💰 Precio de prueba:', montoPrueba.value);
+    return montoPrueba.value; // ← No hay descuento en pruebas
+  }
+  
+  // ========== LÓGICA NORMAL ==========
+  const precioTotal = getPrecioTotal();
+  console.log('💰 calcularPrecioConDescuento:', {
+    precioTotal,
+    descuentoAplicado: descuentoAplicado.value,
+    resultado: Math.max(0, precioTotal - descuentoAplicado.value)
+  });
+  return Math.max(0, precioTotal - descuentoAplicado.value);
+}
+
+// Watch para precio total
+watch(() => getPrecioTotal(), (newVal) => {
+  subtotal.value = newVal;
+  totalFinal.value = newVal - descuentoAplicado.value;
+});
+
+// Watch para descuento
+watch([descuentoPorcentaje, descuentoMonto], () => {
+  calcularDescuento();
+});
 
 
 
@@ -4721,7 +5395,8 @@ function getClaseProgreso(inscripcion) {
 // ========== FUNCIONES AUXILIARES NECESARIAS ==========
 
 // Función para validar que el período sea suficiente
-function validarPeriodoSuficiente(fechaInicio, fechaFin, horarios) {
+// Encuentra esta función en tu script y modifícala:
+function validarPeriodoSuficiente(fechaInicio, fechaFin, horarios, esPrueba = false) {
   if (!fechaInicio || !fechaFin || !horarios?.length) {
     return { valido: false, mensaje: 'Datos insuficientes para validar el período' };
   }
@@ -4733,11 +5408,19 @@ function validarPeriodoSuficiente(fechaInicio, fechaFin, horarios) {
     return { valido: false, mensaje: 'Fechas inválidas' };
   }
 
-  // Calcular días del período
-  const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+  // ========== ¡¡¡IMPORTANTE!!! ==========
+  // SI ES PRUEBA, NO APLICAR VALIDACIÓN DE DÍAS MÍNIMOS
+  if (esPrueba) {
+    return { 
+      valido: true, 
+      mensaje: 'Clase de prueba - 1 día válido' 
+    };
+  }
 
-  // ========== CORRECCIÓN IMPORTANTE ==========
-  // Si hay horarios de domingo, necesitamos al menos 7 días para asegurar que haya un domingo
+  // Calcular días del período
+  const diasTotales = Math.floor((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Si hay horarios de domingo, necesitamos al menos 7 días
   const tieneDomingo = horarios.some(h =>
     h.dia_semana?.toLowerCase().includes('domingo')
   );
@@ -4762,157 +5445,368 @@ function validarPeriodoSuficiente(fechaInicio, fechaFin, horarios) {
   return { valido: true, mensaje: '' };
 }
 
-// Función calcularDistribucionPorHorario corregida
-function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios) {
-  console.log('🔄 Calculando distribución REAL...');
-  console.log('📅 Fechas:', fechaInicio, 'al', fechaFin);
-  console.log('⏰ Horarios seleccionados:', horarios.map(h => `${h.id}: ${h.dia_semana}`));
 
-  // ========== MAPEO COMPLETO Y ROBUSTO ==========
-  const diasSemanaMap = {
-    // Minúsculas
-    'lunes': 1,
-    'martes': 2,
-    'miércoles': 3,
-    'miercoles': 3,
-    'jueves': 4,
-    'viernes': 5,
-    'sábado': 6,
-    'sabado': 6,
-    'domingo': 0,
+function calcularDistribucionPorHorario(fechaInicio, fechaFin, horarios, esPrueba = false) {
 
-    // Con mayúscula inicial
-    'Lunes': 1,
-    'Martes': 2,
-    'Miércoles': 3,
-    'Miercoles': 3,
-    'Jueves': 4,
-    'Viernes': 5,
-    'Sábado': 6,
-    'Sabado': 6,
-    'Domingo': 0,
+  console.log('=== CÁLCULO DE DISTRIBUCIÓN ===');
+  console.log('¿Es prueba?', esPrueba);
 
-    // Todo mayúsculas
-    'LUNES': 1,
-    'MARTES': 2,
-    'MIÉRCOLES': 3,
-    'MIERCOLES': 3,
-    'JUEVES': 4,
-    'VIERNES': 5,
-    'SÁBADO': 6,
-    'SABADO': 6,
-    'DOMINGO': 0
-  };
+  // SI ES PRUEBA, devolver distribución fija de 1 clase por horario
+  if (esPrueba) {
+    console.log('🎯 Modo PRUEBA activado - Distribución fija: 1 clase por horario');
+    
+    const distribucionPrueba = horarios.map((horario, index) => {
+      return {
+        horario_id: horario.id,
+        dia_semana: horario.dia_semana,
+        dia_numero_js: 0, // No importa para prueba
+        clases_totales: 1, // ← ¡SOLO 1 CLASE!
+        fechas_encontradas: [{
+          fecha: formatDateToYMD(new Date(fechaInicio)),
+          dia: 'Fecha de prueba',
+          diaNumero: new Date(fechaInicio).getDay()
+        }],
+        tiene_clases: true,
+        es_prueba: true
+      };
+    });
 
+    console.log('✅ Distribución para prueba:', distribucionPrueba);
+    return distribucionPrueba;
+  }
+  console.log('=== CÁLCULO CORREGIDO (INCLUYENDO FECHA FINAL) ===');
+
+  // 1. Validación básica
+  if (!fechaInicio || !fechaFin || !horarios || horarios.length === 0) {
+    console.error('❌ Datos insuficientes para calcular distribución');
+    return [];
+  }
+
+  // 2. Crear fechas normalizadas (sin horas)
   const inicio = new Date(fechaInicio);
+  inicio.setHours(0, 0, 0, 0);
+
   const fin = new Date(fechaFin);
+  fin.setHours(0, 0, 0, 0);
 
-  // DEBUG: Mostrar información del período
-  console.log('📊 DEBUG del período:');
+  console.log('📅 Período INCLUSIVO:');
   console.log(`  Inicio: ${inicio.toLocaleDateString('es-ES')}`);
-  console.log(`  Fin: ${fin.toLocaleDateString('es-ES')}`);
+  console.log(`  Fin: ${fin.toLocaleDateString('es-ES')} <-- INCLUIDO`);
+  console.log(`  Formato ISO - Inicio: ${inicio.toISOString()}`);
+  console.log(`  Formato ISO - Fin: ${fin.toISOString()}`);
 
-  const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
-  console.log(`  Días totales: ${diasTotales}`);
+  // 3. Validar que las fechas sean válidas
+  if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+    console.error('❌ Fechas inválidas');
+    throw new Error('Fechas inválidas proporcionadas');
+  }
 
-  // Mostrar todos los días del período para debug
-  console.log('📅 Días del período:');
+  // 4. Validar que fin sea mayor o igual a inicio
+  if (fin < inicio) {
+    console.error('❌ La fecha fin es anterior a la fecha inicio');
+    throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
+  }
+
+  // 5. Calcular días totales (INCLUSIVE)
+  const unDia = 24 * 60 * 60 * 1000;
+  const diasTotales = Math.round((fin - inicio) / unDia) + 1; // +1 para INCLUIR ambos extremos
+
+  console.log(`📅 Días totales del ${inicio.toLocaleDateString()} al ${fin.toLocaleDateString()}:`, diasTotales);
+
+  // 6. Para DEBUG: Listar todos los días del período
+  console.log('📅 Todos los días del período (INCLUSIVE):');
   let fechaDebug = new Date(inicio);
   for (let i = 0; i < diasTotales; i++) {
-    const diaNum = fechaDebug.getDay();
-    const diaNombre = fechaDebug.toLocaleDateString('es-ES', { weekday: 'long' });
-    console.log(`  ${i + 1}. ${diaNombre} (${diaNum}): ${fechaDebug.toLocaleDateString('es-ES')}`);
+    const diaSemana = fechaDebug.toLocaleDateString('es-ES', { weekday: 'long' });
+    const diaNumero = fechaDebug.getDay();
+    console.log(`${i + 1}. ${fechaDebug.toLocaleDateString('es-ES')} - ${diaSemana} (día ${diaNumero})`);
     fechaDebug.setDate(fechaDebug.getDate() + 1);
   }
 
-  // Calcular para cada horario
-  const distribucionCalculada = horarios.map(horario => {
-    const diaOriginal = horario.dia_semana;
-    const diaLower = diaOriginal?.toLowerCase() || '';
+  // 7. Mapeo de días robusto (mejorado)
+  const diasSemanaMap = {
+    // Español - minúsculas
+    'domingo': 0, 'domingos': 0,
+    'lunes': 1,
+    'martes': 2,
+    'miércoles': 3, 'miercoles': 3,
+    'jueves': 4,
+    'viernes': 5,
+    'sábado': 6, 'sabado': 6,
+
+    // Español - inicial mayúscula
+    'Domingo': 0, 'Domingos': 0,
+    'Lunes': 1,
+    'Martes': 2,
+    'Miércoles': 3, 'Miercoles': 3,
+    'Jueves': 4,
+    'Viernes': 5,
+    'Sábado': 6, 'Sabado': 6,
+
+    // Español - mayúsculas
+    'DOMINGO': 0,
+    'LUNES': 1,
+    'MARTES': 2,
+    'MIÉRCOLES': 3, 'MIERCOLES': 3,
+    'JUEVES': 4,
+    'VIERNES': 5,
+    'SÁBADO': 6, 'SABADO': 6,
+
+    // Inglés - por si acaso
+    'sunday': 0, 'sundays': 0,
+    'monday': 1,
+    'tuesday': 2,
+    'wednesday': 3,
+    'thursday': 4,
+    'friday': 5,
+    'saturday': 6
+  };
+
+  // 8. Calcular distribución para cada horario
+  const distribucionCalculada = horarios.map((horario, index) => {
+    console.log(`\n🔍 Analizando horario ${index + 1}: ${horario.dia_semana} (ID: ${horario.id})`);
+
+    const diaNombre = horario.dia_semana?.toString().trim() || '';
+    const diaLower = diaNombre.toLowerCase();
 
     // Buscar en el mapa
-    let diaHorario = diasSemanaMap[diaOriginal] ||
-      diasSemanaMap[diaLower] ||
-      -1;
+    let diaHorario = diasSemanaMap[diaNombre] || diasSemanaMap[diaLower];
 
-    console.log(`\n📊 Analizando horario ${horario.id}:`);
-    console.log(`  Día original: "${diaOriginal}"`);
-    console.log(`  Día lower: "${diaLower}"`);
-    console.log(`  Día mapeado a JS: ${diaHorario}`);
+    // Si no se encuentra, intentar búsqueda flexible
+    if (diaHorario === undefined) {
+      console.warn(`⚠️ Día no encontrado exactamente: "${diaNombre}". Intentando búsqueda flexible...`);
 
-    // Si aún no encontramos el día, hacer búsqueda parcial
-    if (diaHorario === -1) {
       if (diaLower.includes('domingo')) diaHorario = 0;
-      else if (diaLower.includes('sabado') || diaLower.includes('sábado')) diaHorario = 6;
-      else if (diaLower.includes('viernes')) diaHorario = 5;
-      else if (diaLower.includes('jueves')) diaHorario = 4;
-      else if (diaLower.includes('miercoles') || diaLower.includes('miércoles')) diaHorario = 3;
-      else if (diaLower.includes('martes')) diaHorario = 2;
       else if (diaLower.includes('lunes')) diaHorario = 1;
-
-      if (diaHorario !== -1) {
-        console.log(`  🔍 Encontrado por búsqueda parcial: ${diaHorario}`);
+      else if (diaLower.includes('martes')) diaHorario = 2;
+      else if (diaLower.includes('miercoles') || diaLower.includes('miércoles')) diaHorario = 3;
+      else if (diaLower.includes('jueves')) diaHorario = 4;
+      else if (diaLower.includes('viernes')) diaHorario = 5;
+      else if (diaLower.includes('sabado') || diaLower.includes('sábado')) diaHorario = 6;
+      else {
+        console.error(`❌ No se pudo identificar el día: "${diaNombre}"`);
+        diaHorario = -1; // Marcador de error
       }
     }
 
+    console.log(`Día "${diaNombre}" -> Número JS: ${diaHorario}`);
+
+    // Si no se pudo identificar el día, retornar error
+    if (diaHorario === -1) {
+      return {
+        horario_id: horario.id,
+        dia_semana: horario.dia_semana,
+        dia_numero_js: -1,
+        clases_totales: 0,
+        fechas_encontradas: [],
+        error: `No se pudo identificar el día: "${diaNombre}"`
+      };
+    }
+
+    // Calcular clases para este horario
     let clases = 0;
     let fechaActual = new Date(inicio);
-    let diasCoincidentes = [];
+    const diasCoincidentes = [];
 
-    // Contar días coincidentes
-    while (fechaActual <= fin) {
+    // Recorrer todos los días del período (INCLUSIVE)
+    for (let i = 0; i < diasTotales; i++) {
       const diaActual = fechaActual.getDay();
       const fechaStr = fechaActual.toLocaleDateString('es-ES');
+      const diaNombreActual = fechaActual.toLocaleDateString('es-ES', { weekday: 'long' });
 
       if (diaHorario === diaActual) {
         clases++;
-        diasCoincidentes.push(fechaStr);
+        diasCoincidentes.push({
+          fecha: fechaStr,
+          dia: diaNombreActual,
+          diaNumero: diaActual
+        });
+        console.log(`  ✓ ${fechaStr} - ${diaNombreActual} (día ${diaActual})`);
       }
 
       fechaActual.setDate(fechaActual.getDate() + 1);
     }
 
-    console.log(`  Clases encontradas: ${clases}`);
+    console.log(`Total clases encontradas para ${horario.dia_semana}: ${clases}`);
+
     if (diasCoincidentes.length > 0) {
-      console.log(`  Fechas: ${diasCoincidentes.join(', ')}`);
+      console.log(`Fechas específicas: ${diasCoincidentes.map(d => d.fecha).join(', ')}`);
     } else {
-      console.warn(`  ⚠️ NO SE ENCONTRARON CLASES para este día en el período`);
+      console.warn(`  ⚠️ NO SE ENCONTRARON CLASES para este horario en el período`);
     }
 
     return {
       horario_id: horario.id,
-      dia_semana: diaOriginal,
+      dia_semana: horario.dia_semana,
       dia_numero_js: diaHorario,
-      clases_totales: clases
+      clases_totales: clases,
+      fechas_encontradas: diasCoincidentes,
+      tiene_clases: clases > 0
     };
   });
 
-  // Validar que todos los horarios tengan al menos 1 clase
-  const horariosSinClases = distribucionCalculada.filter(d => d.clases_totales === 0);  // <-- ¡CORREGIDO!
+  // 9. Mostrar resumen total
+  console.log('\n📊 RESUMEN TOTAL DE DISTRIBUCIÓN:');
+  console.log('='.repeat(50));
 
-  if (horariosSinClases.length > 0) {
-    const mensajeHorarios = horariosSinClases.map((d, i) => {
-      return `"${d.dia_semana || 'Sin día'}" (ID: ${d.horario_id})`;
-    }).join(', ');
+  const totalClases = distribucionCalculada.reduce((sum, d) => sum + d.clases_totales, 0);
+  console.log(`Total clases calculadas: ${totalClases}`);
 
-    // DEBUG adicional: mostrar qué días sí hay en el período
-    console.error('\n❌ HORARIOS SIN CLASES DETECTADOS:');
-    horariosSinClases.forEach(d => {
-      console.error(`  - Horario ${d.horario_id} (${d.dia_semana}):`);
-      console.error(`    * Buscaba día JS: ${d.dia_numero_js}`);
-    });
+  distribucionCalculada.forEach((d, index) => {
+    const tieneError = d.error ? '❌' : (d.tiene_clases ? '✅' : '⚠️');
+    console.log(`${tieneError} ${d.dia_semana}: ${d.clases_totales} clases`);
 
-    throw new Error(`Los siguientes horarios no tienen clases en el período seleccionado: ${mensajeHorarios}. Por favor, extienda la fecha de fin o verifique las fechas.`);
+    if (d.error) {
+      console.log(`   Error: ${d.error}`);
+    }
+  });
+
+  console.log('='.repeat(50));
+
+  // 10. Validaciones finales
+  const horariosSinClases = distribucionCalculada.filter(d => d.clases_totales === 0 && !d.error);
+  const horariosConError = distribucionCalculada.filter(d => d.error);
+
+  if (horariosConError.length > 0) {
+    const errores = horariosConError.map(d => d.error).join('; ');
+    throw new Error(`Errores en identificación de días: ${errores}`);
   }
 
-  // Formato para backend
-  return distribucionCalculada.map(d => ({
+  if (horariosSinClases.length > 0) {
+    const horariosList = horariosSinClases.map(d => d.dia_semana).join(', ');
+    const mensaje = `Los siguientes horarios no tienen clases en el período: ${horariosList}. ` +
+      `Período: ${inicio.toLocaleDateString()} al ${fin.toLocaleDateString()} (${diasTotales} días)`;
+
+    console.error('❌ ' + mensaje);
+
+    // Mostrar diagnóstico específico
+    horariosSinClases.forEach(horario => {
+      console.log(`  Diagnóstico para ${horario.dia_semana} (día ${horario.dia_numero_js}):`);
+      console.log(`  - Se buscaba el día número: ${horario.dia_numero_js}`);
+      console.log(`  - Días en el período: ${diasTotales}`);
+    });
+
+    throw new Error(mensaje);
+  }
+
+  // 11. Validar que el total de clases sea razonable
+  const maxClasesPosibles = diasTotales * horarios.length;
+  const minClasesEsperadas = horarios.length; // Al menos 1 clase por horario
+
+  if (totalClases < minClasesEsperadas) {
+    console.warn(`⚠️ Advertencia: Solo ${totalClases} clases para ${horarios.length} horarios`);
+  }
+
+  if (totalClases > maxClasesPosibles) {
+    console.error(`❌ Error lógico: ${totalClases} clases calculadas pero máximo posible es ${maxClasesPosibles}`);
+    throw new Error('Error en cálculo de clases');
+  }
+
+  // 12. Formato final para el backend
+  const resultadoFinal = distribucionCalculada.map(d => ({
     horario_id: d.horario_id,
+    dia_semana: d.dia_semana,
     clases_totales: d.clases_totales,
     clases_asistidas: 0,
     clases_restantes: d.clases_totales,
-    estado: 'activo'
+    estado: 'activo',
+    // Información adicional para debugging
+    _debug: {
+      dia_numero_js: d.dia_numero_js,
+      total_fechas: d.fechas_encontradas?.length || 0,
+      fechas_ejemplo: d.fechas_encontradas?.slice(0, 3).map(f => f.fecha) || []
+    }
   }));
+
+  // 13. Log final de éxito
+  console.log('\n🎉 DISTRIBUCIÓN CALCULADA EXITOSAMENTE:');
+  console.log(`✅ Período: ${inicio.toLocaleDateString()} al ${fin.toLocaleDateString()}`);
+  console.log(`✅ Días totales: ${diasTotales}`);
+  console.log(`✅ Horarios: ${horarios.length}`);
+  console.log(`✅ Total clases: ${totalClases}`);
+  console.log(`✅ Clases por horario:`);
+  resultadoFinal.forEach(r => {
+    console.log(`   - ${r.dia_semana}: ${r.clases_totales} clases`);
+  });
+
+  return resultadoFinal;
+}
+
+// Función auxiliar para testear el caso específico
+function testCasoEspecifico() {
+  console.log('\n🧪 TEST CASO ESPECÍFICO: 30/01/2026 - 02/03/2026');
+
+  const horariosEjemplo = [
+    { id: 1, dia_semana: 'Lunes' },
+    { id: 2, dia_semana: 'Viernes' },
+    { id: 3, dia_semana: 'Sábado' },
+    { id: 4, dia_semana: 'Domingo' }
+  ];
+
+  const resultado = calcularDistribucionPorHorario(
+    '2026-01-30',
+    '2026-03-02',
+    horariosEjemplo
+  );
+
+  const totalClases = resultado.reduce((sum, r) => sum + r.clases_totales, 0);
+  console.log(`\n📈 RESULTADO ESPERADO: 20 clases`);
+  console.log(`📈 RESULTADO OBTENIDO: ${totalClases} clases`);
+  console.log(totalClases === 20 ? '✅ TEST PASADO' : '❌ TEST FALLIDO');
+
+  return resultado;
+}
+
+// Función para calcular días específicos manualmente (para verificación)
+function calcularManualmente() {
+  console.log('\n📝 CÁLCULO MANUAL VERIFICACIÓN:');
+
+  const inicio = new Date('2026-01-30');
+  const fin = new Date('2026-03-02');
+
+  // Normalizar fechas
+  inicio.setHours(0, 0, 0, 0);
+  fin.setHours(0, 0, 0, 0);
+
+  let fecha = new Date(inicio);
+  const resultados = {
+    Lunes: [],
+    Viernes: [],
+    Sábado: [],
+    Domingo: []
+  };
+
+  while (fecha <= fin) { // <= para INCLUIR 2 de marzo
+    const dia = fecha.getDay();
+    const fechaStr = fecha.toLocaleDateString('es-ES');
+
+    switch (dia) {
+      case 1: // Lunes
+        resultados.Lunes.push(fechaStr);
+        break;
+      case 5: // Viernes
+        resultados.Viernes.push(fechaStr);
+        break;
+      case 6: // Sábado
+        resultados.Sábado.push(fechaStr);
+        break;
+      case 0: // Domingo
+        resultados.Domingo.push(fechaStr);
+        break;
+    }
+
+    fecha.setDate(fecha.getDate() + 1);
+  }
+
+  console.log('Resultado manual:');
+  Object.keys(resultados).forEach(dia => {
+    console.log(`${dia}: ${resultados[dia].length} clases - ${resultados[dia].join(', ')}`);
+  });
+
+  const totalManual = Object.values(resultados).reduce((sum, arr) => sum + arr.length, 0);
+  console.log(`Total manual: ${totalManual} clases`);
+
+  return resultados;
 }
 // Función para calcular clases reales
 function calcularClasesReales(fechaInicio, fechaFin, horarios) {
@@ -5039,6 +5933,29 @@ function calcularMesesDuracion() {
   return Math.max(1, diffMeses);
 }
 
+// AÑADE esta función para calcular meses exactos:
+
+function calcularMesesExactos(fechaInicio, fechaFin) {
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
+
+  // Calcular diferencia en meses considerando días
+  const meses = (fin.getFullYear() - inicio.getFullYear()) * 12 +
+    (fin.getMonth() - inicio.getMonth());
+
+  // Ajustar por días
+  const diasInicio = inicio.getDate();
+  const diasFin = fin.getDate();
+
+  let mesesAjustados = meses;
+  if (diasFin < diasInicio) {
+    mesesAjustados--;
+  }
+
+  // Mínimo 1 mes
+  return Math.max(1, mesesAjustados);
+}
+
 async function verClasesProgramadas(inscripcionId) {
   try {
     console.log('📅 Cargando clases programadas para inscripción:', inscripcionId);
@@ -5127,7 +6044,78 @@ async function cargarEstudiantesParaDialogo() {
   }
 }
 
+function toggleModoPrueba() {
+  esPrueba.value = !esPrueba.value;
+  
+  if (esPrueba.value) {
+    // Configurar automáticamente para prueba
+    const hoy = new Date();
+    const manana = new Date();
+    manana.setDate(manana.getDate() + 1);
+    
+    inscripcionForm.value.fecha_inicio = hoy;
+    inscripcionForm.value.fecha_fin = manana;
+    
+    // Limitar a máximo 1 horario para pruebas
+    if (horariosSeleccionados.value.length > 1) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Clase de prueba',
+        detail: 'Solo puede seleccionar 1 horario para clase de prueba',
+        life: 3000
+      });
+      
+      // Mantener solo el primer horario
+      const primerHorarioId = horariosSeleccionados.value[0];
+      const primerHorarioDetalle = horariosSeleccionadosDetalles.value.find(h => h.id === primerHorarioId);
+      
+      horariosSeleccionados.value = [primerHorarioId];
+      horariosSeleccionadosDetalles.value = primerHorarioDetalle ? [primerHorarioDetalle] : [];
+    }
+    
+    // Establecer monto inicial
+    pagoForm.value.monto = montoPrueba.value;
+    
+    // Desactivar división de pago y descuento para pruebas
+    dividirPago.value = false;
+    descuentoPorcentaje.value = 0;
+    descuentoMonto.value = 0;
+    descuentoAplicado.value = 0;
+    
+    toast.add({
+      severity: 'info',
+      summary: 'Modo prueba activado',
+      detail: 'Configurado para 1 día - 1 clase',
+      life: 3000
+    });
+  } else {
+    // Restaurar valores normales
+    const hoy = new Date();
+    const unMesDespues = new Date();
+    unMesDespues.setMonth(unMesDespues.getMonth() + 1);
+    
+    inscripcionForm.value.fecha_inicio = hoy;
+    inscripcionForm.value.fecha_fin = unMesDespues;
+    
+    toast.add({
+      severity: 'info',
+      summary: 'Modo prueba desactivado',
+      detail: 'Configuración normal restaurada',
+      life: 3000
+    });
+  }
+}
 
+// Modificar la función getPlaceholderObservacion
+function getPlaceholderObservacion() {
+  if (esPrueba.value) {
+    return 'Ej: Clase de prueba para conocer las instalaciones...';
+  }
+  if (dividirPago.value && pagoForm.value.monto > 0 && pagoForm.value.monto < getPrecioTotal()) {
+    return `Ej: Pago parcial. Primera cuota de $${pagoForm.value.monto} de $${getPrecioTotal()}. Saldo pendiente: $${(getPrecioTotal() - pagoForm.value.monto).toFixed(2)}`;
+  }
+  return 'Notas sobre el pago...';
+}
 
 
 async function cargarModalidades() {
@@ -5699,29 +6687,29 @@ async function registrarPago(inscripcion) {
 
   try {
     cargando.value = true;
-    
+
     // Primero asegurarnos de tener datos frescos
     await cargarPagosPendientesParaInscripcion(inscripcion);
-    
+
     // Buscar la inscripción actualizada
     const inscripcionActualizada = inscripciones.value.find(i => i.id === inscripcion.id);
-    
+
     if (!inscripcionActualizada) {
       throw new Error('Inscripción no encontrada');
     }
-    
+
     console.log('📊 Inscripción actualizada:', {
       estado: inscripcionActualizada.estado,
       saldo: inscripcionActualizada.saldo_pendiente,
       tieneSegundaCuota: inscripcionActualizada.tiene_segunda_cuota
     });
-    
+
     // Llamar a la función mejorada
     abrirDialogoRegistroPago(inscripcionActualizada);
 
   } catch (error) {
     console.error('❌ Error al obtener información de pagos:', error);
-    
+
     // Fallback: abrir diálogo con datos disponibles
     toast.add({
       severity: 'warn',
@@ -5729,9 +6717,9 @@ async function registrarPago(inscripcion) {
       detail: 'Mostrando información básica de pago',
       life: 3000
     });
-    
+
     abrirDialogoRegistroPago(inscripcion);
-    
+
   } finally {
     cargando.value = false;
   }
@@ -5741,24 +6729,24 @@ async function registrarPago(inscripcion) {
 
 async function abrirDialogoRegistroPago(inscripcion) {
   console.log('💰 Abriendo diálogo para inscripción #', inscripcion.id);
-  
+
   try {
     cargandoPago.value = true;
     inscripcionParaPago.value = inscripcion;
-    
+
     // 1. Obtener la inscripción completa
     const response = await inscripcionService.show(inscripcion.id);
     let inscripcionData = response.data.data || response.data;
-    
+
     montoTotalInscripcion.value = parseFloat(inscripcionData?.monto_mensual) || 0;
     console.log('📊 Monto total de inscripción #' + inscripcion.id + ':', montoTotalInscripcion.value);
-    
+
     // 2. Obtener TODOS los pagos (sin filtro para debug)
     console.log('🔍 Obteniendo TODOS los pagos...');
     const pagosResponse = await pagoService.index(1, 200, '');
-    
+
     let todosPagos = [];
-    
+
     // Extraer datos
     if (pagosResponse.data) {
       if (pagosResponse.data.success && Array.isArray(pagosResponse.data.data)) {
@@ -5769,59 +6757,59 @@ async function abrirDialogoRegistroPago(inscripcion) {
         todosPagos = pagosResponse.data;
       }
     }
-    
+
     console.log(`📊 ${todosPagos.length} pagos en total en la BD`);
-    
+
     // 3. Filtrar MANUALMENTE los pagos de ESTA inscripción
     const pagosDeEstaInscripcion = todosPagos.filter(pago => {
       const pagoInscripcionId = parseInt(pago.inscripcion_id) || pago.inscripcion_id;
       const buscaInscripcionId = parseInt(inscripcion.id) || inscripcion.id;
-      
+
       const esDeEstaInscripcion = pagoInscripcionId == buscaInscripcionId;
-      
+
       if (esDeEstaInscripcion) {
         console.log(`✅ Pago ${pago.id} ($${pago.monto}) pertenece a inscripción ${inscripcion.id}`);
       }
-      
+
       return esDeEstaInscripcion;
     });
-    
+
     console.log(`🎯 ${pagosDeEstaInscripcion.length} pagos encontrados para inscripción ${inscripcion.id}`);
-    
+
     // Mostrar solo los pagos de esta inscripción
     pagosDeEstaInscripcion.forEach((pago, i) => {
-      console.log(`  Pago ${i+1}: ID=${pago.id}, Monto=$${pago.monto}, Estado="${pago.estado}", Obs="${pago.observacion}"`);
+      console.log(`  Pago ${i + 1}: ID=${pago.id}, Monto=$${pago.monto}, Estado="${pago.estado}", Obs="${pago.observacion}"`);
     });
-    
+
     // 4. Filtrar SOLO pagos PAGADOS de esta inscripción
     const pagosPagados = pagosDeEstaInscripcion.filter(p => {
       const estado = p.estado?.toString().toLowerCase() || '';
       return estado === 'pagado';
     });
-    
+
     console.log(`💰 ${pagosPagados.length} pagos PAGADOS para inscripción ${inscripcion.id}`);
-    
+
     // 5. Sumar montos de pagos pagados de ESTA inscripción
     totalPagado.value = pagosPagados.reduce((sum, pago) => {
       const monto = parseFloat(pago.monto) || 0;
       console.log(`  + Sumando pago ${pago.id} de inscripción ${inscripcion.id}: $${monto}`);
       return sum + monto;
     }, 0);
-    
+
     console.log('💰 Total pagado para inscripción #' + inscripcion.id + ':', totalPagado.value);
-    
+
     // 6. Calcular saldo pendiente
     saldoPendiente.value = montoTotalInscripcion.value - totalPagado.value;
     console.log('📊 Saldo pendiente para inscripción #' + inscripcion.id + ':', saldoPendienteCalculado.value);
-    
+
     // Para inscripción #202 debería mostrar:
     // Monto total: $250
     // Total pagado: $50 (solo el pago ID=173)
     // Saldo pendiente: $200
-    
+
     // 7. Configurar el monto sugerido
     montoPago.value = Math.max(0, saldoPendienteCalculado.value);
-    
+
     // 8. Mostrar información
     toast.add({
       severity: 'info',
@@ -5829,9 +6817,9 @@ async function abrirDialogoRegistroPago(inscripcion) {
       detail: `Inscripción #${inscripcion.id}: Total: $${montoTotalInscripcion.value} | Pagado: $${totalPagado.value} | Saldo: $${saldoPendienteCalculado.value}`,
       life: 5000
     });
-    
+
     dialogoRegistroPago.value = true;
-    
+
   } catch (error) {
     console.error('❌ Error:', error);
     toast.add({
@@ -5849,14 +6837,14 @@ async function abrirDialogoRegistroPago(inscripcion) {
 // Agrega esta función para consultar pagos de forma confiable
 async function consultarPagosReales(inscripcionId) {
   console.log(`🔍 Consultando pagos REALES para inscripción ${inscripcionId}...`);
-  
+
   const endpoints = [
     // Intenta diferentes endpoints
     `/api/pagos?inscripcion_id=${inscripcionId}`,
     `/api/pagos/inscripcion/${inscripcionId}`,
     `/api/inscripciones/${inscripcionId}/pagos`
   ];
-  
+
   for (const endpoint of endpoints) {
     try {
       const token = localStorage.getItem('token');
@@ -5866,14 +6854,14 @@ async function consultarPagosReales(inscripcionId) {
           'Accept': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log(`✅ Éxito en endpoint: ${endpoint}`, data);
-        
+
         // Extraer pagos según estructura
         let pagos = [];
-        
+
         if (Array.isArray(data)) {
           pagos = data;
         } else if (data.data && Array.isArray(data.data)) {
@@ -5881,7 +6869,7 @@ async function consultarPagosReales(inscripcionId) {
         } else if (data.success && Array.isArray(data.data)) {
           pagos = data.data;
         }
-        
+
         return pagos;
       }
     } catch (error) {
@@ -5889,7 +6877,7 @@ async function consultarPagosReales(inscripcionId) {
       // Continuar con siguiente endpoint
     }
   }
-  
+
   // Si todos fallan, devolver array vacío
   console.warn('❌ Todos los endpoints fallaron');
   return [];
@@ -5899,13 +6887,13 @@ async function consultarPagosReales(inscripcionId) {
 // En el frontend, antes de enviar el pago
 async function validarSegundaCuota() {
   if (!esSegundaCuota.value || !pagoSeleccionado.value) return true;
-  
+
   try {
     // Obtener datos actualizados de la inscripción
     const response = await axios.get(`/api/inscripciones/${inscripcionParaPago.value.id}/estado-financiero`);
-    
+
     const { total_inscripcion, total_pagado, saldo_pendiente } = response.data;
-    
+
     // Validar que el monto sea el correcto
     if (Math.abs(montoPago.value - saldo_pendiente) > 0.01) {
       toast.add({
@@ -5916,7 +6904,7 @@ async function validarSegundaCuota() {
       });
       return false;
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error validando segunda cuota:', error);
@@ -5928,14 +6916,14 @@ async function validarSegundaCuota() {
 async function cargarTodosPagosInscripcion(inscripcionId) {
   try {
     console.log(`💰 Cargando pagos para inscripción ${inscripcionId}...`);
-    
+
     // USAR EL ENDPOINT CORRECTO
     const response = await pagoService.porInscripcion(inscripcionId, 1, 100);
-    
+
     console.log('📥 Respuesta:', response.data);
-    
+
     let todosPagos = [];
-    
+
     // Extraer según estructura
     if (response.data?.success && Array.isArray(response.data.data)) {
       todosPagos = response.data.data;
@@ -5944,26 +6932,26 @@ async function cargarTodosPagosInscripcion(inscripcionId) {
     } else if (Array.isArray(response.data)) {
       todosPagos = response.data;
     }
-    
+
     console.log(`✅ ${todosPagos.length} pagos cargados`);
-    
+
     // Calcular total pagado
-    const pagosPagados = todosPagos.filter(p => 
+    const pagosPagados = todosPagos.filter(p =>
       p.estado && p.estado.toString().toLowerCase() === 'pagado'
     );
-    
+
     const totalPagado = pagosPagados.reduce((sum, pago) => {
       return sum + (parseFloat(pago.monto) || 0);
     }, 0);
-    
+
     return {
       todosPagos,
       totalPagado,
-      pagosPendientes: todosPagos.filter(p => 
+      pagosPendientes: todosPagos.filter(p =>
         p.estado && p.estado.toString().toLowerCase() === 'pendiente'
       )
     };
-    
+
   } catch (error) {
     console.error('Error cargando pagos:', error);
     return { todosPagos: [], totalPagado: 0, pagosPendientes: [] };
@@ -5973,55 +6961,55 @@ async function cargarTodosPagosInscripcion(inscripcionId) {
 
 async function calcularPagosCorrectos(inscripcionId) {
   console.log(`🔍 Calculando pagos CORRECTOS para inscripción ${inscripcionId}`);
-  
+
   try {
     // 1. Obtener SOLO los pagos de ESTA inscripción
     const response = await pagoService.index(1, 100, '', {
       inscripcion_id: inscripcionId  // ← FILTRO CRÍTICO
     });
-    
+
     let todosPagos = [];
-    
+
     // Extraer datos correctamente
     if (response.data?.success && Array.isArray(response.data.data)) {
       todosPagos = response.data.data;
     } else if (Array.isArray(response.data)) {
       todosPagos = response.data;
     }
-    
+
     console.log(`📊 PAGOS ENCONTRADOS para ${inscripcionId}:`, todosPagos.length);
-    
+
     // 2. MOSTRAR CADA PAGO PARA DEBUG
     todosPagos.forEach((pago, i) => {
-      console.log(`  ${i+1}. ID: ${pago.id} | $${pago.monto} | Estado: "${pago.estado}" | Cuota: ${pago.numero_cuota || 'N/A'}`);
+      console.log(`  ${i + 1}. ID: ${pago.id} | $${pago.monto} | Estado: "${pago.estado}" | Cuota: ${pago.numero_cuota || 'N/A'}`);
     });
-    
+
     // 3. FILTRAR CORRECTAMENTE
-    const pagosPagados = todosPagos.filter(p => 
+    const pagosPagados = todosPagos.filter(p =>
       p.estado && p.estado.toString().toLowerCase() === 'pagado'
     );
-    
-    const pagosPendientes = todosPagos.filter(p => 
+
+    const pagosPendientes = todosPagos.filter(p =>
       p.estado && p.estado.toString().toLowerCase() === 'pendiente'
     );
-    
+
     // 4. CALCULAR TOTAL PAGADO CORRECTO
     const totalPagado = pagosPagados.reduce((sum, pago) => {
       return sum + (parseFloat(pago.monto) || 0);
     }, 0);
-    
+
     // 5. BUSCAR SEGUNDA CUOTA PENDIENTE
-    const segundaCuotaPendiente = pagosPendientes.find(p => 
-      p.numero_cuota === 2 || 
+    const segundaCuotaPendiente = pagosPendientes.find(p =>
+      p.numero_cuota === 2 ||
       (p.observacion && p.observacion.toLowerCase().includes('segunda'))
     );
-    
+
     // 6. BUSCAR PRIMERA CUOTA (para referencia)
-    const primeraCuota = pagosPagados.find(p => 
+    const primeraCuota = pagosPagados.find(p =>
       p.numero_cuota === 1 ||
       (p.observacion && p.observacion.toLowerCase().includes('primera'))
-    );abrirDialogoRegistroPago
-    
+    ); abrirDialogoRegistroPago
+
     return {
       todosPagos,
       pagosPagados,
@@ -6031,7 +7019,7 @@ async function calcularPagosCorrectos(inscripcionId) {
       primeraCuota,
       tienePagosDivididos: todosPagos.some(p => p.es_parcial == 1)
     };
-    
+
   } catch (error) {
     console.error('❌ Error calculando pagos:', error);
     return {
@@ -6050,57 +7038,57 @@ async function calcularPagosCorrectos(inscripcionId) {
 
 async function registrarPagoReal() {
   console.log('💰 EJECUTANDO registrarPagoReal...');
-  
+
   if (!inscripcionParaPago.value) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'No hay inscripción seleccionada', life: 3000 });
     return;
   }
-  
+
   // Validaciones básicas
   if (!montoPago.value || montoPago.value <= 0) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Monto inválido', life: 3000 });
     return;
   }
-  
+
   if (!metodoPago.value) {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Seleccione método de pago', life: 3000 });
     return;
   }
-  
+
   try {
     // 1. PREPARAR DATOS PARA LA API
     const pagoData = {
       inscripcion_id: inscripcionParaPago.value.id,
       monto: montoPago.value,
       metodo_pago: metodoPago.value,
-      fecha_pago: fechaPago.value ? 
-        new Date(fechaPago.value).toISOString().split('T')[0] : 
+      fecha_pago: fechaPago.value ?
+        new Date(fechaPago.value).toISOString().split('T')[0] :
         new Date().toISOString().split('T')[0],
       estado: 'pagado',
       observacion: observacion.value || `Pago para inscripción #${inscripcionParaPago.value.id}`
     };
-    
+
     // 2. SI ES SEGUNDA CUOTA, AGREGAR CAMPOS ESPECIALES
     if (esSegundaCuota.value && pagoSeleccionado.value) {
       pagoData.es_parcial = 1;
       pagoData.numero_cuota = 2;
       pagoData.pago_grupo_id = pagoSeleccionado.value.pago_grupo_id || Date.now().toString();
-      
+
       // Buscar la primera cuota para mantener consistencia
       if (!pagoData.pago_grupo_id && inscripcionParaPago.value.id == 200) {
         pagoData.pago_grupo_id = '1769136664062'; // Del registro que ya tienes
       }
-      
+
       pagoData.observacion = `Segunda cuota de $${montoPago.value}. ${pagoData.observacion}`;
     }
-    
+
     console.log('📤 Enviando datos REALES a la API:', pagoData);
-    
+
     // 3. LLAMAR AL SERVICIO
     const response = await pagoService.store(pagoData);
-    
+
     console.log('📥 Respuesta del servidor:', response.data);
-    
+
     // 4. VERIFICAR RESPUESTA
     if (response.data?.success || response.data?.id) {
       // Éxito
@@ -6110,30 +7098,30 @@ async function registrarPagoReal() {
         detail: `Pago de $${montoPago.value} registrado exitosamente`,
         life: 4000
       });
-      
+
       // 5. CERRAR DIÁLOGO
       dialogoRegistroPago.value = false;
-      
+
       // 6. LIMPIAR FORMULARIO
       limpiarFormularioPago();
-      
+
       // 7. RECARGAR DATOS
       setTimeout(() => {
         cargarDatos(); // Esto recargará las inscripciones y sus pagos
       }, 1000);
-      
+
     } else {
       throw new Error(response.data?.message || 'No se pudo registrar el pago');
     }
-    
+
   } catch (error) {
     console.error('❌ Error registrando pago REAL:', error);
-    
+
     let mensajeError = 'Error al registrar pago';
-    
+
     if (error.response?.data) {
       console.error('Detalles del error:', error.response.data);
-      
+
       if (error.response.data.errors) {
         // Errores de validación de Laravel
         const errores = Object.values(error.response.data.errors).flat();
@@ -6144,7 +7132,7 @@ async function registrarPagoReal() {
     } else if (error.message) {
       mensajeError = error.message;
     }
-    
+
     toast.add({
       severity: 'error',
       summary: 'Error',
@@ -6162,17 +7150,17 @@ async function registrarPagoReal() {
 async function calcularEstadoFinancieroLocal(inscripcion) {
   try {
     console.log('🔄 Calculando estado financiero localmente para inscripción:', inscripcion.id);
-    
+
     let todosPagos = [];
-    
+
     // USAR SOLO EL MÉTODO INDEX QUE SÍ FUNCIONA
     try {
       const response = await pagoService.index(1, 100, '', {
         inscripcion_id: inscripcion.id
       });
-      
+
       console.log('📥 Respuesta de pagos index:', response.data);
-      
+
       // Extraer datos según tu estructura API
       if (response.data) {
         // Estructura común: { data: [], success: true }
@@ -6192,58 +7180,58 @@ async function calcularEstadoFinancieroLocal(inscripcion) {
           todosPagos = response.data.data.data;
         }
       }
-      
+
       console.log(`✅ ${todosPagos.length} pagos encontrados`);
-      
+
     } catch (apiError) {
       console.log('⚠️ Método index falló:', apiError.message);
       // Dejar array vacío si falla
     }
-    
+
     // ========== CALCULAR TOTALES CORRECTAMENTE ==========
-    
+
     // Filtrar SOLO pagos con estado 'pagado' (no 'Pagado' con mayúscula)
-    const pagosPagados = todosPagos.filter(p => 
+    const pagosPagados = todosPagos.filter(p =>
       p.estado && p.estado.toLowerCase() === 'pagado'
     );
-    
+
     console.log('💰 Pagos pagados encontrados:', pagosPagados);
-    
+
     // Calcular total pagado - IMPORTANTE: sumar solo montos de pagos PAGADOS
     const totalPagado = pagosPagados.reduce((sum, pago) => {
       const monto = parseFloat(pago.monto) || 0;
       console.log(`  + Pago ${pago.id}: $${monto} (estado: ${pago.estado})`);
       return sum + monto;
     }, 0);
-    
+
     // Identificar pagos pendientes
-    const pagosPendientes = todosPagos.filter(p => 
+    const pagosPendientes = todosPagos.filter(p =>
       p.estado && (p.estado.toLowerCase() === 'pendiente' || p.estado.toLowerCase() === 'vencido')
     );
-    
+
     console.log('📋 Pagos pendientes:', pagosPendientes.length);
-    
+
     // Buscar primera cuota (pagada)
-    const primeraCuota = pagosPagados.find(p => 
-      p.es_parcial === true || 
+    const primeraCuota = pagosPagados.find(p =>
+      p.es_parcial === true ||
       p.numero_cuota === 1 ||
       (p.observacion && p.observacion.toLowerCase().includes('primera'))
     );
-    
+
     // Buscar segunda cuota pendiente
-    const segundaCuotaPendiente = pagosPendientes.find(p => 
-      p.es_parcial === true || 
+    const segundaCuotaPendiente = pagosPendientes.find(p =>
+      p.es_parcial === true ||
       p.numero_cuota === 2 ||
       (p.observacion && p.observacion.toLowerCase().includes('segunda'))
     );
-    
+
     // Obtener monto total de la inscripción
-    const montoTotal = parseFloat(inscripcion.monto_mensual) || 
-                      parseFloat(inscripcion.modalidad?.precio_mensual) || 0;
-    
+    const montoTotal = parseFloat(inscripcion.monto_mensual) ||
+      parseFloat(inscripcion.modalidad?.precio_mensual) || 0;
+
     // Calcular saldo pendiente CORRECTO
     const saldoPendiente = Math.max(0, montoTotal - totalPagado);
-    
+
     console.log('📊 Cálculo local CORREGIDO:', {
       montoTotal,
       totalPagado,
@@ -6254,7 +7242,7 @@ async function calcularEstadoFinancieroLocal(inscripcion) {
       pagosPagados: pagosPagados.length,
       pagosPendientes: pagosPendientes.length
     });
-    
+
     return {
       total_inscripcion: montoTotal,
       total_pagado: totalPagado,
@@ -6264,21 +7252,21 @@ async function calcularEstadoFinancieroLocal(inscripcion) {
       segunda_cuota_pendiente: segundaCuotaPendiente,
       calculado_localmente: true
     };
-    
+
   } catch (error) {
     console.error('❌ Error calculando estado financiero local:', error);
-    
+
     // Fallback extremo - usar datos básicos de la inscripción
     const montoTotal = parseFloat(inscripcion.monto_mensual) || 0;
-    
+
     // Si la inscripción tiene saldo_pendiente, usarlo
     let saldoPendiente = parseFloat(inscripcion.saldo_pendiente) || 0;
-    
+
     // Si no tiene saldo_pendiente pero está en mora, usar monto total
     if (saldoPendiente === 0 && inscripcion.estado === 'en_mora') {
       saldoPendiente = montoTotal;
     }
-    
+
     return {
       total_inscripcion: montoTotal,
       total_pagado: montoTotal - saldoPendiente,
@@ -6338,7 +7326,7 @@ function cancelarRegistroPago() {
 // Función para limpiar el formulario
 function limpiarFormularioPago() {
   console.log('🧹 Limpiando formulario de pago...');
-  
+
   if (inscripcionParaPago) inscripcionParaPago.value = null;
   if (pagosPendientes) pagosPendientes.value = [];
   if (pagoSeleccionado) pagoSeleccionado.value = null;
@@ -6519,38 +7507,50 @@ function getIniciales(estudiante) {
   return nombres[0][0].toUpperCase();
 }
 
+// EN abrirDialogoNueva(), actualiza la inicialización:
+
 async function abrirDialogoNueva() {
   tituloDialogo.value = 'Nueva Inscripción';
   pasoActual.value = 0;
   estudianteSeleccionado.value = null;
   buscarEstudiante.value = '';
   filtroDisciplina.value = null;
-  inscripcionForm.value = crearInscripcionVacia();
-  dialogoInscripcion.value = true;
 
-  // ========== NUEVO: Cargar estudiantes Y modalidades ==========
+  // Inicializar fechas correctamente
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  // Calcular fecha de fin (1 mes después)
+  const fechaFin = new Date(hoy);
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+  inscripcionForm.value = {
+    fecha_inicio: hoy,
+    fecha_fin: fechaFin
+  };
+
+  // Resto del código...
+  dialogoInscripcion.value = true;
   await Promise.all([
     cargarEstudiantesParaDialogo(),
-    cargarModalidades()  // ← ¡FALTA ESTA LÍNEA!
+    cargarModalidades()
   ]);
-
-  console.log('✅ Estudiantes y modalidades cargadas para nueva inscripción');
 }
 
 onMounted(async () => {
   try {
     console.log('🚀 Iniciando carga de datos...');
-    
+
     // Primero cargar modalidades (necesario para diálogo de nueva inscripción)
     await cargarModalidades();
     console.log('✅ Modalidades cargadas');
-    
+
     // Luego cargar inscripciones (que también carga pagos pendientes)
     await cargarDatos();
     console.log('✅ Datos de inscripciones cargados');
-    
+
     console.log('🎉 Carga inicial completada');
-    
+
   } catch (error) {
     console.error('❌ Error en carga inicial:', error);
     toast.add({
@@ -6663,20 +7663,23 @@ onMounted(async () => {
   background: linear-gradient(90deg, var(--card-gradient));
 }
 
-.stat-card:nth-child(1) { 
-  --card-gradient: #3b82f6, #60a5fa; 
+.stat-card:nth-child(1) {
+  --card-gradient: #3b82f6, #60a5fa;
   --card-color: #3b82f6;
 }
-.stat-card:nth-child(2) { 
-  --card-gradient: #10b981, #34d399; 
+
+.stat-card:nth-child(2) {
+  --card-gradient: #10b981, #34d399;
   --card-color: #10b981;
 }
-.stat-card:nth-child(3) { 
-  --card-gradient: #f59e0b, #fbbf24; 
+
+.stat-card:nth-child(3) {
+  --card-gradient: #f59e0b, #fbbf24;
   --card-color: #f59e0b;
 }
-.stat-card:nth-child(4) { 
-  --card-gradient: #8b5cf6, #a78bfa; 
+
+.stat-card:nth-child(4) {
+  --card-gradient: #8b5cf6, #a78bfa;
   --card-color: #8b5cf6;
 }
 
@@ -6763,6 +7766,19 @@ onMounted(async () => {
   background: white;
   border: 1px solid #e5e7eb;
   transition: all 0.3s ease;
+}
+
+.modalidad-prueba {
+  border-left: 4px solid #f59e0b !important;
+  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), white) !important;
+}
+
+.modalidad-prueba .p-card-title {
+  color: #d97706 !important;
+}
+
+.modalidad-prueba .p-card-subtitle {
+  color: #92400e !important;
 }
 
 .alerta-card:hover {
@@ -6984,6 +8000,7 @@ onMounted(async () => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -6996,9 +8013,12 @@ onMounted(async () => {
 
 /* Animación para estado en mora */
 @keyframes pulse-mora {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -7015,29 +8035,29 @@ onMounted(async () => {
     text-align: center;
     gap: 1rem;
   }
-  
+
   .header-actions {
     align-items: center;
   }
-  
+
   .stat-card {
     margin-bottom: 1rem;
   }
-  
+
   .dashboard-container {
     padding: 1rem;
   }
-  
+
   .stat-content {
     flex-direction: column;
     text-align: center;
     gap: 0.5rem;
   }
-  
+
   .stat-icon {
     font-size: 2rem;
   }
-  
+
   .stat-value {
     font-size: 1.8rem;
   }

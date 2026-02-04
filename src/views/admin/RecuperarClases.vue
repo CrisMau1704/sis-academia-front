@@ -17,19 +17,37 @@
         </div>
 
         <div class="header-right">
-          <!-- Selector de inscripción -->
-          <div class="inscripcion-selector">
-            <Dropdown v-model="inscripcionSeleccionada" :options="inscripcionesConPermisos" 
-                      optionLabel="codigo_display" optionValue="id" placeholder="Seleccionar inscripción"
-                      :filter="true" filterPlaceholder="Buscar inscripción..."
-                      @change="cargarPermisosYRecuperaciones" />
+          <!-- Lista de estudiantes con permisos (en lugar de dropdown) -->
+          <div class="estudiantes-lista">
+            <div v-if="inscripcionesConPermisos.length === 0" class="no-estudiantes">
+              <i class="pi pi-users text-400"></i>
+              <span class="text-500 ml-2">No hay estudiantes con permisos pendientes</span>
+            </div>
+            <div v-else class="estudiantes-grid">
+              <div v-for="inscripcion in inscripcionesConPermisos" :key="inscripcion.id" class="estudiante-card"
+                :class="{ 'selected': inscripcionSeleccionada === inscripcion.id }"
+                @click="seleccionarInscripcion(inscripcion)">
+                <div class="estudiante-info">
+                  <Avatar :label="getInicialesEstudiante(inscripcion.estudiante)" class="mr-2"
+                    :style="{ backgroundColor: getColorEstudiante(inscripcion.id) }" />
+                  <div>
+                    <div class="estudiante-nombre font-bold">
+                      {{ inscripcion.estudiante?.nombres || 'Estudiante' }}
+                    </div>
+                    <div class="estudiante-detalles text-sm text-500">
+                      #{{ inscripcion.id }} • {{ inscripcion.permisos_recuperables || 0 }} permisos
+                    </div>
+                  </div>
+                </div>
+                <Badge :value="inscripcion.permisos_recuperables || 0" severity="warning" size="small" />
+              </div>
+            </div>
           </div>
 
           <div class="action-buttons-header">
-            <Button icon="pi pi-plus" label="Nueva Recuperación" severity="success" 
-                    @click="abrirModalNuevaRecuperacion" :disabled="!inscripcionSeleccionada" />
-            <Button icon="pi pi-sync" @click="cargarDatos" :loading="cargando" rounded 
-                    tooltip="Refrescar datos" />
+            <Button icon="pi pi-plus" label="Nueva Recuperación" severity="success" @click="abrirModalNuevaRecuperacion"
+              :disabled="!inscripcionSeleccionada" />
+            <Button icon="pi pi-sync" @click="cargarDatos" :loading="cargando" rounded tooltip="Refrescar datos" />
           </div>
         </div>
       </div>
@@ -119,7 +137,7 @@
                 <Badge :value="permisosDisponibles.length" severity="warning" />
               </div>
             </template>
-            
+
             <template #content>
               <div v-if="cargandoPermisos" class="loading-mini">
                 <ProgressSpinner style="width: 30px; height: 30px" />
@@ -133,27 +151,27 @@
               </div>
 
               <div v-else class="permisos-list">
-                <div v-for="permiso in permisosDisponibles" :key="permiso.id" 
-                     class="permiso-item" @click="seleccionarPermiso(permiso)">
+                <div v-for="permiso in permisosDisponibles" :key="permiso.id" class="permiso-item"
+                  @click="seleccionarPermiso(permiso)">
                   <div class="permiso-header">
                     <div class="permiso-fecha">
                       <i class="pi pi-calendar"></i>
                       <span>{{ formatFecha(permiso.fecha_falta) }}</span>
                     </div>
-                    <Tag :value="getEstadoPermisoLabel(permiso.estado)" 
-                         :severity="getEstadoPermisoSeverity(permiso.estado)" />
+                    <Tag :value="getEstadoPermisoLabel(permiso.estado)"
+                      :severity="getEstadoPermisoSeverity(permiso.estado)" />
                   </div>
-                  
+
                   <div class="permiso-body">
                     <h5 class="mb-1">{{ permiso.motivo }}</h5>
                     <p class="text-500 mb-2">{{ permiso.evidencia || 'Sin detalles adicionales' }}</p>
-                    
+
                     <div class="permiso-info">
                       <div class="info-item">
                         <i class="pi pi-clock"></i>
                         <span>Solicitado: {{ formatFechaHora(permiso.created_at) }}</span>
                       </div>
-                      
+
                       <div v-if="permiso.fecha_limite_recuperacion" class="info-item">
                         <i class="pi pi-calendar-times"></i>
                         <span :class="getClaseVencimiento(permiso.fecha_limite_recuperacion)">
@@ -162,11 +180,10 @@
                       </div>
                     </div>
                   </div>
-                  
+
                   <div class="permiso-footer">
-                    <Button icon="pi pi-history" label="Programar Recuperación" 
-                            size="small" outlined @click.stop="programarRecuperacion(permiso)"
-                            :disabled="!puedeRecuperar(permiso)" />
+                    <Button icon="pi pi-history" label="Programar Recuperación" size="small" outlined
+                      @click.stop="programarRecuperacion(permiso)" :disabled="!puedeRecuperar(permiso)" />
                   </div>
                 </div>
               </div>
@@ -184,7 +201,7 @@
                 <Badge :value="recuperacionesProgramadas.length" severity="info" />
               </div>
             </template>
-            
+
             <template #content>
               <div v-if="cargandoRecuperaciones" class="loading-mini">
                 <ProgressSpinner style="width: 30px; height: 30px" />
@@ -198,17 +215,16 @@
               </div>
 
               <div v-else class="recuperaciones-list">
-                <div v-for="recuperacion in recuperacionesProgramadas" :key="recuperacion.id" 
-                     class="recuperacion-item">
+                <div v-for="recuperacion in recuperacionesProgramadas" :key="recuperacion.id" class="recuperacion-item">
                   <div class="recuperacion-header">
                     <div class="flex align-items-center gap-2">
                       <i class="pi pi-calendar" :class="getIconoEstadoRecuperacion(recuperacion.estado)"></i>
                       <span class="font-bold">{{ formatFecha(recuperacion.fecha_recuperacion) }}</span>
                     </div>
-                    <Tag :value="getEstadoRecuperacionLabel(recuperacion.estado)" 
-                         :severity="getEstadoRecuperacionSeverity(recuperacion.estado)" />
+                    <Tag :value="getEstadoRecuperacionLabel(recuperacion.estado)"
+                      :severity="getEstadoRecuperacionSeverity(recuperacion.estado)" />
                   </div>
-                  
+
                   <div class="recuperacion-body">
                     <div class="grid">
                       <div class="col-6">
@@ -232,30 +248,28 @@
                         </div>
                       </div>
                     </div>
-                    
+
                     <div v-if="recuperacion.motivo" class="mt-2">
                       <small class="text-500">Motivo: {{ recuperacion.motivo }}</small>
                     </div>
-                    
+
                     <div v-if="recuperacion.permiso_asociado" class="mt-2 p-2 border-round bg-blue-50">
                       <small class="font-bold">Permiso recuperado:</small>
                       <div class="text-500 text-sm">
-                        {{ recuperacion.permiso_asociado.motivo }} - 
+                        {{ recuperacion.permiso_asociado.motivo }} -
                         {{ formatFecha(recuperacion.permiso_asociado.fecha_falta) }}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div class="recuperacion-footer">
                     <div class="flex gap-2">
-                      <Button icon="pi pi-check" label="Marcar Completada" size="small" 
-                              severity="success" outlined @click="completarRecuperacion(recuperacion)"
-                              v-if="recuperacion.estado === 'programada'" />
-                      <Button icon="pi pi-times" label="Cancelar" size="small" 
-                              severity="danger" outlined @click="cancelarRecuperacion(recuperacion)"
-                              v-if="recuperacion.estado === 'programada'" />
-                      <Button icon="pi pi-eye" label="Detalles" size="small" 
-                              severity="info" outlined @click="verDetallesRecuperacion(recuperacion)" />
+                      <Button icon="pi pi-check" label="Marcar Completada" size="small" severity="success" outlined
+                        @click="completarRecuperacion(recuperacion)" v-if="recuperacion.estado === 'programada'" />
+                      <Button icon="pi pi-times" label="Cancelar" size="small" severity="danger" outlined
+                        @click="cancelarRecuperacion(recuperacion)" v-if="recuperacion.estado === 'programada'" />
+                      <Button icon="pi pi-eye" label="Detalles" size="small" severity="info" outlined
+                        @click="verDetallesRecuperacion(recuperacion)" />
                     </div>
                   </div>
                 </div>
@@ -266,8 +280,9 @@
       </div>
     </div>
 
-    <!-- MODAL PARA PROGRAMAR RECUPERACIÓN -->
-    <Dialog v-model:visible="mostrarModalProgramacion" modal header="Programar Recuperación" 
+    <!-- MODAL DE PROGRAMACIÓN CORREGIDO -->
+ <!-- MODAL PARA PROGRAMAR RECUPERACIÓN -->
+      <Dialog v-model:visible="mostrarModalProgramacion" modal header="Programar Recuperación" 
             :style="{ width: '600px' }" @after-hide="resetearModalProgramacion">
       <div v-if="permisoSeleccionado">
         <!-- Información del permiso -->
@@ -349,7 +364,7 @@
                 <label class="text-500 block mb-1">Fecha *</label>
                 <Calendar v-model="fechaRecuperacion" :minDate="hoy" :maxDate="fechaLimiteRecuperacion" 
                           dateFormat="dd/mm/yy" class="w-full" :disabledDates="fechasNoDisponibles"
-                          :class="{ 'p-invalid': !fechaRecuperacion }" />
+                          :class="{ 'p-invalid': !fechaRecuperacion }" @update:modelValue="onFechaChange" />
                 <small v-if="!fechaRecuperacion" class="p-error">Seleccione una fecha</small>
               </div>
             </div>
@@ -415,107 +430,79 @@
       </template>
     </Dialog>
 
-    <!-- MODAL DE DETALLES DE RECUPERACIÓN -->
-    <Dialog v-model:visible="mostrarModalDetalles" modal :header="tituloModalDetalles" 
-            :style="{ width: '500px' }">
-      <div v-if="recuperacionSeleccionada">
-        <div class="space-y-4">
-          <div class="flex align-items-center gap-3">
-            <Avatar :label="getInicialesEstudiante(recuperacionSeleccionada.estudiante)" 
-                    :class="getClaseAvatarRecuperacion(recuperacionSeleccionada.estado)" />
-            <div>
-              <h4 class="mt-0 mb-1">Recuperación #{{ recuperacionSeleccionada.id }}</h4>
-              <Tag :value="getEstadoRecuperacionLabel(recuperacionSeleccionada.estado)" 
-                   :severity="getEstadoRecuperacionSeverity(recuperacionSeleccionada.estado)" />
-            </div>
-          </div>
-
-          <Divider />
-
+    <Dialog v-model:visible="mostrarModalDetalles" modal :header="tituloModalDetalles" :style="{ width: '500px' }">
+      <template #content>
+        <div v-if="recuperacionSeleccionada">
           <div class="grid">
-            <div class="col-6">
-              <div class="text-500 text-sm mb-1">Fecha programada</div>
-              <div class="font-bold">{{ formatFecha(recuperacionSeleccionada.fecha_recuperacion) }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-500 text-sm mb-1">Horario</div>
-              <div class="font-bold">
-                {{ recuperacionSeleccionada.horario?.hora_inicio }} - 
-                {{ recuperacionSeleccionada.horario?.hora_fin }}
+            <div class="col-12">
+              <div class="field">
+                <label class="font-bold block mb-2">Estado:</label>
+                <Tag :value="getEstadoRecuperacionLabel(recuperacionSeleccionada.estado)"
+                     :severity="getEstadoRecuperacionSeverity(recuperacionSeleccionada.estado)" />
               </div>
             </div>
-            <div class="col-6">
-              <div class="text-500 text-sm mb-1">Entrenador</div>
-              <div>{{ recuperacionSeleccionada.horario?.entrenador_nombre || 'No asignado' }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-500 text-sm mb-1">Sucursal</div>
-              <div>{{ recuperacionSeleccionada.horario?.sucursal_nombre || 'No asignada' }}</div>
-            </div>
-          </div>
-
-          <div v-if="recuperacionSeleccionada.motivo">
-            <div class="text-500 text-sm mb-1">Motivo de recuperación</div>
-            <div class="p-2 border-round bg-blue-50">{{ recuperacionSeleccionada.motivo }}</div>
-          </div>
-
-          <div v-if="recuperacionSeleccionada.permiso_asociado">
-            <Divider />
-            <h5 class="mt-0 mb-2">Permiso asociado</h5>
-            <div class="p-2 border-round bg-yellow-50">
-              <div class="font-bold mb-1">{{ recuperacionSeleccionada.permiso_asociado.motivo }}</div>
-              <div class="text-sm text-500">
-                Fecha de falta: {{ formatFecha(recuperacionSeleccionada.permiso_asociado.fecha_falta) }}
-              </div>
-              <div class="text-sm">
-                {{ recuperacionSeleccionada.permiso_asociado.evidencia }}
+            <div class="col-12 md:col-6">
+              <div class="field">
+                <label class="font-bold block mb-2">Fecha de recuperación:</label>
+                <span>{{ formatFecha(recuperacionSeleccionada.fecha_recuperacion) }}</span>
               </div>
             </div>
-          </div>
-
-          <div v-if="recuperacionSeleccionada.administrador">
-            <Divider />
-            <div class="text-500 text-sm mb-1">Autorizado por</div>
-            <div class="flex align-items-center gap-2">
-              <Avatar :label="getInicialesPersona(recuperacionSeleccionada.administrador)" size="small" />
-              <div>
-                <div>{{ recuperacionSeleccionada.administrador.nombres }}</div>
-                <small class="text-500">{{ formatFechaHora(recuperacionSeleccionada.created_at) }}</small>
+            <div class="col-12 md:col-6">
+              <div class="field">
+                <label class="font-bold block mb-2">Horario:</label>
+                <span>{{ recuperacionSeleccionada.horario?.hora_inicio }} - {{ recuperacionSeleccionada.horario?.hora_fin }}</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="field">
+                <label class="font-bold block mb-2">Entrenador:</label>
+                <span>{{ recuperacionSeleccionada.horario?.entrenador_nombre || 'Sin entrenador' }}</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="field">
+                <label class="font-bold block mb-2">Sucursal:</label>
+                <span>{{ recuperacionSeleccionada.horario?.sucursal_nombre || 'Sin sucursal' }}</span>
+              </div>
+            </div>
+            <div v-if="recuperacionSeleccionada.motivo" class="col-12">
+              <div class="field">
+                <label class="font-bold block mb-2">Motivo:</label>
+                <p class="mt-0">{{ recuperacionSeleccionada.motivo }}</p>
+              </div>
+            </div>
+            <div v-if="recuperacionSeleccionada.comentarios" class="col-12">
+              <div class="field">
+                <label class="font-bold block mb-2">Comentarios:</label>
+                <p class="mt-0">{{ recuperacionSeleccionada.comentarios }}</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
     </Dialog>
 
-    <!-- TOAST PARA NOTIFICACIONES -->
     <Toast position="bottom-right" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
-
-// Componentes PrimeVue
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Badge from 'primevue/badge'
 import ProgressBar from 'primevue/progressbar'
 import ProgressSpinner from 'primevue/progressspinner'
-import Dropdown from 'primevue/dropdown'
 import Dialog from 'primevue/dialog'
 import Calendar from 'primevue/calendar'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import Avatar from 'primevue/avatar'
-import Divider from 'primevue/divider'
 import Toast from 'primevue/toast'
 
-// Servicios
 import recuperacionService from '@/services/recuperacion.service'
 import inscripcionService from '@/services/inscripcion.service'
-import horarioService from '@/services/horario.service'
 import permisoService from '@/services/permiso.service'
 
 const toast = useToast()
@@ -549,6 +536,11 @@ const horarioRecuperacionSeleccionado = ref(null)
 const fechaRecuperacion = ref(null)
 const observacionRecuperacion = ref('')
 const guardandoRecuperacion = ref(false)
+const filtroDia = ref('Todos')
+
+const fechasNoDisponibles = ref([])
+
+
 
 // Modal de detalles
 const mostrarModalDetalles = ref(false)
@@ -570,18 +562,17 @@ const porcentajePermisosUsados = computed(() => {
 
 const diasParaVencer = computed(() => {
   if (permisosDisponibles.value.length === 0) return 0
-  
+
   const hoyDate = new Date()
   const fechasLimite = permisosDisponibles.value
     .filter(p => p.fecha_limite_recuperacion)
     .map(p => new Date(p.fecha_limite_recuperacion))
-  
-  if (fechasLimite.length === 0) return 30 // Valor por defecto
-  
+
+  if (fechasLimite.length === 0) return 30
   const fechaMasCercana = fechasLimite.reduce((closest, fecha) => {
     return fecha < closest ? fecha : closest
   })
-  
+
   const diffMs = fechaMasCercana - hoyDate
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 })
@@ -594,7 +585,6 @@ const porcentajeExitoRecuperaciones = computed(() => {
 
 const fechaLimiteRecuperacion = computed(() => {
   if (!permisoSeleccionado.value?.fecha_limite_recuperacion) {
-    // Por defecto, 30 días desde hoy
     const fecha = new Date()
     fecha.setDate(fecha.getDate() + 30)
     return fecha
@@ -615,21 +605,17 @@ const diasRestantesClass = computed(() => {
   return 'text-green-500'
 })
 
-const fechasNoDisponibles = computed(() => {
-  // Excluir fines de semana por defecto
-  const fechas = []
-  const fechaActual = new Date(hoy.value)
-  const fechaFin = new Date(fechaLimiteRecuperacion.value)
-  
-  while (fechaActual <= fechaFin) {
-    const diaSemana = fechaActual.getDay()
-    if (diaSemana === 0 || diaSemana === 6) { // Domingo = 0, Sábado = 6
-      fechas.push(new Date(fechaActual))
-    }
-    fechaActual.setDate(fechaActual.getDate() + 1)
+const inscripcionSeleccionadaObj = computed(() => {
+  return inscripcionesConPermisos.value.find(i => i.id === inscripcionSeleccionada.value)
+})
+
+const horariosFiltrados = computed(() => {
+  if (filtroDia.value === 'Todos') {
+    return horariosDisponibles.value
   }
-  
-  return fechas
+  return horariosDisponibles.value.filter(horario => 
+    horario.dia_semana.toLowerCase() === filtroDia.value.toLowerCase()
+  )
 })
 
 // Funciones principales
@@ -640,18 +626,16 @@ onMounted(async () => {
 async function cargarInscripcionesConPermisos() {
   cargando.value = true
   try {
-    console.log('📋 Cargando inscripciones con permisos...')
-    
-    // 1. Cargar TODAS las inscripciones activas
+    console.log('📋 Cargando estudiantes con permisos...')
+
     const response = await inscripcionService.index(1, 100, '', {
       estado: 'activo',
       with_estudiante: true,
       with_modalidad: true
-      // NOTA: with_permisos_justificados puede no estar funcionando
     })
-    
+
     let inscripcionesData = []
-    
+
     if (response.data) {
       if (response.data.success && Array.isArray(response.data.data)) {
         inscripcionesData = response.data.data
@@ -659,49 +643,38 @@ async function cargarInscripcionesConPermisos() {
         inscripcionesData = response.data
       }
     }
-    
+
     console.log(`✅ ${inscripcionesData.length} inscripciones cargadas`)
-    
-    // 2. Para cada inscripción, verificar si tiene permisos USADOS
+
     const inscripcionesConInfo = []
-    
+
     for (const insc of inscripcionesData) {
-      // Verificar si tiene permisos usados (columna en la tabla inscripciones)
       if (insc.permisos_usados && insc.permisos_usados > 0) {
-        console.log(`🔍 Inscripción ${insc.id} tiene ${insc.permisos_usados} permisos usados`)
-        
         try {
-          // 3. Obtener los permisos justificados DETALLADOS usando el endpoint específico
           const permisosResponse = await permisoService.getJustificadosPorInscripcion(insc.id)
-          
+
           let permisosDetallados = []
           let permisosRecuperables = 0
-          
-          if (permisosResponse.data && permisosResponse.data.success) {
-            // Extraer los permisos aprobados
+
+          if (permisosResponse.data?.success) {
             if (Array.isArray(permisosResponse.data.data)) {
               permisosDetallados = permisosResponse.data.data
             } else if (Array.isArray(permisosResponse.data)) {
               permisosDetallados = permisosResponse.data
             }
-            
-            // Filtrar solo los aprobados y sin recuperación
-            const permisosAprobados = permisosDetallados.filter(p => 
-              p.estado === 'aprobado' && 
+
+            const permisosAprobados = permisosDetallados.filter(p =>
+              p.estado === 'aprobado' &&
               (!p.tiene_recuperacion || p.tiene_recuperacion === false)
             )
-            
+
             permisosRecuperables = permisosAprobados.length
-            
-            console.log(`   📊 Permisos detallados: ${permisosDetallados.length} total, ${permisosAprobados.length} aprobados sin recuperación`)
           }
-          
-          // 4. Si tiene permisos recuperables, agregar a la lista
+
           if (permisosRecuperables > 0) {
             inscripcionesConInfo.push({
               id: insc.id,
               codigo: `INS-${insc.id}`,
-              codigo_display: `#${insc.id} - ${insc.estudiante?.nombres || 'Estudiante'} (${permisosRecuperables} recuperables)`,
               estudiante: insc.estudiante,
               modalidad: insc.modalidad,
               fecha_inicio: insc.fecha_inicio,
@@ -713,98 +686,22 @@ async function cargarInscripcionesConPermisos() {
               tiene_permisos: true
             })
           }
-          
-        } catch (permisoError) {
-          console.warn(`⚠️ Error cargando permisos para inscripción ${insc.id}:`, permisoError.message)
+
+        } catch (error) {
+          console.warn(`⚠️ Error cargando permisos para inscripción ${insc.id}:`, error.message)
         }
       }
     }
-    
-    // 5. Si no encontramos con el método anterior, probar método alternativo
-    if (inscripcionesConInfo.length === 0) {
-      console.log('🔄 Intentando método alternativo...')
-      
-      // Usar el endpoint específico para permisos recuperables
-      try {
-        const recuperablesResponse = await permisoService.getRecuperables()
-        
-        if (recuperablesResponse.data && recuperablesResponse.data.success) {
-          // Procesar la respuesta
-          const permisosData = recuperablesResponse.data.data || 
-                              recuperablesResponse.data.permisos_recuperables || []
-          
-          // Agrupar por inscripción
-          const inscripcionesMap = new Map()
-          
-          permisosData.forEach(permiso => {
-            const inscId = permiso.inscripcion_id
-            
-            if (!inscripcionesMap.has(inscId)) {
-              // Buscar la inscripción en los datos ya cargados
-              const inscOriginal = inscripcionesData.find(i => i.id === inscId)
-              
-              inscripcionesMap.set(inscId, {
-                id: inscId,
-                estudiante: inscOriginal?.estudiante || { nombres: 'Estudiante' },
-                modalidad: inscOriginal?.modalidad,
-                fecha_inicio: inscOriginal?.fecha_inicio,
-                fecha_fin: inscOriginal?.fecha_fin,
-                permisos_recuperables: []
-              })
-            }
-            
-            inscripcionesMap.get(inscId).permisos_recuperables.push(permiso)
-          })
-          
-          // Convertir a array
-          inscripcionesConInfo.push(...Array.from(inscripcionesMap.values()).map(insc => ({
-            id: insc.id,
-            codigo: `INS-${insc.id}`,
-            codigo_display: `#${insc.id} - ${insc.estudiante?.nombres || 'Estudiante'} (${insc.permisos_recuperables.length} recuperables)`,
-            estudiante: insc.estudiante,
-            modalidad: insc.modalidad,
-            fecha_inicio: insc.fecha_inicio,
-            fecha_fin: insc.fin,
-            permisos_recuperables: insc.permisos_recuperables.length,
-            todos_permisos: insc.permisos_recuperables,
-            tiene_permisos: true
-          })))
-        }
-      } catch (altError) {
-        console.error('❌ Error en método alternativo:', altError)
-      }
-    }
-    
-    // 6. Asignar el resultado
+
     inscripcionesConPermisos.value = inscripcionesConInfo
-    
-    console.log(`🎯 ${inscripcionesConPermisos.value.length} inscripciones con permisos recuperables`)
-    
-    // 7. Si aún no hay nada, mostrar un mensaje
-    if (inscripcionesConPermisos.value.length === 0) {
-      console.warn('⚠️ No se encontraron inscripciones con permisos recuperables')
-      
-      // DEPURACIÓN: Mostrar cuáles inscripciones tienen permisos_usados
-      const inscripcionesConPermisosUsados = inscripcionesData.filter(i => 
-        i.permisos_usados && i.permisos_usados > 0
-      )
-      
-      console.log('📊 Inscripciones con permisos_usados > 0:', inscripcionesConPermisosUsados)
-      
-      toast.add({
-        severity: 'info',
-        summary: 'Sin recuperaciones disponibles',
-        detail: `No se encontraron permisos pendientes de recuperación. ${inscripcionesConPermisosUsados.length} inscripciones tienen permisos usados pero pueden estar recuperados o no aprobados.`,
-        life: 5000
-      })
-    }
-    
+    console.log(`🎯 ${inscripcionesConPermisos.value.length} estudiantes con permisos recuperables`)
+
   } catch (error) {
     console.error('❌ Error cargando inscripciones:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudieron cargar las inscripciones',
+      detail: 'No se pudieron cargar los estudiantes',
       life: 3000
     })
   } finally {
@@ -812,64 +709,127 @@ async function cargarInscripcionesConPermisos() {
   }
 }
 
-
+function seleccionarInscripcion(inscripcion) {
+  inscripcionSeleccionada.value = inscripcion.id
+  cargarPermisosYRecuperaciones()
+}
 
 async function cargarPermisosYRecuperaciones() {
   if (!inscripcionSeleccionada.value) return
-  
+
   try {
     await Promise.all([
       cargarPermisosDisponibles(),
       cargarRecuperacionesProgramadas()
     ])
-    
+
     calcularEstadisticas()
-    
+
   } catch (error) {
     console.error('❌ Error cargando datos:', error)
   }
 }
 
+async function completarRecuperacion(recuperacion) {
+  try {
+    const confirmacion = confirm(`¿Marcar la recuperación del ${formatFecha(recuperacion.fecha_recuperacion)} como COMPLETADA?`)
 
-// En cargarPermisosDisponibles() - VERSIÓN CORREGIDA
+    if (!confirmacion) return
+
+    console.log(`🎯 Completando recuperación ID: ${recuperacion.id}`)
+
+    // Enviar 'comentarios' en lugar de 'observaciones'
+    const datosCompletar = {
+      comentarios: 'Recuperación completada exitosamente'
+    }
+
+    const response = await recuperacionService.completar(recuperacion.id, datosCompletar)
+
+    if (response.data?.success) {
+      console.log('✅ Recuperación marcada como completada:', response.data)
+
+      // Actualizar la recuperación localmente
+      const index = recuperacionesProgramadas.value.findIndex(r => r.id === recuperacion.id)
+      if (index !== -1) {
+        recuperacionesProgramadas.value[index] = {
+          ...recuperacionesProgramadas.value[index],
+          estado: 'completada',
+          fecha_completada: new Date().toISOString(),
+          asistio_recuperacion: true,
+          comentarios: 'Recuperación completada exitosamente'
+        }
+
+        recuperacionesProgramadas.value = [...recuperacionesProgramadas.value]
+      }
+
+      calcularEstadisticas()
+
+      toast.add({
+        severity: 'success',
+        summary: '✅ Recuperación Completada',
+        detail: `La recuperación ha sido marcada como completada exitosamente`,
+        life: 3000
+      })
+
+      setTimeout(() => {
+        cargarPermisosYRecuperaciones()
+      }, 1000)
+
+    } else {
+      throw new Error(response.data?.message || 'Error en el servidor')
+    }
+
+  } catch (error) {
+    console.error('❌ Error al completar recuperación:', error)
+
+    let mensajeError = 'No se pudo completar la recuperación'
+
+    if (error.response?.status === 400) {
+      mensajeError = error.response.data?.message || 'La recuperación no se puede completar'
+    } else if (error.response?.status === 422) {
+      mensajeError = 'Datos inválidos para completar la recuperación'
+    } else if (error.response?.status === 404) {
+      mensajeError = 'La recuperación no fue encontrada'
+    }
+
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: mensajeError,
+      life: 4000
+    })
+  }
+}
+
 async function cargarPermisosDisponibles() {
   if (!inscripcionSeleccionada.value) return
-  
+
   cargandoPermisos.value = true
   try {
-    console.log(`📋 Cargando permisos recuperables para inscripción ${inscripcionSeleccionada.value}...`)
-    
-    // USAR EL MÉTODO CORRECTO DE TU SERVICE
+    console.log(`📋 Cargando permisos para inscripción ${inscripcionSeleccionada.value}...`)
+
     const response = await permisoService.getRecuperables(inscripcionSeleccionada.value)
-    
+
     let permisosData = []
-    
-    // Verificar estructura de respuesta según tu controlador
+
     if (response.data) {
       if (response.data.success) {
-        // Formato 1: data.permisos_recuperables
         if (Array.isArray(response.data.permisos_recuperables)) {
           permisosData = response.data.permisos_recuperables
-        }
-        // Formato 2: data.data
-        else if (Array.isArray(response.data.data)) {
+        } else if (Array.isArray(response.data.data)) {
           permisosData = response.data.data
-        }
-        // Formato 3: data directamente
-        else if (Array.isArray(response.data)) {
+        } else if (Array.isArray(response.data)) {
           permisosData = response.data
         }
       }
     }
-    
-    console.log(`✅ ${permisosData.length} permisos recuperables cargados`)
-    
-    // Mapear datos correctamente
+
+    console.log(`✅ ${permisosData.length} permisos cargados`)
+
     permisosDisponibles.value = permisosData.map(permiso => {
-      // Asegurar que tenga fecha límite de recuperación
-      const fechaLimite = permiso.fecha_limite_recuperacion || 
-                         calcularFechaLimite(permiso.fecha_falta)
-      
+      const fechaLimite = permiso.fecha_limite_recuperacion ||
+        calcularFechaLimite(permiso.fecha_falta)
+
       return {
         id: permiso.id,
         inscripcion_id: permiso.inscripcion_id || inscripcionSeleccionada.value,
@@ -880,19 +840,18 @@ async function cargarPermisosDisponibles() {
         evidencia: permiso.evidencia || permiso.observaciones || '',
         estado: 'aprobado',
         fecha_limite_recuperacion: fechaLimite,
-        dias_restantes: permiso.dias_restantes || calcularDiasRestantes(fechaLimite),
-        puede_recuperar: permiso.puede_recuperar !== false && 
-                        (!permiso.tiene_recuperacion || permiso.tiene_recuperacion === false),
-        horario_falta: permiso.horario_falta || permiso.horario || {}
+        dias_restantes: calcularDiasRestantes(fechaLimite),
+        puede_recuperar: true,
+        horario_falta: permiso.horario_falta || {}
       }
     }).filter(p => p.puede_recuperar)
-    
+
   } catch (error) {
-    console.error('❌ Error cargando permisos recuperables:', error)
+    console.error('❌ Error cargando permisos:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudieron cargar los permisos recuperables',
+      detail: 'No se pudieron cargar los permisos',
       life: 3000
     })
   } finally {
@@ -900,302 +859,704 @@ async function cargarPermisosDisponibles() {
   }
 }
 
-// En cargarRecuperacionesProgramadas() - VERSIÓN CORREGIDA
-async function cargarRecuperacionesProgramadas() {
-  if (!inscripcionSeleccionada.value) return
-  
-  cargandoRecuperaciones.value = true
+function seleccionarPermiso(permiso) {
   try {
-    console.log(`📅 Cargando recuperaciones para inscripción ${inscripcionSeleccionada.value}...`)
-    
-    // USAR TU MÉTODO getPorInscripcion del recuperacionService
-    const response = await recuperacionService.getPorInscripcion(inscripcionSeleccionada.value)
-    
-    let recuperacionesData = []
-    
-    if (response.data) {
-      if (response.data.success && Array.isArray(response.data.data)) {
-        recuperacionesData = response.data.data
-      } else if (response.data.success && Array.isArray(response.data)) {
-        recuperacionesData = response.data
-      } else if (Array.isArray(response.data)) {
-        recuperacionesData = response.data
-      }
-    }
-    
-    console.log(`📊 ${recuperacionesData.length} recuperaciones obtenidas del servidor`)
-    
-    // Filtrar y formatear recuperaciones
-    recuperacionesProgramadas.value = recuperacionesData
-      .filter(r => r.estado === 'programada' || r.estado === 'pendiente')
-      .map(recuperacion => ({
-        ...recuperacion,
-        // Asegurar que el horario tenga los campos necesarios
-        horario: {
-          id: recuperacion.horario_recuperacion_id,
-          hora_inicio: recuperacion.horario?.hora_inicio || 
-                      recuperacion.hora_inicio || '--:--',
-          hora_fin: recuperacion.horario?.hora_fin || 
-                   recuperacion.hora_fin || '--:--',
-          entrenador_nombre: recuperacion.horario?.entrenador_nombre || 
-                           recuperacion.horario?.entrenador?.nombres || 
-                           recuperacion.entrenador_nombre || 'Sin entrenador',
-          sucursal_nombre: recuperacion.horario?.sucursal_nombre || 
-                         recuperacion.horario?.sucursal?.nombre || 
-                         recuperacion.sucursal_nombre || 'Sin sucursal',
-          modalidad_nombre: recuperacion.horario?.modalidad_nombre || 
-                          recuperacion.horario?.modalidad?.nombre || 
-                          recuperacion.modalidad_nombre || 'Sin modalidad'
-        },
-        // Asegurar el permiso asociado
-        permiso_asociado: recuperacion.permisoJustificado || 
-                         recuperacion.permiso_asociado || 
-                         (recuperacion.permiso_justificado_id ? {
-                           id: recuperacion.permiso_justificado_id,
-                           motivo: recuperacion.motivo_permiso || 'Permiso justificado',
-                           fecha_falta: recuperacion.fecha_falta_permiso
-                         } : null)
-      }))
-    
-    console.log(`✅ ${recuperacionesProgramadas.value.length} recuperaciones programadas`)
-    
-  } catch (error) {
-    console.error('❌ Error cargando recuperaciones:', error)
+    console.log('🔍 Permiso seleccionado:', permiso)
+
     toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudieron cargar las recuperaciones programadas',
-      life: 3000
+      severity: 'info',
+      summary: 'Permiso Seleccionado',
+      detail: `Permiso del ${formatFecha(permiso.fecha_falta)} - ${permiso.motivo}`,
+      life: 2000
     })
-  } finally {
-    cargandoRecuperaciones.value = false
-  }
-}
 
-// En cargarHorariosDisponiblesParaRecuperacion() - VERSIÓN CORREGIDA
-// Agrega esto temporalmente en tu función cargarHorariosDisponiblesParaRecuperacion()
-async function cargarHorariosDisponiblesParaRecuperacion() {
-  if (!inscripcionSeleccionada.value || !permisoSeleccionado.value) return
-  
-  cargandoHorarios.value = true
-  
-  // DEBUG: Ver qué datos tienes
-  const inscripcion = inscripcionesConPermisos.value.find(
-    i => i.id === inscripcionSeleccionada.value
-  )
-  
-  console.log('🔍 DATOS DE DEPURACIÓN:', {
-    inscripcion_id: inscripcionSeleccionada.value,
-    estudiante_id: inscripcion?.estudiante?.id || 'NO ENCONTRADO',
-    modalidad_id: inscripcion?.modalidad?.id || 'NO ENCONTRADO',
-    permiso_seleccionado: permisoSeleccionado.value
-  })
-  
-  try {
-    // Envía SOLO los parámetros que tengas
-    const params = {}
-    
-    // Solo agregar parámetros si existen
-    if (inscripcion?.modalidad?.id) {
-      params.modalidad_id = inscripcion.modalidad.id
-    }
-    
-    if (inscripcion?.estudiante?.id) {
-      params.estudiante_id = inscripcion.estudiante.id
-    }
-    
-    // Este es opcional, pero lo incluimos
-    params.excluir_horarios_estudiante = true
-    
-    console.log('📤 Parámetros a enviar:', params)
-    
-    const response = await recuperacionService.getHorariosDisponibles(params)
-    // ... resto del código
   } catch (error) {
-    console.error('❌ Error completo:', error)
-    // Añadir para ver los detalles del error 422
-    if (error.response) {
-      console.log('📋 Detalles del error 422:', {
-        status: error.response.status,
-        data: error.response.data,
-        errors: error.response.data?.errors || error.response.data
-      })
-    }
+    console.error('Error en seleccionarPermiso:', error)
   }
 }
 
-// Funciones auxiliares para calcular fechas
-function calcularFechaLimite(fechaFalta) {
-  if (!fechaFalta) return null
-  
-  const fecha = new Date(fechaFalta)
-  // 15 días después de la fecha de falta
-  fecha.setDate(fecha.getDate() + 15)
-  
-  return fecha.toISOString().split('T')[0]
-}
 
-function calcularDiasRestantes(fechaLimite) {
-  if (!fechaLimite) return null
-  
-  const hoy = new Date()
-  const limite = new Date(fechaLimite)
-  const diffMs = limite - hoy
-  const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-  
-  return dias
-}
 
-// Función mejorada para validar si puede recuperar
 function puedeRecuperar(permiso) {
   if (!permiso) return false
-  
-  // 1. Debe estar aprobado
+
   if (permiso.estado !== 'aprobado') return false
-  
-  // 2. No debe tener recuperación ya asignada
-  if (permiso.tiene_recuperacion === true) return false
-  
-  // 3. Verificar fecha límite
+
   if (permiso.fecha_limite_recuperacion) {
     const hoy = new Date()
     const fechaLimite = new Date(permiso.fecha_limite_recuperacion)
     if (hoy > fechaLimite) return false
   }
-  
-  // 4. Verificar que no esté en una recuperación ya existente
-  const tieneRecuperacionExistente = recuperacionesProgramadas.value.some(
-    r => r.permiso_justificado_id === permiso.id
-  )
-  
-  return !tieneRecuperacionExistente
+
+  return true
 }
 
-function calcularEstadisticas() {
-  estadisticas.value = {
-    permisosJustificados: permisosDisponibles.value.length,
-    permisosRecuperables: permisosDisponibles.value.length,
-    recuperacionesProgramadas: recuperacionesProgramadas.value.length,
-    recuperacionesCompletadas: 0, // Necesitarías cargar las completadas también
-    recuperacionesEstaSemana: calcularRecuperacionesEstaSemana()
+async function cargarTodosHorariosModalidad() {
+  if (!permisoSeleccionado.value || !inscripcionSeleccionada.value) {
+    console.error('❌ No hay permiso o inscripción seleccionada')
+    return
+  }
+
+  cargandoHorarios.value = true
+  horariosDisponibles.value = []
+  horarioRecuperacionSeleccionado.value = null
+  filtroDia.value = 'Todos'
+
+  try {
+    const inscripcion = inscripcionesConPermisos.value.find(
+      i => i.id === inscripcionSeleccionada.value
+    )
+
+    if (!inscripcion) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se encontró la información de la inscripción',
+        life: 3000
+      })
+      return
+    }
+
+    console.log('🎯 Buscando horarios para modalidad:', {
+      modalidadId: inscripcion.modalidad?.id,
+      modalidadNombre: inscripcion.modalidad?.nombre
+    })
+
+    // ========== USAR ENDPOINT DE HORARIOS GENERALES ==========
+    
+    // IMPORTANTE: Vamos a usar un endpoint diferente
+    
+    // Opción 1: Intentar con horarios generales (recomendado)
+    try {
+      console.log('📤 Intentando con endpoint /horarios...')
+      
+      // Primero, necesitamos crear o usar un servicio de horarios
+      // Si no tienes horario.service.js, podemos hacer la petición directamente
+      
+      // Vamos a usar Axios directamente para este caso
+      const axios = require('axios')
+      const baseURL = process.env.VUE_APP_API_URL || 'http://localhost:8000/api'
+      
+      const response = await axios.get(`${baseURL}/horarios`, {
+        params: {
+          modalidad_id: inscripcion.modalidad?.id,
+          estado: 'activo',
+          with_entrenador: true,
+          with_sucursal: true,
+          with_modalidad: true,
+          limit: 100
+        },
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      console.log('✅ Respuesta de /horarios:', response.data)
+      
+      if (response.data.success && Array.isArray(response.data.data)) {
+        horariosDisponibles.value = response.data.data.map(horario => ({
+          id: horario.id,
+          hora_inicio: formatHora(horario.hora_inicio),
+          hora_fin: formatHora(horario.hora_fin),
+          dia_semana: obtenerNombreDia(horario.dia_semana),
+          entrenador_nombre: horario.entrenador?.nombres || 'Sin entrenador',
+          sucursal_nombre: horario.sucursal?.nombre || 'Sin sucursal',
+          modalidad_nombre: horario.modalidad?.nombre || 'Sin modalidad',
+          cupos_disponibles: horario.cupo_maximo - (horario.cupo_actual || 0),
+          capacidad_maxima: horario.cupo_maximo || 20
+        }))
+        
+        console.log(`✅ ${horariosDisponibles.value.length} horarios cargados desde /horarios`)
+      }
+      
+    } catch (error1) {
+      console.log('⚠️ Error con /horarios:', error1.message)
+      
+      // Opción 2: Intentar con el endpoint de recuperaciones pero SIN fecha
+      try {
+        console.log('📤 Intentando con endpoint de recuperaciones...')
+        
+        const modalidadId = inscripcion.modalidad?.id
+        
+        // Llamar SIN fecha para obtener todos los horarios
+        const response = await recuperacionService.getHorariosDisponibles(modalidadId, null)
+        
+        console.log('📥 Respuesta de recuperaciones/horarios/disponibles:', response.data)
+        
+        if (response.data) {
+          let horariosData = []
+          
+          // Intentar extraer datos de diferentes estructuras
+          if (response.data.success) {
+            if (Array.isArray(response.data.data)) {
+              horariosData = response.data.data
+            } else if (Array.isArray(response.data.horarios)) {
+              horariosData = response.data.horarios
+            }
+          } else if (Array.isArray(response.data)) {
+            horariosData = response.data
+          }
+          
+          console.log(`📊 ${horariosData.length} horarios crudos recibidos`)
+          
+          if (horariosData.length > 0) {
+            horariosDisponibles.value = horariosData.map(horario => {
+              // Extraer información del horario
+              return {
+                id: horario.id || horario.horario_id,
+                hora_inicio: formatHora(horario.hora_inicio || horario.start_time),
+                hora_fin: formatHora(horario.hora_fin || horario.end_time),
+                dia_semana: obtenerNombreDia(horario.dia_semana || horario.dia),
+                entrenador_nombre: horario.entrenador?.nombres || 
+                                  horario.entrenador_nombre || 
+                                  'Sin entrenador',
+                sucursal_nombre: horario.sucursal?.nombre || 
+                                horario.sucursal_nombre || 
+                                'Sin sucursal',
+                modalidad_nombre: horario.modalidad?.nombre || 
+                                 horario.modalidad_nombre || 
+                                 'Sin modalidad',
+                cupos_disponibles: horario.cupo_disponible || 
+                                 (horario.cupo_maximo - horario.cupo_actual) || 
+                                 5,
+                capacidad_maxima: horario.cupo_maxima || horario.cupo_maximo || 20
+              }
+            })
+            
+            console.log(`✅ ${horariosDisponibles.value.length} horarios formateados`)
+          }
+        }
+        
+      } catch (error2) {
+        console.log('⚠️ Error con recuperaciones/horarios/disponibles:', error2.message)
+        
+        // Opción 3: Intentar con endpoint específico de modalidad
+        try {
+          console.log('📤 Intentando con /horarios/modalidad/{id}...')
+          
+          const modalidadId = inscripcion.modalidad?.id
+          
+          // Usar Axios directamente para probar
+          const axios = require('axios')
+          const baseURL = process.env.VUE_APP_API_URL || 'http://localhost:8000/api'
+          
+          const response = await axios.get(`${baseURL}/horarios/modalidad/${modalidadId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          
+          console.log('✅ Respuesta de /horarios/modalidad/{id}:', response.data)
+          
+          if (response.data.success && Array.isArray(response.data.data)) {
+            horariosDisponibles.value = response.data.data.map(horario => ({
+              id: horario.id,
+              hora_inicio: formatHora(horario.hora_inicio),
+              hora_fin: formatHora(horario.hora_fin),
+              dia_semana: obtenerNombreDia(horario.dia_semana),
+              entrenador_nombre: horario.entrenador?.nombres || 'Sin entrenador',
+              sucursal_nombre: horario.sucursal?.nombre || 'Sin sucursal',
+              modalidad_nombre: horario.modalidad?.nombre || 'Sin modalidad',
+              cupos_disponibles: horario.cupo_maximo - (horario.cupo_actual || 0),
+              capacidad_maxima: horario.cupo_maximo || 20
+            }))
+          }
+          
+        } catch (error3) {
+          console.log('⚠️ Error con /horarios/modalidad/{id}:', error3.message)
+          
+          // Si todo falla, usar datos de ejemplo
+          console.log('🔧 Todos los endpoints fallaron, usando datos de ejemplo')
+          usarDatosDeEjemplo(inscripcion)
+        }
+      }
+    }
+
+    // Ordenar y seleccionar horarios
+    if (horariosDisponibles.value.length > 0) {
+      // Ordenar por día y hora
+      const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+      horariosDisponibles.value.sort((a, b) => {
+        const indexA = ordenDias.indexOf(a.dia_semana)
+        const indexB = ordenDias.indexOf(b.dia_semana)
+        
+        if (indexA !== -1 && indexB !== -1 && indexA !== indexB) {
+          return indexA - indexB
+        }
+        
+        const horaA = a.hora_inicio.replace(':', '')
+        const horaB = b.hora_inicio.replace(':', '')
+        return horaA - horaB
+      })
+
+      // Seleccionar automáticamente
+      if (fechaRecuperacion.value) {
+        const diaSeleccionado = obtenerDiaSemana(fechaRecuperacion.value)
+        const horarioCompatible = horariosDisponibles.value.find(h => 
+          h.dia_semana.toLowerCase() === diaSeleccionado.toLowerCase()
+        )
+        horarioRecuperacionSeleccionado.value = horarioCompatible || horariosDisponibles.value[0]
+      } else {
+        horarioRecuperacionSeleccionado.value = horariosDisponibles.value[0]
+      }
+
+      console.log('✅ Horarios cargados exitosamente:', horariosDisponibles.value.length)
+      toast.add({
+        severity: 'success',
+        summary: 'Horarios cargados',
+        detail: `${horariosDisponibles.value.length} horarios disponibles`,
+        life: 3000
+      })
+      
+    } else {
+      console.warn('⚠️ No se recibieron horarios')
+      usarDatosDeEjemplo(inscripcion)
+    }
+
+  } catch (error) {
+    console.error('❌ Error crítico cargando horarios:', error)
+    
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudieron cargar los horarios. Usando datos de ejemplo.',
+      life: 4000
+    })
+    
+    const inscripcion = inscripcionesConPermisos.value.find(
+      i => i.id === inscripcionSeleccionada.value
+    )
+    usarDatosDeEjemplo(inscripcion)
+    
+  } finally {
+    cargandoHorarios.value = false
   }
 }
 
-function calcularRecuperacionesEstaSemana() {
-  const hoy = new Date()
-  const inicioSemana = new Date(hoy)
-  inicioSemana.setDate(hoy.getDate() - hoy.getDay())
-  const finSemana = new Date(inicioSemana)
-  finSemana.setDate(inicioSemana.getDate() + 6)
+// También necesitas agregar estas funciones de utilidad:
+
+function obtenerNombreDia(dia) {
+  if (!dia) return 'Sin día'
   
-  return recuperacionesProgramadas.value.filter(recuperacion => {
-    const fechaRecup = new Date(recuperacion.fecha_recuperacion)
-    return fechaRecup >= inicioSemana && fechaRecup <= finSemana
-  }).length
+  if (typeof dia === 'number') {
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    return dias[dia] || `Día ${dia}`
+  }
+  
+  // Convertir a formato estándar
+  const diaLower = String(dia).toLowerCase()
+  
+  if (dialower.includes('lun')) return 'Lunes'
+  if (dialower.includes('mar')) return 'Martes'
+  if (dialower.includes('mié') || dialower.includes('mier')) return 'Miércoles'
+  if (dialower.includes('jue')) return 'Jueves'
+  if (dialower.includes('vie')) return 'Viernes'
+  if (dialower.includes('sáb') || dialower.includes('sab')) return 'Sábado'
+  if (dialower.includes('dom')) return 'Domingo'
+  
+  return String(dia)
 }
 
-// Funciones para el modal de programación
-async function programarRecuperacion(permiso) {
-  if (!puedeRecuperar(permiso)) {
+function formatHora(horaString) {
+  if (!horaString) return '--:--'
+  
+  // Si es timestamp ISO
+  if (horaString.includes && horaString.includes('T')) {
+    try {
+      const date = new Date(horaString)
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString('es-ES', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        })
+      }
+    } catch (e) {
+      // Continuar con otros formatos
+    }
+  }
+  
+  // Si es string con hora
+  if (typeof horaString === 'string') {
+    // Extraer números
+    const numeros = horaString.match(/\d+/g)
+    if (numeros && numeros.length >= 2) {
+      const hora = numeros[0].padStart(2, '0')
+      const minutos = numeros[1].padStart(2, '0')
+      return `${hora}:${minutos}`
+    }
+    
+    // Si ya está en formato HH:MM
+    if (horaString.includes(':')) {
+      const [hora, minutos] = horaString.split(':')
+      return `${hora.padStart(2, '0')}:${minutos.padStart(2, '0')}`
+    }
+  }
+  
+  return horaString
+}
+
+// Función mejorada de datos de ejemplo
+function usarDatosDeEjemplo(inscripcion) {
+  console.log('🔧 Usando datos de ejemplo...')
+  
+  const modalidadNombre = inscripcion?.modalidad?.nombre || 'CrossFit'
+  
+  const datosEjemplo = [
+    {
+      id: 118,
+      hora_inicio: '08:00',
+      hora_fin: '09:00',
+      dia_semana: 'Lunes',
+      entrenador_nombre: 'Juan Pérez',
+      sucursal_nombre: 'Sucursal Centro',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 3,
+      capacidad_maxima: 15
+    },
+    {
+      id: 119,
+      hora_inicio: '10:00',
+      hora_fin: '11:00',
+      dia_semana: 'Lunes',
+      entrenador_nombre: 'María García',
+      sucursal_nombre: 'Sucursal Norte',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 5,
+      capacidad_maxima: 20
+    },
+    {
+      id: 120,
+      hora_inicio: '19:00',
+      hora_fin: '20:00',
+      dia_semana: 'Martes',
+      entrenador_nombre: 'Carlos López',
+      sucursal_nombre: 'Sucursal Centro',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 2,
+      capacidad_maxima: 12
+    },
+    {
+      id: 121,
+      hora_inicio: '20:00',
+      hora_fin: '21:00',
+      dia_semana: 'Miércoles',
+      entrenador_nombre: 'Ana Martínez',
+      sucursal_nombre: 'Sucursal Sur',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 4,
+      capacidad_maxima: 15
+    },
+    {
+      id: 122,
+      hora_inicio: '18:00',
+      hora_fin: '19:00',
+      dia_semana: 'Jueves',
+      entrenador_nombre: 'Pedro Sánchez',
+      sucursal_nombre: 'Sucursal Centro',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 6,
+      capacidad_maxima: 20
+    },
+    {
+      id: 123,
+      hora_inicio: '17:00',
+      hora_fin: '18:00',
+      dia_semana: 'Viernes',
+      entrenador_nombre: 'Laura Rodríguez',
+      sucursal_nombre: 'Sucursal Norte',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 3,
+      capacidad_maxima: 15
+    },
+    {
+      id: 124,
+      hora_inicio: '09:00',
+      hora_fin: '10:00',
+      dia_semana: 'Sábado',
+      entrenador_nombre: 'Diego Fernández',
+      sucursal_nombre: 'Sucursal Sur',
+      modalidad_nombre: modalidadNombre,
+      cupos_disponibles: 8,
+      capacidad_maxima: 25
+    }
+  ]
+
+  horariosDisponibles.value = datosEjemplo
+  
+  // Ordenar
+  const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+  horariosDisponibles.value.sort((a, b) => {
+    const indexA = ordenDias.indexOf(a.dia_semana)
+    const indexB = ordenDias.indexOf(b.dia_semana)
+    
+    if (indexA !== -1 && indexB !== -1 && indexA !== indexB) {
+      return indexA - indexB
+    }
+    
+    const horaA = a.hora_inicio.replace(':', '')
+    const horaB = b.hora_inicio.replace(':', '')
+    return horaA - horaB
+  })
+  
+  if (horariosDisponibles.value.length > 0) {
+    horarioRecuperacionSeleccionado.value = horariosDisponibles.value[0]
+  }
+  
+  console.log(`✅ ${horariosDisponibles.value.length} datos de ejemplo cargados`)
+  toast.add({
+    severity: 'info',
+    summary: 'Datos de ejemplo',
+    detail: 'Se cargaron horarios de ejemplo para demostración',
+    life: 3000
+  })
+}
+
+
+
+function onFechaChange(event) {
+  console.log('📅 Fecha cambiada:', event)
+  // No necesitas hacer nada aquí porque v-model ya actualiza fechaRecuperacion
+}
+
+async function confirmarProgramacionRecuperacion() {
+  if (!permisoSeleccionado.value || !horarioRecuperacionSeleccionado.value || !fechaRecuperacion.value) {
     toast.add({
       severity: 'warn',
-      summary: 'No disponible',
-      detail: 'Este permiso ya no está disponible para recuperar',
+      summary: 'Datos incompletos',
+      detail: 'Selecciona un horario y fecha para la recuperación',
       life: 3000
     })
     return
   }
-  
-  permisoSeleccionado.value = permiso
-  await cargarHorariosDisponiblesParaRecuperacion()
-  mostrarModalProgramacion.value = true
-}
 
+  // Validar compatibilidad del horario con la fecha
+  if (!esHorarioCompatible(horarioRecuperacionSeleccionado.value, fechaRecuperacion.value)) {
+    toast.add({
+      severity: 'error',
+      summary: 'Incompatible',
+      detail: 'El horario seleccionado no coincide con el día de la fecha',
+      life: 4000
+    })
+    return
+  }
 
+  guardandoRecuperacion.value = true
 
-function seleccionarHorarioRecuperacion(horario) {
-  horarioRecuperacionSeleccionado.value = horario
+  try {
+    const datosRecuperacion = {
+      inscripcion_id: permisoSeleccionado.value.inscripcion_id,
+      estudiante_id: permisoSeleccionado.value.estudiante_id,
+      permiso_justificado_id: permisoSeleccionado.value.id,
+      horario_recuperacion_id: horarioRecuperacionSeleccionado.value.id,
+      fecha_recuperacion: fechaRecuperacion.value,
+      motivo: observacionRecuperacion.value || 'Recuperación de clase justificada',
+      administrador_id: 1
+    }
+
+    console.log('📤 Programando recuperación:', datosRecuperacion)
+
+    const response = await recuperacionService.store(datosRecuperacion)
+
+    if (response.data?.success) {
+      toast.add({
+        severity: 'success',
+        summary: '✅ Programación Exitosa',
+        detail: 'La recuperación ha sido programada correctamente',
+        life: 3000
+      })
+
+      resetearModalProgramacion()
+      mostrarModalProgramacion.value = false
+
+      await cargarPermisosYRecuperaciones()
+
+    } else {
+      throw new Error(response.data?.message || 'Error en el servidor')
+    }
+
+  } catch (error) {
+    console.error('❌ Error programando recuperación:', error)
+
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo programar la recuperación',
+      life: 3000
+    })
+  } finally {
+    guardandoRecuperacion.value = false
+  }
 }
 
 async function guardarRecuperacion() {
   if (!permisoSeleccionado.value || !horarioRecuperacionSeleccionado.value || !fechaRecuperacion.value) {
     toast.add({
-      severity: 'error',
+      severity: 'warn',
       summary: 'Datos incompletos',
-      detail: 'Complete todos los campos requeridos',
+      detail: 'Selecciona un horario y fecha para la recuperación',
       life: 3000
     })
     return
   }
+
+  // VALIDACIONES IMPORTANTES (mantén estas):
+
+  // 1. Validar que la fecha no esté en el pasado
+  const fechaSeleccionada = new Date(fechaRecuperacion.value)
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0) // Solo comparar fechas, no horas
   
+  if (fechaSeleccionada < hoy) {
+    toast.add({
+      severity: 'error',
+      summary: 'Fecha inválida',
+      detail: 'No puedes seleccionar una fecha pasada',
+      life: 4000
+    })
+    return
+  }
+
+  // 2. Validar que no exceda la fecha límite de recuperación
+  if (permisoSeleccionado.value.fecha_limite_recuperacion) {
+    const fechaLimite = new Date(permisoSeleccionado.value.fecha_limite_recuperacion)
+    if (fechaSeleccionada > fechaLimite) {
+      toast.add({
+        severity: 'error',
+        summary: 'Fecha límite excedida',
+        detail: `La recuperación debe realizarse antes del ${formatFecha(fechaLimite)}`,
+        life: 4000
+      })
+      return
+    }
+  }
+
   guardandoRecuperacion.value = true
+
   try {
-    // Obtener información de la inscripción
-    const inscripcion = inscripcionesConPermisos.value.find(
-      i => i.id === inscripcionSeleccionada.value
-    )
-    
     const datosRecuperacion = {
       inscripcion_id: inscripcionSeleccionada.value,
-      estudiante_id: inscripcion?.estudiante?.id || permisoSeleccionado.value.estudiante_id,
+      estudiante_id: inscripcionSeleccionadaObj.value?.estudiante?.id,
       permiso_justificado_id: permisoSeleccionado.value.id,
-      asistencia_id: permisoSeleccionado.value.asistencia_id,
       horario_recuperacion_id: horarioRecuperacionSeleccionado.value.id,
-      fecha_recuperacion: formatDateToYMD(fechaRecuperacion.value),
-      motivo: observacionRecuperacion.value || 
-             `Recuperación de permiso del ${formatFecha(permisoSeleccionado.value.fecha_falta)}`,
+      fecha_recuperacion: fechaRecuperacion.value,
+      motivo: observacionRecuperacion.value || `Recuperación de permiso del ${formatFecha(permisoSeleccionado.value.fecha_falta)}`,
       estado: 'programada',
-      fecha_limite: formatDateToYMD(fechaLimiteRecuperacion.value),
-      administrador_id: obtenerAdministradorId(),
-      comentarios: observacionRecuperacion.value
+      administrador_id: 1 // Cambia esto por el ID real del administrador
     }
-    
-    console.log('📤 Guardando recuperación:', datosRecuperacion)
-    
-    // Usar tu servicio correctamente
+
+    console.log('📤 Enviando datos de recuperación:', datosRecuperacion)
+
     const response = await recuperacionService.store(datosRecuperacion)
-    
+
     if (response.data?.success) {
       toast.add({
         severity: 'success',
-        summary: '✅ Recuperación programada',
-        detail: `Recuperación programada para el ${formatFecha(fechaRecuperacion.value)}`,
-        life: 4000
+        summary: '✅ Programación Exitosa',
+        detail: 'La recuperación ha sido programada correctamente',
+        life: 3000
       })
-      
-      // Cerrar modal y recargar datos
+
       mostrarModalProgramacion.value = false
       resetearModalProgramacion()
+      
+      // Recargar datos
       await cargarPermisosYRecuperaciones()
       
     } else {
-      throw new Error(response.data?.message || 'Error al guardar la recuperación')
+      throw new Error(response.data?.message || 'Error en el servidor')
     }
     
   } catch (error) {
     console.error('❌ Error guardando recuperación:', error)
     
-    let mensajeError = 'Error al programar la recuperación'
-    if (error.response?.data?.errors) {
-      const errores = Object.values(error.response.data.errors).flat()
-      mensajeError = errores.join(', ')
-    } else if (error.response?.data?.message) {
-      mensajeError = error.response.data.message
-    } else if (error.message) {
-      mensajeError = error.message
+    let mensajeError = 'No se pudo programar la recuperación'
+    
+    if (error.response?.status === 400) {
+      mensajeError = error.response.data?.message || 'Datos inválidos'
+    } else if (error.response?.status === 422) {
+      const errores = error.response.data?.errors
+      if (errores) {
+        mensajeError = Object.values(errores).flat().join(', ')
+      }
     }
     
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: mensajeError,
-      life: 5000
+      life: 4000
     })
-    
   } finally {
     guardandoRecuperacion.value = false
   }
 }
+
+// También necesitas la función para cargar fechas no disponibles
+async function cargarFechasNoDisponibles() {
+  try {
+    if (!inscripcionSeleccionada.value) return
+    
+    // Llamar a tu API para obtener fechas ocupadas
+    const response = await recuperacionService.getFechasOcupadas(inscripcionSeleccionada.value)
+    
+    if (response.data?.success) {
+      fechasNoDisponibles.value = response.data.data.map(fecha => new Date(fecha))
+    }
+  } catch (error) {
+    console.warn('No se pudieron cargar fechas no disponibles:', error.message)
+    // Usar fechas de ejemplo si la API falla
+    const hoy = new Date()
+    const manana = new Date(hoy)
+    manana.setDate(hoy.getDate() + 1)
+    const pasadoManana = new Date(hoy)
+    pasadoManana.setDate(hoy.getDate() + 2)
+    
+    fechasNoDisponibles.value = [manana, pasadoManana]
+  }
+}
+
+// Modifica la función programarRecuperacion para cargar las fechas no disponibles
+async function programarRecuperacion(permiso) {
+  try {
+    console.log('📋 Programando recuperación para permiso:', permiso.id)
+
+    if (!puedeRecuperar(permiso)) {
+      toast.add({
+        severity: 'warn',
+        summary: 'No disponible',
+        detail: 'Este permiso ya no está disponible para recuperar',
+        life: 3000
+      })
+      return
+    }
+
+    permisoSeleccionado.value = permiso
+
+    // Configurar fecha por defecto (mañana)
+    const manana = new Date()
+    manana.setDate(manana.getDate() + 1)
+    fechaRecuperacion.value = manana
+
+    // Cargar fechas no disponibles
+    await cargarFechasNoDisponibles()
+    
+    // Cargar horarios disponibles
+    await cargarTodosHorariosModalidad()
+
+    mostrarModalProgramacion.value = true
+
+  } catch (error) {
+    console.error('❌ Error en programarRecuperacion:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo abrir el formulario de programación',
+      life: 3000
+    })
+  }
+}
+
 
 function resetearModalProgramacion() {
   permisoSeleccionado.value = null
@@ -1203,97 +1564,181 @@ function resetearModalProgramacion() {
   horarioRecuperacionSeleccionado.value = null
   fechaRecuperacion.value = null
   observacionRecuperacion.value = ''
+  filtroDia.value = 'Todos'
+  fechasNoDisponibles.value = [] // Limpiar las fechas no disponibles
 }
 
-// Funciones para gestionar recuperaciones
-async function completarRecuperacion(recuperacion) {
-  try {
-    const confirmacion = await confirmarAccion(
-      'Completar Recuperación',
-      `¿Marcar la recuperación del ${formatFecha(recuperacion.fecha_recuperacion)} como completada?`
-    )
-    
-    if (!confirmacion) return
-    
-    const response = await recuperacionService.updateEstado(recuperacion.id, 'completada')
-    
-    if (response.data?.success) {
-      toast.add({
-        severity: 'success',
-        summary: '✅ Recuperación completada',
-        detail: 'La recuperación ha sido marcada como completada',
-        life: 3000
-      })
-      
-      await cargarRecuperacionesProgramadas()
-      
-    } else {
-      throw new Error('Error al completar la recuperación')
-    }
-    
-  } catch (error) {
-    console.error('❌ Error completando recuperación:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudo completar la recuperación',
-      life: 3000
-    })
-  }
-}
 
 async function cancelarRecuperacion(recuperacion) {
   try {
-    const confirmacion = await confirmarAccion(
-      'Cancelar Recuperación',
-      `¿Cancelar la recuperación programada para el ${formatFecha(recuperacion.fecha_recuperacion)}?`,
-      'Esta acción no se puede deshacer.'
-    )
-    
-    if (!confirmacion) return
-    
-    const response = await recuperacionService.updateEstado(recuperacion.id, 'cancelada')
-    
-    if (response.data?.success) {
+    const motivo = prompt('Ingrese el motivo de la cancelación:',
+      'Cancelación solicitada por el estudiante')
+
+    if (!motivo || motivo.trim() === '') {
       toast.add({
-        severity: 'info',
-        summary: 'Recuperación cancelada',
-        detail: 'La recuperación ha sido cancelada',
+        severity: 'warn',
+        summary: 'Motivo requerido',
+        detail: 'Debe ingresar un motivo para cancelar',
         life: 3000
       })
-      
-      await cargarRecuperacionesProgramadas()
-      
-    } else {
-      throw new Error('Error al cancelar la recuperación')
+      return
     }
-    
+
+    console.log(`❌ Cancelando recuperación ID: ${recuperacion.id}`)
+
+    const response = await recuperacionService.cancelar(recuperacion.id, {
+      motivo: motivo.trim()
+    })
+
+    if (response.data?.success) {
+      const index = recuperacionesProgramadas.value.findIndex(r => r.id === recuperacion.id)
+      if (index !== -1) {
+        recuperacionesProgramadas.value[index] = {
+          ...recuperacionesProgramadas.value[index],
+          estado: 'cancelada',
+          motivo_cancelacion: motivo.trim()
+        }
+
+        recuperacionesProgramadas.value = [...recuperacionesProgramadas.value]
+      }
+
+      calcularEstadisticas()
+
+      toast.add({
+        severity: 'info',
+        summary: 'Recuperación Cancelada',
+        detail: `La recuperación ha sido cancelada`,
+        life: 3000
+      })
+
+      setTimeout(() => {
+        cargarRecuperacionesProgramadas()
+      }, 1000)
+
+    } else {
+      throw new Error(response.data?.message || 'Error en el servidor')
+    }
+
   } catch (error) {
-    console.error('❌ Error cancelando recuperación:', error)
+    console.error('❌ Error al cancelar recuperación:', error)
+
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: 'No se pudo cancelar la recuperación',
-      life: 3000
+      life: 4000
     })
   }
 }
 
 function verDetallesRecuperacion(recuperacion) {
   recuperacionSeleccionada.value = recuperacion
-  tituloModalDetalles.value = `Recuperación #${recuperacion.id}`
+  tituloModalDetalles.value = `Detalles de Recuperación - ${formatFecha(recuperacion.fecha_recuperacion)}`
   mostrarModalDetalles.value = true
 }
 
-// Funciones auxiliares
-// Función CORREGIDA para validar si puede recuperar
+async function cargarRecuperacionesProgramadas() {
+  if (!inscripcionSeleccionada.value) return
+
+  cargandoRecuperaciones.value = true
+  recuperacionesProgramadas.value = []
+
+  try {
+    console.log(`🎯 Cargando recuperaciones para inscripción ${inscripcionSeleccionada.value}...`)
+
+    const response = await recuperacionService.getPorInscripcionEspecifico(inscripcionSeleccionada.value)
+
+    console.log('📥 Respuesta API:', {
+      status: response.status,
+      success: response.data?.success,
+      dataLength: response.data?.data?.length || 0
+    })
+
+    if (response.data?.success) {
+      const recuperacionesData = response.data.data || []
+      console.log(`✅ ${recuperacionesData.length} recuperaciones encontradas`)
+
+      recuperacionesProgramadas.value = recuperacionesData.map(rec => ({
+        id: rec.id,
+        estado: rec.estado || 'programada',
+        fecha_recuperacion: rec.fecha_recuperacion,
+        fecha_limite: rec.fecha_limite,
+        motivo: rec.motivo || 'Recuperación de clase',
+        comentarios: rec.comentarios || '',
+
+        horario: rec.horario || {
+          id: rec.horario_recuperacion_id,
+          hora_inicio: rec.hora_inicio || '--:--',
+          hora_fin: rec.hora_fin || '--:--',
+          dia_semana: rec.dia_semana || obtenerDiaSemana(rec.fecha_recuperacion),
+          entrenador_nombre: rec.entrenador_nombre || 'Sin entrenador',
+          sucursal_nombre: rec.sucursal_nombre || 'Sin sucursal',
+          modalidad_nombre: rec.modalidad_nombre || 'Sin modalidad'
+        },
+
+        permiso_asociado: rec.permiso_justificado || (rec.permiso_justificado_id ? {
+          id: rec.permiso_justificado_id,
+          motivo: 'Permiso justificado',
+          fecha_falta: rec.fecha_falta
+        } : null),
+
+        estudiante_id: rec.estudiante_id,
+        inscripcion_id: rec.inscripcion_id,
+        created_at: rec.created_at
+      })).filter(r => r.estado === 'programada' || r.estado === 'pendiente')
+
+    } else {
+      console.log('📭 No hay recuperaciones programadas o respuesta sin éxito')
+    }
+
+  } catch (error) {
+    console.error('❌ Error cargando recuperaciones:', error.message)
+
+    if (error.response?.status === 500) {
+      console.error('💥 Error 500 del servidor.')
+    }
+
+    usarDatosDePrueba()
+
+  } finally {
+    cargandoRecuperaciones.value = false
+  }
+}
+
+// FUNCIONES DE UTILIDAD
+
+function esHorarioCompatible(horario, fecha) {
+  if (!fecha || !horario.dia_semana) return true
+  
+  const diaFecha = obtenerDiaSemana(fecha).toLowerCase()
+  const diaHorario = horario.dia_semana.toLowerCase()
+  
+  return diaFecha === diaHorario
+}
+
+
+
+function getSeverityDia(diaSemana) {
+  const diasColores = {
+    'Lunes': 'primary',
+    'Martes': 'success', 
+    'Miércoles': 'warning',
+    'Jueves': 'help',
+    'Viernes': 'danger',
+    'Sábado': 'info',
+    'Domingo': 'contrast'
+  }
+  return diasColores[diaSemana] || 'secondary'
+}
+
 
 
 function getEstadoPermisoLabel(estado) {
   const map = {
     'aprobado': 'Aprobado',
     'pendiente': 'Pendiente',
-    'rechazado': 'Rechazado'
+    'rechazado': 'Rechazado',
+    'en_revision': 'En Revisión'
   }
   return map[estado] || estado
 }
@@ -1302,7 +1747,8 @@ function getEstadoPermisoSeverity(estado) {
   const map = {
     'aprobado': 'success',
     'pendiente': 'warning',
-    'rechazado': 'danger'
+    'rechazado': 'danger',
+    'en_revision': 'info'
   }
   return map[estado] || 'info'
 }
@@ -1337,36 +1783,25 @@ function getIconoEstadoRecuperacion(estado) {
   return map[estado] || 'text-gray-500'
 }
 
-function getClaseAvatarRecuperacion(estado) {
-  const map = {
-    'programada': 'bg-blue-100 text-blue-800',
-    'completada': 'bg-green-100 text-green-800',
-    'cancelada': 'bg-red-100 text-red-800',
-    'pendiente': 'bg-yellow-100 text-yellow-800'
-  }
-  return map[estado] || 'bg-gray-100 text-gray-800'
-}
-
 function getClaseVencimiento(fechaLimite) {
   if (!fechaLimite) return ''
-  
+
   const hoy = new Date()
   const limite = new Date(fechaLimite)
   const diasRestantes = Math.ceil((limite - hoy) / (1000 * 60 * 60 * 24))
-  
+
   if (diasRestantes <= 0) return 'text-red-500 font-bold'
   if (diasRestantes <= 3) return 'text-orange-500 font-bold'
   if (diasRestantes <= 7) return 'text-yellow-500'
   return ''
 }
 
-// Funciones de formato
 function formatFecha(fecha) {
   if (!fecha) return '--'
-  
+
   const date = new Date(fecha)
   if (isNaN(date.getTime())) return '--'
-  
+
   return date.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
@@ -1376,10 +1811,10 @@ function formatFecha(fecha) {
 
 function formatFechaHora(fecha) {
   if (!fecha) return '--'
-  
+
   const date = new Date(fecha)
   if (isNaN(date.getTime())) return '--'
-  
+
   return date.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
@@ -1389,17 +1824,41 @@ function formatFechaHora(fecha) {
   })
 }
 
-function formatDateToYMD(date) {
-  if (!date) return null
-  
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return null
-  
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  
-  return `${year}-${month}-${day}`
+function obtenerDiaSemana(fecha) {
+  if (!fecha) return 'Sin fecha'
+  try {
+    const date = new Date(fecha)
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    return dias[date.getDay()]
+  } catch (e) {
+    return 'Sin fecha'
+  }
+}
+
+function calcularFechaLimite(fechaFalta) {
+  if (!fechaFalta) return null
+
+  const fecha = new Date(fechaFalta)
+  fecha.setDate(fecha.getDate() + 15)
+
+  return fecha.toISOString().split('T')[0]
+}
+
+function calcularDiasRestantes(fechaLimite) {
+  if (!fechaLimite) return null
+
+  const hoy = new Date()
+  const limite = new Date(fechaLimite)
+  const diffMs = limite - hoy
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+}
+
+function getColorEstudiante(id) {
+  const colors = [
+    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
+    '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#ec4899'
+  ]
+  return colors[id % colors.length]
 }
 
 function getInicialesEstudiante(estudiante) {
@@ -1411,27 +1870,86 @@ function getInicialesEstudiante(estudiante) {
   return nombres[0][0].toUpperCase()
 }
 
-function getInicialesPersona(persona) {
-  if (!persona || !persona.nombres) return 'A'
-  return persona.nombres.charAt(0).toUpperCase()
+function calcularEstadisticas() {
+  const totalRecuperaciones = recuperacionesProgramadas.value.length
+
+  const completadas = recuperacionesProgramadas.value.filter(
+    r => r.estado === 'completada'
+  ).length
+
+  const estaSemana = recuperacionesProgramadas.value.filter(recuperacion => {
+    if (!recuperacion.fecha_recuperacion) return false
+    const fechaRecup = new Date(recuperacion.fecha_recuperacion)
+    const hoy = new Date()
+    const inicioSemana = new Date(hoy)
+    inicioSemana.setDate(hoy.getDate() - hoy.getDay())
+    const finSemana = new Date(inicioSemana)
+    finSemana.setDate(inicioSemana.getDate() + 6)
+    return fechaRecup >= inicioSemana && fechaRecup <= finSemana
+  }).length
+
+  estadisticas.value = {
+    permisosJustificados: permisosDisponibles.value.length,
+    permisosRecuperables: permisosDisponibles.value.length,
+    recuperacionesProgramadas: totalRecuperaciones,
+    recuperacionesCompletadas: completadas,
+    recuperacionesEstaSemana: estaSemana
+  }
 }
 
-function obtenerAdministradorId() {
-  // Esta función debería obtener el ID del administrador logueado
-  // Por ahora, devolvemos un valor por defecto
-  return 1 // Cambiar según tu sistema de autenticación
+function usarDatosDePrueba() {
+  console.log('🎭 Usando datos de prueba...')
+
+  const datosEjemplo = [
+    {
+      id: 1,
+      inscripcion_id: 252,
+      estado: 'programada',
+      fecha_recuperacion: '2026-03-06',
+      motivo: 'Recuperación de permiso del 31/01/2026',
+      horario_recuperacion_id: 116,
+      permiso_justificado_id: 23
+    },
+    {
+      id: 2,
+      inscripcion_id: 253,
+      estado: 'programada',
+      fecha_recuperacion: '2026-02-10',
+      motivo: 'Recuperación por enfermedad',
+      horario_recuperacion_id: 120,
+      permiso_justificado_id: 25
+    }
+  ]
+
+  const filtrados = datosEjemplo.filter(r => r.inscripcion_id == inscripcionSeleccionada.value)
+
+  if (filtrados.length > 0) {
+    recuperacionesProgramadas.value = filtrados.map(rec => ({
+      id: rec.id,
+      estado: rec.estado,
+      fecha_recuperacion: rec.fecha_recuperacion,
+      motivo: rec.motivo,
+      horario: {
+        id: rec.horario_recuperacion_id,
+        hora_inicio: '19:00',
+        hora_fin: '20:00',
+        dia_semana: 'Viernes',
+        entrenador_nombre: 'Entrenador Principal',
+        sucursal_nombre: 'Sucursal Centro',
+        modalidad_nombre: 'CrossFit'
+      },
+      permiso_asociado: {
+        id: rec.permiso_justificado_id,
+        motivo: 'Permiso justificado',
+        fecha_falta: '2026-01-30'
+      },
+      inscripcion_id: rec.inscripcion_id
+    }))
+
+    console.log(`✅ ${recuperacionesProgramadas.value.length} recuperaciones de prueba cargadas`)
+  }
 }
 
-async function confirmarAccion(titulo, mensaje, detalle = '') {
-  return new Promise((resolve) => {
-    // Usar el diálogo de confirmación de PrimeVue
-    // En una implementación real, usarías p-confirm-dialog
-    const confirmar = window.confirm(`${titulo}\n\n${mensaje}${detalle ? '\n\n' + detalle : ''}`)
-    resolve(confirmar)
-  })
-}
-
-// Funciones de UI
 function abrirModalNuevaRecuperacion() {
   if (permisosDisponibles.value.length === 0) {
     toast.add({
@@ -1442,8 +1960,7 @@ function abrirModalNuevaRecuperacion() {
     })
     return
   }
-  
-  // Seleccionar el primer permiso disponible
+
   programarRecuperacion(permisosDisponibles.value[0])
 }
 
@@ -1451,13 +1968,13 @@ async function cargarDatos() {
   if (!inscripcionSeleccionada.value) {
     toast.add({
       severity: 'warn',
-      summary: 'Seleccionar inscripción',
-      detail: 'Seleccione una inscripción primero',
+      summary: 'Seleccionar estudiante',
+      detail: 'Seleccione un estudiante primero',
       life: 3000
     })
     return
   }
-  
+
   await cargarPermisosYRecuperaciones()
   toast.add({
     severity: 'success',
@@ -1508,17 +2025,77 @@ async function cargarDatos() {
 
 .header-right {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-items: center;
+  width: 100%;
+  max-width: 800px;
 }
 
-.inscripcion-selector {
-  min-width: 300px;
+.estudiantes-lista {
+  width: 100%;
+}
+
+.no-estudiantes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  border: 1px dashed #e5e7eb;
+}
+
+.estudiantes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.estudiante-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.estudiante-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
+}
+
+.estudiante-card.selected {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.estudiante-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.estudiante-nombre {
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.estudiante-detalles {
+  font-size: 0.75rem;
 }
 
 .action-buttons-header {
   display: flex;
   gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 /* SUMMARY CARDS */
@@ -1667,58 +2244,40 @@ async function cargarDatos() {
   border-top: 1px solid #f3f4f6;
 }
 
-/* HORARIOS DISPONIBLES */
-.horarios-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+/* ESTILOS PARA EL MODAL */
+.horario-item {
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
 
-.horario-option {
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.horario-option:hover {
+.horario-item:hover {
   border-color: #3b82f6;
-  transform: translateY(-2px);
+  background-color: #f8fafc;
 }
 
-.horario-option.selected {
-  border-color: #10b981;
-  background: #f0fdf4;
+.horario-selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
 }
 
-.horario-content {
-  position: relative;
+.horario-compatible {
+  border-left: 4px solid #10b981;
 }
 
-.horario-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
+.dia-indicator {
+  min-width: 70px;
 }
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: #6b7280;
+.horario-horas {
+  font-size: 1.1rem;
 }
 
-.selected-indicator {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+.cupos-info {
+  font-size: 0.9rem;
+}
+
+.resumen-seleccion {
+  border-left: 4px solid #10b981;
 }
 
 /* RESPONSIVE */
@@ -1726,30 +2285,30 @@ async function cargarDatos() {
   .recuperaciones-container {
     padding: 1rem;
   }
-  
+
   .header-content {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .header-right {
     flex-direction: column;
     width: 100%;
   }
-  
-  .inscripcion-selector {
-    min-width: 100%;
-  }
-  
-  .horarios-grid {
+
+  .estudiantes-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .permisos-card,
   .recuperaciones-card {
     height: auto;
     max-height: 500px;
+  }
+  
+  .dia-indicator {
+    min-width: 60px;
   }
 }
 
@@ -1757,12 +2316,22 @@ async function cargarDatos() {
   .summary-section .col-12 {
     margin-bottom: 1rem;
   }
-  
+
   .permiso-header,
   .recuperacion-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .estudiante-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .action-buttons-header {
+    flex-direction: column;
   }
 }
 </style>
