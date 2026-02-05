@@ -33,8 +33,8 @@ porInscripcion(inscripcionId, page = 1, limit = 10) {
 },
   
   // Obtener pagos por estudiante
-  porEstudiante(estudianteId, page = 1, limit = 10) {
-    return Api().get(`/pagos/estudiante/${estudianteId}?page=${page}&limit=${limit}`);
+porEstudiante(estudianteId, page = 1, limit = 10) {
+    return Api().get(`/pagos/por-estudiante/${estudianteId}?page=${page}&limit=${limit}`);
   },
   
   // Obtener un pago específico
@@ -236,5 +236,13 @@ porInscripcion(inscripcionId, page = 1, limit = 10) {
         });
       }, 1500);
     });
-  }
+  },
+
+  obtenerPorEstudiante(estudianteId) {
+        return Api().get(`/pagos/estudiante/${estudianteId}`);
+    },
+    
+    puedeReembolsar(pagoId) {
+        return Api().get(`/pagos/${pagoId}/puede-reembolsar`);
+    }
 };

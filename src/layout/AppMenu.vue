@@ -97,6 +97,12 @@ const fullMenu = [
                 icon: 'pi pi-fw pi-history', 
                 to: '/admin/historialpagos',
                 permission: 'view_payment_history'
+            },
+            { 
+                label: 'Reembolso de Pagos', 
+                icon: 'pi pi-fw pi-chart-bar', 
+                to: '/admin/reembolsos',
+                permission: 'view_reembolsos'
             }
         ]
     },

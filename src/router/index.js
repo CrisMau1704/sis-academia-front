@@ -19,6 +19,7 @@ import HistorialPago from '../views/admin/HistorialPago.vue'
 import AsistenciasMensuales from '../views/admin/AsistenciasMensuales.vue'
 import ClasesRestantes from '../views/admin/ClasesRestantes.vue'
 import RecuperarClases from '../views/admin/RecuperarClases.vue'
+import Reembolsos from '../views/admin/Reembolsos.vue'
 
 
 
@@ -87,6 +88,11 @@ const routes = [
         path: 'historialpagos',
         name: 'HistorialPago',
         component: HistorialPago
+      },
+      {
+        path: 'reembolsos',
+        name: 'Reembolsos',
+        component: Reembolsos
       },
 
      

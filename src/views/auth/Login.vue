@@ -322,6 +322,10 @@ async function funIngresar() {
                 console.log('→ Redirigiendo a pagos (tiene view_payment_history)');
                 router.push('/admin/historialpagos');
             }
+            else if (permisosGuardados.includes('view_reembolsos')) {
+                console.log('→ Redirigiendo a pagos (tiene view_reembolsos)');
+                router.push('/admin/reembolsos');
+            }
             
             // 5. CONFIGURACIÓN DEL SISTEMA
             else if (permisosGuardados.includes('manage_branches')) {
