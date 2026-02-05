@@ -1,28 +1,30 @@
 <template>
   <div class="dashboard-container">
-    <!-- Header -->
+    <!-- Header Principal -->
     <div class="dashboard-header">
       <div class="flex align-items-center">
         <i class="pi pi-chart-bar text-primary text-3xl mr-3"></i>
         <div>
-          <h1>Dashboard de Gestión</h1>
-          <p class="text-500 m-0">Resumen completo del sistema</p>
+          <h1>Dashboard de Gestión Completo</h1>
+          <p class="text-500 m-0">Control total del sistema - Estudiantes, Pagos y Reembolsos</p>
         </div>
       </div>
       <div class="header-actions">
-        <Button label="Actualizar" icon="pi pi-refresh" severity="info" 
-                @click="cargarDatos" :loading="cargando" />
+        <Button label="Actualizar Todo" icon="pi pi-refresh" severity="info" 
+                @click="cargarTodosDatos" :loading="cargandoTodo" />
         <span class="text-500 text-sm">Última actualización: {{ ultimaActualizacion }}</span>
       </div>
     </div>
 
-    <!-- TARJETAS PRINCIPALES MEJORADAS -->
+ 
+
+    <!-- TARJETAS PRINCIPALES UNIFICADAS -->
     <div class="dashboard-cards">
       <div class="grid">
         
-        <!-- Tarjeta 1: CLIENTES ACTIVOS -->
-        <div class="col-12 md:col-6 lg:col-3">
-          <Card class="stat-card">
+        <!-- Tarjeta 1: ESTUDIANTES ACTIVOS -->
+        <div class="col-12 md:col-6 lg:col-3" :class="{'highlight-card': vistaActiva === 'estudiantes'}">
+          <Card class="stat-card student-card">
             <template #title>
               <div class="flex align-items-center">
                 <div class="card-icon bg-blue-100 text-blue-600 p-2 rounded-circle mr-2">
@@ -36,21 +38,28 @@
             </template>
             <template #content>
               <div class="mt-2">
-                <small class="text-500">Total inscritos: {{ estadisticas.totalInscripciones }}</small>
-                <div class="flex justify-content-between align-items-center mt-2">
-                  <span class="text-sm">Tasa de renovación</span>
-                  <span class="font-bold" :class="estadisticas.tasaRenovacion >= 70 ? 'text-green-600' : 'text-orange-600'">
-                    {{ estadisticas.tasaRenovacion }}%
-                  </span>
+                <div class="flex justify-content-between align-items-center mb-2">
+                  <small class="text-500">Total inscritos</small>
+                  <small class="font-bold">{{ estadisticas.totalInscripciones }}</small>
                 </div>
+                <div class="flex justify-content-between align-items-center">
+                  <small class="text-500">Tasa renovación</small>
+                  <small class="font-bold" :class="getColorTasa(estadisticas.tasaRenovacion)">
+                    {{ estadisticas.tasaRenovacion }}%
+                  </small>
+                </div>
+                <Divider />
+                <Button label="Ver Estudiantes" icon="pi pi-users" 
+                        class="p-button-sm w-full p-button-outlined" 
+                        @click="irAEstudiantes" />
               </div>
             </template>
           </Card>
         </div>
 
         <!-- Tarjeta 2: FINANZAS -->
-        <div class="col-12 md:col-6 lg:col-3">
-          <Card class="stat-card">
+        <div class="col-12 md:col-6 lg:col-3" :class="{'highlight-card': vistaActiva === 'finanzas'}">
+          <Card class="stat-card finance-card">
             <template #title>
               <div class="flex align-items-center">
                 <div class="card-icon bg-green-100 text-green-600 p-2 rounded-circle mr-2">
@@ -64,13 +73,17 @@
             </template>
             <template #content>
               <div class="mt-2">
-                <div class="flex justify-content-between">
+                <div class="flex justify-content-between mb-1">
                   <small class="text-500">Este mes</small>
                   <small class="font-bold text-green-600">Bs.{{ formatMonto(estadisticas.recaudacionMes) }}</small>
                 </div>
-                <div class="flex justify-content-between mt-1">
+                <div class="flex justify-content-between mb-1">
                   <small class="text-500">Promedio/pago</small>
                   <small class="font-bold">Bs.{{ formatMonto(estadisticas.promedioPago) }}</small>
+                </div>
+                <div class="flex justify-content-between">
+                  <small class="text-500">Ganancias netas</small>
+                  <small class="font-bold text-blue-600">Bs.{{ formatMonto(estadisticas.gananciasNetas) }}</small>
                 </div>
               </div>
             </template>
@@ -78,8 +91,8 @@
         </div>
 
         <!-- Tarjeta 3: SITUACIÓN DE PAGOS -->
-        <div class="col-12 md:col-6 lg:col-3">
-          <Card class="stat-card">
+        <div class="col-12 md:col-6 lg:col-3" :class="{'highlight-card': vistaActiva === 'pagos'}">
+          <Card class="stat-card payment-card">
             <template #title>
               <div class="flex align-items-center">
                 <div class="card-icon bg-orange-100 text-orange-600 p-2 rounded-circle mr-2">
@@ -93,267 +106,279 @@
             </template>
             <template #content>
               <div class="mt-2">
-                <div class="flex justify-content-between mb-2">
-                  <small class="text-500">Pagos en mora:</small>
-                  <small class="font-bold text-red-600">Bs.{{ formatMonto(estadisticas.pagosVencidosMonto || estadisticas.montoEnMora) }}</small>
+                <div class="flex justify-content-between mb-1">
+                  <small class="text-500">Monto en mora</small>
+                  <small class="font-bold text-red-600">Bs.{{ formatMonto(estadisticas.montoEnMora) }}</small>
+                </div>
+                <div class="flex justify-content-between mb-1">
+                  <small class="text-500">Por vencer (7 días)</small>
+                  <small class="font-bold">{{ estadisticas.inscripcionesPorVencer }}</small>
                 </div>
                 <div class="flex justify-content-between">
-                  <small class="text-500">Por vencer (7 días):</small>
-                  <small class="font-bold">{{ estadisticas.inscripcionesPorVencer }}</small>
+                  <small class="text-500">Pagos pendientes</small>
+                  <small class="font-bold">{{ estadisticas.pagosPendientes }}</small>
                 </div>
               </div>
             </template>
           </Card>
         </div>
 
-        <!-- Tarjeta 4: ACTIVIDAD HOY -->
-        <div class="col-12 md:col-6 lg:col-3">
-          <Card class="stat-card">
+        <!-- Tarjeta 4: REEMBOLSOS -->
+        <div class="col-12 md:col-6 lg:col-3" :class="{'highlight-card': vistaActiva === 'reembolsos'}">
+          <Card class="stat-card refund-card">
             <template #title>
               <div class="flex align-items-center">
-                <div class="card-icon bg-purple-100 text-purple-600 p-2 rounded-circle mr-2">
-                  <i class="pi pi-calendar"></i>
+                <div class="card-icon bg-red-100 text-red-600 p-2 rounded-circle mr-2">
+                  <i class="pi pi-money-bill-wave"></i>
                 </div>
                 <div>
-                  <div class="text-sm text-500">Actividad Hoy</div>
-                  <div class="font-bold text-purple-600">{{ estadisticas.clasesHoy }}</div>
+                  <div class="text-sm text-500">Reembolsos Pendientes</div>
+                  <div class="font-bold text-red-600">{{ estadisticas.reembolsosPendientes }}</div>
                 </div>
               </div>
             </template>
             <template #content>
               <div class="mt-2">
-                <small class="text-500">Clases programadas</small>
-                <div class="mt-2">
-                  <div class="flex justify-content-between">
-                    <span class="text-sm">Pagados total</span>
-                    <span class="font-bold">{{ estadisticas.pagosPagados }}</span>
-                  </div>
-                  <div class="flex justify-content-between mt-1">
-                    <span class="text-sm">Pagos totales</span>
-                    <span class="font-bold">{{ estadisticas.totalPagos }}</span>
-                  </div>
+                <div class="flex justify-content-between mb-1">
+                  <small class="text-500">Monto total</small>
+                  <small class="font-bold">Bs.{{ formatMonto(estadisticas.totalReembolsos) }}</small>
                 </div>
+                <div class="flex justify-content-between mb-1">
+                  <small class="text-500">Aprobados</small>
+                  <small class="font-bold text-green-600">{{ estadisticas.reembolsosAprobados }}</small>
+                </div>
+                <div class="flex justify-content-between">
+                  <small class="text-500">Monto este mes</small>
+                  <small class="font-bold">Bs.{{ formatMonto(estadisticas.reembolsosMes) }}</small>
+                </div>
+                <Divider />
+                <Button label="Gestionar Reembolsos" icon="pi pi-arrow-right" 
+                        severity="danger" class="p-button-sm w-full" 
+                        @click="irAReembolsos" />
               </div>
             </template>
           </Card>
         </div>
+
       </div>
     </div>
 
-    <!-- SECCIÓN DE ESTADO GENERAL -->
+    <!-- VISIÓN GENERAL EN TIEMPO REAL -->
     <div class="dashboard-section">
       <Card>
         <template #title>
-          <div class="flex align-items-center">
-            <i class="pi pi-chart-pie mr-2 text-primary"></i>
-            <span>Estado General del Sistema</span>
+          <div class="flex align-items-center justify-content-between">
+            <div class="flex align-items-center">
+              <i class="pi pi-eye text-primary mr-2"></i>
+              <span>Visión General en Tiempo Real</span>
+            </div>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-circle-fill text-green-500"></i>
+              <small class="text-500">En línea</small>
+              <i class="pi pi-clock ml-3"></i>
+              <small class="text-500">{{ horaActual }}</small>
+            </div>
           </div>
         </template>
         <template #content>
           <div class="grid">
             
-            <!-- Panel de Inscripciones -->
-            <div class="col-12 md:col-6">
-              <div class="panel-estado">
-                <div class="panel-header">
-                  <i class="pi pi-users text-blue-500 mr-2"></i>
-                  <span class="font-bold">Inscripciones</span>
+            <!-- Actividad Hoy -->
+            <div class="col-12 md:col-6 lg:col-4">
+              <div class="real-time-card">
+                <div class="real-time-header">
+                  <i class="pi pi-calendar text-blue-500"></i>
+                  <span class="font-bold ml-2">Actividad Hoy</span>
                 </div>
-                <div class="panel-content">
-                  <div class="estado-item" v-for="(item, key) in [
-                    { label: 'Activas', value: estadisticas.inscripcionesActivas, color: 'bg-green-500', icon: 'pi pi-check' },
-                    { label: 'En mora', value: estadisticas.inscripcionesEnMora, color: 'bg-red-500', icon: 'pi pi-exclamation-triangle' },
-                    { label: 'Por vencer', value: estadisticas.inscripcionesPorVencer, color: 'bg-orange-500', icon: 'pi pi-clock' },
-                    { label: 'Total', value: estadisticas.totalInscripciones, color: 'bg-blue-500', icon: 'pi pi-chart-bar' }
-                  ]" :key="key">
-                    <div class="flex align-items-center">
-                      <div class="estado-icon" :class="item.color">
-                        <i :class="item.icon"></i>
-                      </div>
-                      <div class="ml-3">
-                        <div class="text-sm text-500">{{ item.label }}</div>
-                        <div class="font-bold text-lg">{{ item.value }}</div>
+                <div class="real-time-content">
+                  <div class="real-time-item">
+                    <i class="pi pi-users text-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Clases programadas</div>
+                      <div class="font-bold text-xl">{{ estadisticas.clasesHoy }}</div>
+                    </div>
+                  </div>
+                  <div class="real-time-item">
+                    <i class="pi pi-credit-card text-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Pagos registrados</div>
+                      <div class="font-bold text-xl">{{ estadisticas.pagosHoy }}</div>
+                    </div>
+                  </div>
+                  <div class="real-time-item">
+                    <i class="pi pi-user-plus text-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Nuevos estudiantes</div>
+                      <div class="font-bold text-xl">{{ estadisticas.nuevosEstudiantesHoy }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finanzas Rápidas -->
+            <div class="col-12 md:col-6 lg:col-4">
+              <div class="real-time-card">
+                <div class="real-time-header">
+                  <i class="pi pi-wallet text-green-500"></i>
+                  <span class="font-bold ml-2">Finanzas Rápidas</span>
+                </div>
+                <div class="real-time-content">
+                  <div class="real-time-item">
+                    <i class="pi pi-arrow-up-right text-green-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Ingresos hoy</div>
+                      <div class="font-bold text-xl text-green-600">Bs.{{ formatMonto(estadisticas.ingresosHoy) }}</div>
+                    </div>
+                  </div>
+                  <div class="real-time-item">
+                    <i class="pi pi-arrow-down-left text-red-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Reembolsos hoy</div>
+                      <div class="font-bold text-xl text-red-600">Bs.{{ formatMonto(estadisticas.reembolsosHoy) }}</div>
+                    </div>
+                  </div>
+                  <div class="real-time-item">
+                    <i class="pi pi-chart-line text-blue-500"></i>
+                    <div>
+                      <div class="text-sm text-500">Balance diario</div>
+                      <div class="font-bold text-xl" :class="getColorBalance(estadisticas.balanceDiario)">
+                        Bs.{{ formatMonto(estadisticas.balanceDiario) }}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Panel de Finanzas -->
-            <div class="col-12 md:col-6">
-              <div class="panel-estado">
-                <div class="panel-header">
-                  <i class="pi pi-wallet text-green-500 mr-2"></i>
-                  <span class="font-bold">Finanzas</span>
+
+            <!-- Estado Reembolsos -->
+            <div class="col-12 md:col-6 lg:col-4">
+              <div class="real-time-card">
+                <div class="real-time-header">
+                  <i class="pi pi-sync text-red-500"></i>
+                  <span class="font-bold ml-2">Estado Reembolsos</span>
                 </div>
-                <div class="panel-content">
-                  <div class="estado-item" v-for="(item, key) in [
-                    { label: 'Recaudación total', value: `Bs.${formatMonto(estadisticas.recaudacionTotal)}`, color: 'bg-green-500', icon: 'pi pi-money-bill' },
-                    { label: 'Recaudación mes', value: `Bs.${formatMonto(estadisticas.recaudacionMes)}`, color: 'bg-teal-500', icon: 'pi pi-calendar' },
-                    { label: 'Monto en mora', value: `Bs.${formatMonto(estadisticas.montoEnMora)}`, color: 'bg-red-500', icon: 'pi pi-exclamation-circle' },
-                    { label: 'Promedio pago', value: `Bs.${formatMonto(estadisticas.promedioPago)}`, color: 'bg-blue-500', icon: 'pi pi-chart-line' }
-                  ]" :key="key">
-                    <div class="flex align-items-center">
-                      <div class="estado-icon" :class="item.color">
-                        <i :class="item.icon"></i>
-                      </div>
-                      <div class="ml-3">
-                        <div class="text-sm text-500">{{ item.label }}</div>
-                        <div class="font-bold text-lg">{{ item.value }}</div>
-                      </div>
+                <div class="real-time-content">
+                  <div class="real-time-item">
+                    <Tag value="Pendientes" severity="warning" class="w-full justify-content-center mb-1" />
+                    <div class="text-center">
+                      <div class="font-bold text-2xl">{{ estadisticas.reembolsosPendientes }}</div>
+                      <small class="text-500">por revisar</small>
+                    </div>
+                  </div>
+                  <div class="real-time-item">
+                    <Tag value="En proceso" severity="info" class="w-full justify-content-center mb-1" />
+                    <div class="text-center">
+                      <div class="font-bold text-2xl">{{ estadisticas.reembolsosProceso }}</div>
+                      <small class="text-500">aprobados</small>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            
+
+           
+
           </div>
         </template>
       </Card>
     </div>
 
-    <!-- Sección de gráficos y estadísticas detalladas -->
+    <!-- GRÁFICOS Y ANÁLISIS -->
     <div class="dashboard-section">
       <div class="grid">
-        <!-- Gráfico de Recaudación por Mes -->
+        <!-- Gráfico de Recaudación vs Reembolsos -->
         <div class="col-12 lg:col-8">
           <Card>
             <template #title>
               <div class="flex align-items-center justify-content-between">
                 <div class="flex align-items-center">
                   <i class="pi pi-chart-line mr-2 text-primary"></i>
-                  <span>Recaudación Mensual</span>
+                  <span>Recaudación vs Reembolsos</span>
                 </div>
-                <Dropdown v-model="periodoGrafico" :options="periodos" optionLabel="label" optionValue="value"
-                  placeholder="Últimos 6 meses" class="w-15rem" />
+                <Dropdown v-model="periodoGrafico" :options="periodos" 
+                          optionLabel="label" optionValue="value" class="w-15rem" />
               </div>
             </template>
             <template #content>
               <div v-if="cargandoGrafico" class="text-center p-5">
                 <ProgressSpinner style="width: 50px; height: 50px" />
-                <p class="text-500 mt-3">Cargando datos del gráfico...</p>
+                <p class="text-500 mt-3">Cargando gráfico...</p>
               </div>
-              
-              <!-- CORRECCIÓN PRINCIPAL: Usar div con v-else-if y verificar datos -->
-              <div v-else-if="chartDataRecaudacion.labels && chartDataRecaudacion.labels.length > 0">
-                <Chart 
-                  :key="chartKey"
-                  :type="'line'" 
-                  :data="chartDataRecaudacion" 
-                  :options="chartOptions" 
-                  :height="250" />
-              </div>
-              
-              <div v-else class="text-center p-5">
-                <p class="text-500">No hay datos para mostrar</p>
-              </div>
+              <Chart v-else :type="'line'" :data="chartDataComparativo" 
+                    :options="chartOptionsComparativo" :height="250" />
             </template>
           </Card>
         </div>
 
-        <!-- Estadísticas rápidas -->
+        <!-- Distribución de Reembolsos -->
         <div class="col-12 lg:col-4">
-          <Card class="h-full">
+          <Card>
             <template #title>
               <div class="flex align-items-center">
-                <i class="pi pi-chart-bar mr-2 text-primary"></i>
-                <span>Estadísticas Rápidas</span>
+                <i class="pi pi-chart-pie mr-2 text-primary"></i>
+                <span>Distribución Reembolsos</span>
               </div>
             </template>
             <template #content>
-              <div class="quick-stats">
-                <div class="quick-stat-item">
-                  <div class="flex justify-content-between">
-                    <span class="text-500">Promedio por pago:</span>
-                    <span class="font-bold text-green-600">Bs.{{ formatMonto(estadisticas.promedioPago) }}</span>
-                  </div>
-                  <ProgressBar :value="calcularProgresoPromedio()" :showValue="false" class="mt-2" />
-                </div>
-
-                <Divider />
-
-                <div class="quick-stat-item">
-                  <div class="flex justify-content-between">
-                    <span class="text-500">Clases hoy:</span>
-                    <span class="font-bold text-blue-600">{{ estadisticas.clasesHoy }}</span>
-                  </div>
-                  <ProgressBar :value="calcularProgresoClases()" :showValue="false" class="mt-2" />
-                </div>
-
-                <Divider />
-
-                <div class="quick-stat-item">
-                  <div class="flex justify-content-between">
-                    <span class="text-500">Por vencer (7 días):</span>
-                    <span class="font-bold text-orange-600">{{ estadisticas.inscripcionesPorVencer }}</span>
-                  </div>
-                  <ProgressBar :value="calcularProgresoVencimientos()" :showValue="false" class="mt-2" />
-                </div>
-
-                <Divider />
-
-                <div class="quick-stat-item">
-                  <div class="flex justify-content-between">
-                    <span class="text-500">Tasa de renovación:</span>
-                    <span class="font-bold" :class="getColorTasaRenovacion()">
-                      {{ estadisticas.tasaRenovacion }}%
-                    </span>
-                  </div>
-                  <ProgressBar :value="estadisticas.tasaRenovacion" :showValue="false"
-                    :class="getClaseProgressBarRenovacion()" class="mt-2" />
-                </div>
-              </div>
+              <Chart type="pie" :data="chartDataReembolsos" :options="chartOptionsPie" :height="250" />
             </template>
           </Card>
         </div>
       </div>
     </div>
 
-    <!-- Sección de últimas inscripciones y pagos -->
+    <!-- TABLAS DINÁMICAS -->
     <div class="dashboard-section">
       <div class="grid">
-        <!-- Últimas Inscripciones -->
-        <div class="col-12 lg:col-6">
+        
+        <!-- Últimos Reembolsos -->
+        <div class="col-12 lg:col-6" v-if="vistaActiva === 'reembolsos' || vistaActiva === 'todo'">
           <Card>
             <template #title>
               <div class="flex align-items-center justify-content-between">
                 <div class="flex align-items-center">
-                  <i class="pi pi-user-plus mr-2 text-primary"></i>
-                  <span>Últimas Inscripciones</span>
+                  <i class="pi pi-money-bill-wave text-red-500 mr-2"></i>
+                  <span>Últimos Reembolsos</span>
+                  <Tag :value="ultimosReembolsos.length" severity="danger" class="ml-2" />
                 </div>
-                <Button label="Ver todas" icon="pi pi-arrow-right" text @click="irAInscripciones" />
+                <Button label="Ver Todos" icon="pi pi-arrow-right" text @click="irAReembolsos" />
               </div>
             </template>
             <template #content>
-              <DataTable :value="ultimasInscripciones" :loading="cargandoInscripciones" class="p-datatable-sm"
-                :rows="5">
+              <DataTable :value="ultimosReembolsos" :rows="5" class="p-datatable-sm" stripedRows>
+                <Column header="ID" style="width: 70px">
+                  <template #body="{ data }">
+                    <div class="font-mono">#{{ data.id }}</div>
+                  </template>
+                </Column>
                 <Column header="Estudiante">
-                  <template #body="slotProps">
+                  <template #body="{ data }">
                     <div class="flex align-items-center">
-                      <Avatar :label="getIniciales(slotProps.data.estudiante)" size="small" shape="circle"
-                        class="mr-2" />
+                      <Avatar :label="getIniciales(data.estudiante)" size="small" class="mr-2" />
                       <div>
-                        <div class="font-medium">{{ getNombreCompleto(slotProps.data.estudiante) }}</div>
-                        <small class="text-500">{{ slotProps.data.estudiante?.ci }}</small>
+                        <div class="font-medium">{{ getNombreCompleto(data.estudiante) }}</div>
+                        <small class="text-500">CI: {{ data.estudiante?.ci }}</small>
                       </div>
                     </div>
                   </template>
                 </Column>
-                <Column header="Modalidad">
-                  <template #body="slotProps">
-                    <div class="font-medium">{{ slotProps.data.modalidad?.nombre }}</div>
-                    <small class="text-500">Bs.{{ slotProps.data.modalidad?.precio_mensual }}/mes</small>
+                <Column header="Monto" style="width: 100px">
+                  <template #body="{ data }">
+                    <div class="text-right font-bold text-red-600">
+                      Bs.{{ formatMonto(data.monto_reembolsado) }}
+                    </div>
                   </template>
                 </Column>
                 <Column header="Estado" style="width: 100px">
-                  <template #body="slotProps">
-                    <Tag :value="slotProps.data.estado" :severity="getSeveridadEstado(slotProps.data.estado)" />
+                  <template #body="{ data }">
+                    <Tag :value="data.estado" :severity="getSeveridadEstado(data.estado)" />
                   </template>
                 </Column>
-                <Column header="Fecha" style="width: 100px">
-                  <template #body="slotProps">
-                    <div class="text-sm">{{ formatFechaCorta(slotProps.data.created_at) }}</div>
+                <Column header="Acciones" style="width: 80px">
+                  <template #body="{ data }">
+                    <Button icon="pi pi-eye" class="p-button-text p-button-sm" 
+                            @click="verDetalleReembolso(data)" />
                   </template>
                 </Column>
               </DataTable>
@@ -362,55 +387,161 @@
         </div>
 
         <!-- Últimos Pagos -->
-        <div class="col-12 lg:col-6">
+        <div class="col-12 lg:col-6" v-if="vistaActiva === 'pagos' || vistaActiva === 'todo'">
           <Card>
             <template #title>
               <div class="flex align-items-center justify-content-between">
                 <div class="flex align-items-center">
-                  <i class="pi pi-credit-card mr-2 text-primary"></i>
+                  <i class="pi pi-credit-card text-green-500 mr-2"></i>
                   <span>Últimos Pagos</span>
+                  <Tag :value="ultimosPagos.length" severity="success" class="ml-2" />
                 </div>
-                <Button label="Ver todos" icon="pi pi-arrow-right" text @click="irAPagos" />
+                <Button label="Ver Todos" icon="pi pi-arrow-right" text @click="irAPagos" />
               </div>
             </template>
             <template #content>
-              <DataTable :value="ultimosPagos" :loading="cargandoPagos" class="p-datatable-sm" :rows="5">
+              <DataTable :value="ultimosPagos" :rows="5" class="p-datatable-sm" stripedRows>
                 <Column header="Estudiante">
-                  <template #body="slotProps">
-                    <div class="flex align-items-center">
-                      <div>
-                        <div class="font-medium">{{ getNombreEstudiante(slotProps.data) }}</div>
-                        <small class="text-500">Inscripción #{{ slotProps.data.inscripcion_id }}</small>
-                      </div>
-                    </div>
+                  <template #body="{ data }">
+                    <div class="font-medium">{{ getNombreEstudiante(data) }}</div>
                   </template>
                 </Column>
                 <Column header="Monto" style="width: 100px">
-                  <template #body="slotProps">
-                    <div class="text-right">
-                      <div class="font-bold text-green-600">Bs.{{ formatMonto(slotProps.data.monto) }}</div>
-                      <small class="text-500 capitalize">{{ slotProps.data.metodo_pago }}</small>
+                  <template #body="{ data }">
+                    <div class="text-right font-bold text-green-600">
+                      Bs.{{ formatMonto(data.monto) }}
                     </div>
                   </template>
                 </Column>
-                <Column header="Fecha" style="width: 100px">
-                  <template #body="slotProps">
-                    <div class="text-sm">{{ formatFechaCorta(slotProps.data.fecha_pago) }}</div>
+                <Column header="Estado" style="width: 100px">
+                  <template #body="{ data }">
+                    <Tag :value="data.estado" :severity="getSeveridadEstadoPago(data.estado)" />
                   </template>
                 </Column>
-                <Column header="Estado" style="width: 100px">
-                  <template #body="slotProps">
-                    <Tag :value="slotProps.data.estado" :severity="getSeveridadEstadoPago(slotProps.data.estado)" />
+                <Column header="Fecha" style="width: 100px">
+                  <template #body="{ data }">
+                    <div class="text-sm">{{ formatFechaCorta(data.fecha_pago) }}</div>
                   </template>
                 </Column>
               </DataTable>
             </template>
           </Card>
         </div>
+
+        <!-- Inscripciones Recientes -->
+        <div class="col-12 lg:col-6" v-if="vistaActiva === 'estudiantes' || vistaActiva === 'todo'">
+          <Card>
+            <template #title>
+              <div class="flex align-items-center justify-content-between">
+                <div class="flex align-items-center">
+                  <i class="pi pi-user-plus text-blue-500 mr-2"></i>
+                  <span>Inscripciones Recientes</span>
+                </div>
+                <Button label="Ver Todas" icon="pi pi-arrow-right" text @click="irAInscripciones" />
+              </div>
+            </template>
+            <template #content>
+              <DataTable :value="ultimasInscripciones" :rows="5" class="p-datatable-sm" stripedRows>
+                <Column header="Estudiante">
+                  <template #body="{ data }">
+                    <div class="flex align-items-center">
+                      <Avatar :label="getIniciales(data.estudiante)" size="small" class="mr-2" />
+                      <div class="font-medium">{{ getNombreCompleto(data.estudiante) }}</div>
+                    </div>
+                  </template>
+                </Column>
+                <Column header="Modalidad">
+                  <template #body="{ data }">
+                    <div class="font-medium">{{ data.modalidad?.nombre }}</div>
+                  </template>
+                </Column>
+                <Column header="Estado" style="width: 100px">
+                  <template #body="{ data }">
+                    <Tag :value="data.estado" :severity="getSeveridadEstado(data.estado)" />
+                  </template>
+                </Column>
+              </DataTable>
+            </template>
+          </Card>
+        </div>
+
       </div>
     </div>
 
-    <!-- Resumen por modalidades -->
+    <!-- RESUMEN FINANCIERO DETALLADO -->
+    <div class="dashboard-section">
+      <Card>
+        <template #title>
+          <div class="flex align-items-center">
+            <i class="pi pi-calculator text-primary mr-2"></i>
+            <span>Resumen Financiero Detallado</span>
+          </div>
+        </template>
+        <template #content>
+          <div class="grid">
+            <div class="col-12 md:col-6 lg:col-3">
+              <div class="financial-summary-card">
+                <div class="financial-header">
+                  <i class="pi pi-arrow-up-right text-green-500"></i>
+                  <span>Ingresos Totales</span>
+                </div>
+                <div class="financial-value text-green-600">
+                  Bs.{{ formatMonto(estadisticas.recaudacionTotal) }}
+                </div>
+                <div class="financial-detail">
+                  <span>Este mes: Bs.{{ formatMonto(estadisticas.recaudacionMes) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 md:col-6 lg:col-3">
+              <div class="financial-summary-card">
+                <div class="financial-header">
+                  <i class="pi pi-arrow-down-left text-red-500"></i>
+                  <span>Reembolsos Totales</span>
+                </div>
+                <div class="financial-value text-red-600">
+                  Bs.{{ formatMonto(estadisticas.totalReembolsos) }}
+                </div>
+                <div class="financial-detail">
+                  <span>Este mes: Bs.{{ formatMonto(estadisticas.reembolsosMes) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 md:col-6 lg:col-3">
+              <div class="financial-summary-card">
+                <div class="financial-header">
+                  <i class="pi pi-chart-line text-blue-500"></i>
+                  <span>Ganancias Netas</span>
+                </div>
+                <div class="financial-value text-blue-600">
+                  Bs.{{ formatMonto(estadisticas.gananciasNetas) }}
+                </div>
+                <div class="financial-detail">
+                  <span>Margen: {{ calcularMargen() }}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 md:col-6 lg:col-3">
+              <div class="financial-summary-card">
+                <div class="financial-header">
+                  <i class="pi pi-exclamation-triangle text-orange-500"></i>
+                  <span>Deuda Pendiente</span>
+                </div>
+                <div class="financial-value text-orange-600">
+                  Bs.{{ formatMonto(estadisticas.montoEnMora) }}
+                </div>
+                <div class="financial-detail">
+                  <span>{{ estadisticas.inscripcionesEnMora }} inscripciones</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    
+    
     <div class="dashboard-section">
       <Card>
         <template #title>
@@ -439,47 +570,19 @@
       </Card>
     </div>
 
-    <!-- Alertas importantes -->
-    <div class="dashboard-section" v-if="alertasImportantes.length > 0">
-      <Card>
-        <template #title>
-          <div class="flex align-items-center">
-            <i class="pi pi-bell mr-2 text-red-500"></i>
-            <span>Alertas Importantes</span>
-            <Badge :value="alertasImportantes.length" severity="danger" class="ml-2" />
-          </div>
-        </template>
-        <template #content>
-          <div class="grid">
-            <div v-for="(alerta, index) in alertasImportantes" :key="index" class="col-12 md:col-6 lg:col-4">
-              <div class="alerta-card" :class="getClaseAlerta(alerta.tipo)">
-                <div class="flex align-items-center mb-2">
-                  <i :class="getIconoAlerta(alerta.tipo) + ' mr-2'"></i>
-                  <div class="font-bold">{{ alerta.titulo }}</div>
-                </div>
-                <div class="mb-2">{{ alerta.descripcion }}</div>
-                <div class="flex justify-content-between">
-                  <small class="text-500">{{ alerta.fecha }}</small>
-                  <Button v-if="alerta.accion" :label="alerta.accion.texto" :icon="alerta.accion.icono"
-                    class="p-button-sm" @click="ejecutarAccionAlerta(alerta)" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-      </Card>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 
 // Importar servicios
 import inscripcionService from '@/services/inscripcion.service';
 import pagoService from '@/services/pago.service';
+import reembolsoService from '@/services/reembolso.service';
+import estudianteService from '@/services/estudiante.service';
 
 // Importar componentes PrimeVue
 import Card from 'primevue/card';
@@ -494,320 +597,272 @@ import Dropdown from 'primevue/dropdown';
 import Badge from 'primevue/badge';
 import Chart from 'primevue/chart';
 import ProgressSpinner from 'primevue/progressspinner';
+import InputText from 'primevue/inputtext';
+import Calendar from 'primevue/calendar';
+import MultiSelect from 'primevue/multiselect';
+import Toast from 'primevue/toast';
 
 const router = useRouter();
 const toast = useToast();
-const chartKey = ref(0);
 
 // ========== ESTADOS PRINCIPALES ==========
-const cargando = ref(false);
-const cargandoInscripciones = ref(false);
-const cargandoPagos = ref(false);
+const cargandoTodo = ref(false);
 const cargandoGrafico = ref(false);
 const ultimaActualizacion = ref(new Date().toLocaleString('es-ES'));
+const horaActual = ref('');
 
-// ========== DATOS REALES ==========
+// ========== FILTROS ==========
+const vistaActiva = ref('todo');
+const busquedaGlobal = ref('');
+const mostrarFiltrosAvanzados = ref(false);
+const filtroFechaDesde = ref(null);
+const filtroFechaHasta = ref(null);
+const filtroEstados = ref([]);
+const resumenModalidades = ref([]);
+
+const opcionesEstados = ref([
+  { label: 'Activo', value: 'activo' },
+  { label: 'En mora', value: 'en_mora' },
+  { label: 'Pendiente', value: 'pendiente' },
+  { label: 'Aprobado', value: 'aprobado' },
+  { label: 'Rechazado', value: 'rechazado' },
+  { label: 'Completado', value: 'completado' }
+]);
+
+// ========== ESTADÍSTICAS COMPLETAS ==========
 const estadisticas = ref({
-  // Inscripciones
+  // Estudiantes
   totalInscripciones: 0,
   inscripcionesActivas: 0,
   inscripcionesEnMora: 0,
   inscripcionesPorVencer: 0,
-
-  // Pagos
+  tasaRenovacion: 0,
+  
+  // Finanzas
   recaudacionTotal: 0,
   recaudacionMes: 0,
+  promedioPago: 0,
+  montoEnMora: 0,
+  gananciasNetas: 0,
+  
+  // Pagos
   pagosPendientes: 0,
   pagosVencidos: 0,
-  pagosVencidosMonto: 0,
-  promedioPago: 0,
-
-  // Otros
-  clasesHoy: 0,
-  tasaRenovacion: 0,
-  montoEnMora: 0,
   totalPagos: 0,
-  pagosPagados: 0
+  pagosPagados: 0,
+  
+  // Reembolsos
+  reembolsosPendientes: 0,
+  reembolsosAprobados: 0,
+  totalReembolsos: 0,
+  reembolsosMes: 0,
+  reembolsosProceso: 0,
+  
+  // Tiempo real
+  clasesHoy: 0,
+  pagosHoy: 0,
+  nuevosEstudiantesHoy: 0,
+  ingresosHoy: 0,
+  reembolsosHoy: 0,
+  balanceDiario: 0
 });
 
-// ========== DATOS PARA LISTAS ==========
-const ultimasInscripciones = ref([]);
+// ========== DATOS ==========
+const ultimosReembolsos = ref([]);
 const ultimosPagos = ref([]);
-const resumenModalidades = ref([]);
-const alertasImportantes = ref([]);
+const ultimasInscripciones = ref([]);
+const alertasUrgentes = ref([]);
 
-// ========== CONFIGURACIÓN GRÁFICO ==========
+// ========== GRÁFICOS ==========
 const periodoGrafico = ref('6m');
 const periodos = ref([
   { label: 'Últimos 3 meses', value: '3m' },
   { label: 'Últimos 6 meses', value: '6m' },
-  { label: 'Último año', value: '1y' },
-  { label: 'Todo el tiempo', value: 'all' }
+  { label: 'Último año', value: '1y' }
 ]);
 
-const chartDataRecaudacion = ref({
-  labels: [],
-  datasets: [
-    {
-      label: 'Recaudación (Bs.)',
-      data: [],
-      fill: true,
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      tension: 0.4,
-      borderWidth: 2
-    }
-  ]
-});
+const chartDataComparativo = ref({});
+const chartOptionsComparativo = ref({});
+const chartDataReembolsos = ref({});
+const chartOptionsPie = ref({});
 
-const chartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: {
-      callbacks: {
-        label: function(context) {
-          return `Bs. ${context.parsed.y.toLocaleString('es-ES', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })}`;
-        }
-      }
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: {
-        callback: function(value) {
-          return `Bs. ${value.toLocaleString('es-ES')}`;
-        }
-      },
-      grid: {
-        color: 'rgba(0, 0, 0, 0.05)'
-      }
-    },
-    x: {
-      grid: {
-        color: 'rgba(0, 0, 0, 0.05)'
-      }
-    }
-  }
-});
-
-// ========== FUNCIONES PRINCIPALES ==========
-async function cargarDatos() {
-  cargando.value = true;
-
+// ========== FUNCIONES PRINCIPALES CORREGIDAS ==========
+async function cargarTodosDatos() {
+  cargandoTodo.value = true;
+  
   try {
-    console.log('📊 Cargando datos del dashboard...');
-
-    // Inicializar datos del gráfico primero
-    inicializarDatosGrafico();
+    console.log('🔄 Cargando todos los datos del dashboard...');
     
-    // Cargar todos los datos
-    await cargarEstadisticasGenerales();
-    await cargarUltimasInscripciones();
-    await cargarUltimosPagos();
-    await cargarResumenModalidades();
-    await cargarAlertasImportantes();
+    // Cargar en paralelo pero con el formato correcto para cada servicio
+    await Promise.all([
+      cargarEstadisticasCompletas(),
+      cargarUltimosReembolsos(),
+      cargarUltimosPagos(),
+      cargarUltimasInscripciones(),
+      cargarAlertasUrgentes(),
+      cargarDatosGraficos(),
+      cargarResumenModalidades()
+    ]);
     
-    // Cargar datos del gráfico al final
-    await cargarDatosGrafico();
-
     ultimaActualizacion.value = new Date().toLocaleString('es-ES');
-
+    actualizarHora();
+    
     toast.add({
       severity: 'success',
       summary: '✅ Datos actualizados',
-      detail: 'Dashboard actualizado correctamente',
+      detail: 'Dashboard completo cargado correctamente',
       life: 3000
     });
-
+    
   } catch (error) {
-    console.error('❌ Error cargando datos del dashboard:', error);
-
+    console.error('❌ Error cargando datos:', error);
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudieron cargar todos los datos del dashboard',
+      detail: 'Error al cargar datos completos',
       life: 4000
     });
   } finally {
-    cargando.value = false;
+    cargandoTodo.value = false;
   }
 }
 
-// ========== FUNCIÓN NUEVA: Inicializar datos del gráfico ==========
-function inicializarDatosGrafico() {
-  chartDataRecaudacion.value = {
-    labels: [],
-    datasets: [
-      {
-        label: 'Recaudación (Bs.)',
-        data: [],
-        fill: true,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.4,
-        borderWidth: 2
-      }
-    ]
-  };
-  chartKey.value++; // Forzar re-render del chart
+// ========== FUNCIONES DE CARGA INDIVIDUALES ==========
+
+// 1. CARGAR ÚLTIMOS REEMBOLSOS (CORREGIDO)
+async function cargarUltimosReembolsos() {
+  try {
+    console.log('🔄 Cargando últimos reembolsos...');
+    
+    // FORMA CORRECTA para reembolsoService
+    const response = await reembolsoService.index(1, 5, {
+      sort: 'created_at',
+      order: 'desc'
+    });
+    
+    console.log('📊 Respuesta reembolsos:', response);
+    
+    // Extraer datos
+    ultimosReembolsos.value = extraerDatos(response);
+    
+    console.log('✅ Reembolsos procesados:', ultimosReembolsos.value.length, 'registros');
+    
+  } catch (error) {
+    console.error('❌ Error cargando últimos reembolsos:', error);
+    
+    // Datos de ejemplo para desarrollo
+    if (import.meta.env.DEV) {
+      console.log('⚠️ Usando datos de ejemplo para desarrollo');
+      ultimosReembolsos.value = [
+        {
+          id: 4,
+          estudiante_id: 12,
+          estudiante: {
+            id: 12,
+            nombres: "Juan",
+            apellidos: "Pérez",
+            ci: "1234567"
+          },
+          monto_reembolsado: 240.00,
+          porcentaje_reembolso: 100,
+          tipo: 'total',
+          metodo: 'efectivo',
+          estado: 'aprobado',
+          motivo: 'devolución',
+          fecha_solicitud: '2026-02-04 21:37:02'
+        }
+      ];
+    } else {
+      ultimosReembolsos.value = [];
+    }
+  }
 }
 
-async function cargarEstadisticasGenerales() {
+// 2. CARGAR ÚLTIMOS PAGOS (CORREGIDO)
+async function cargarUltimosPagos() {
   try {
-    console.log('📊 CARGANDO ESTADÍSTICAS DEL SISTEMA...');
+    console.log('🔄 Cargando últimos pagos...');
     
-    const [responsePagos, responseInscripciones] = await Promise.all([
-      pagoService.index(1, 1000),
-      inscripcionService.index(1, 1000, '', {
-        include: 'estudiante,modalidad'
-      })
+    // FORMA CORRECTA para pagoService
+    const response = await pagoService.index(1, 5, {
+      sort: 'created_at',
+      order: 'desc'
+    });
+    
+    console.log('📊 Respuesta pagos:', response);
+    
+    ultimosPagos.value = extraerDatos(response);
+    
+    console.log('✅ Pagos procesados:', ultimosPagos.value.length, 'registros');
+    
+  } catch (error) {
+    console.error('❌ Error cargando últimos pagos:', error);
+    ultimosPagos.value = [];
+  }
+}
+
+// 3. CARGAR ÚLTIMAS INSCRIPCIONES (YA ESTABA BIEN)
+async function cargarUltimasInscripciones() {
+  try {
+    console.log('🔄 Cargando últimas inscripciones...');
+    
+    // FORMA CORRECTA para inscripcionService
+    const response = await inscripcionService.index(1, 5, '');
+    
+    console.log('📊 Respuesta inscripciones:', response);
+    
+    ultimasInscripciones.value = extraerDatos(response);
+    
+    console.log('✅ Inscripciones procesadas:', ultimasInscripciones.value.length, 'registros');
+    
+  } catch (error) {
+    console.error('❌ Error cargando últimas inscripciones:', error);
+    ultimasInscripciones.value = [];
+  }
+}
+
+// 4. CARGAR ESTADÍSTICAS COMPLETAS (CORREGIDO)
+async function cargarEstadisticasCompletas() {
+  try {
+    console.log('📊 Cargando estadísticas completas...');
+    
+    // Cargar todos los datos necesarios - cada uno con su formato correcto
+    const [pagosPromise, inscripcionesPromise, reembolsosPromise] = await Promise.allSettled([
+      // Pagos: (page, limit, filtros)
+      pagoService.index(1, 1000, {}),
+      
+      // Inscripciones: (page, limit, q)
+      inscripcionService.index(1, 1000, ''),
+      
+      // Reembolsos: (page, per_page, filtros)
+      reembolsoService.index(1, 1000, {})
     ]);
     
+    // Procesar pagos
     let datosPagos = [];
-    if (responsePagos.data) {
-      if (Array.isArray(responsePagos.data)) {
-        datosPagos = responsePagos.data;
-      } else if (responsePagos.data.data && Array.isArray(responsePagos.data.data)) {
-        datosPagos = responsePagos.data.data;
-      } else if (responsePagos.data.success && Array.isArray(responsePagos.data.data)) {
-        datosPagos = responsePagos.data.data;
-      }
+    if (pagosPromise.status === 'fulfilled') {
+      datosPagos = extraerDatos(pagosPromise.value);
     }
     
+    // Procesar inscripciones
     let datosInscripciones = [];
-    if (responseInscripciones.data) {
-      if (Array.isArray(responseInscripciones.data)) {
-        datosInscripciones = responseInscripciones.data;
-      } else if (responseInscripciones.data.data && Array.isArray(responseInscripciones.data.data)) {
-        datosInscripciones = responseInscripciones.data.data;
-      } else if (responseInscripciones.data.success && Array.isArray(responseInscripciones.data.data)) {
-        datosInscripciones = responseInscripciones.data.data;
-      }
+    if (inscripcionesPromise.status === 'fulfilled') {
+      datosInscripciones = extraerDatos(inscripcionesPromise.value);
     }
     
-    console.log(`✅ Cargados ${datosPagos.length} pagos y ${datosInscripciones.length} inscripciones`);
+    // Procesar reembolsos
+    let datosReembolsos = [];
+    if (reembolsosPromise.status === 'fulfilled') {
+      datosReembolsos = extraerDatos(reembolsosPromise.value);
+    }
     
-    // Procesar datos
-    const inscripcionesMap = {};
-    datosInscripciones.forEach(insc => {
-      inscripcionesMap[insc.id] = insc;
-    });
+    console.log(`📈 Datos cargados: ${datosPagos.length} pagos, ${datosInscripciones.length} inscripciones, ${datosReembolsos.length} reembolsos`);
     
-    const pagosProcesados = datosPagos.map(pago => {
-      try {
-        const inscripcion = inscripcionesMap[pago.inscripcion_id];
-        
-        let diasMora = 0;
-        if ((pago.estado === 'pendiente' || pago.estado === 'vencido') && pago.fecha_vencimiento) {
-          const fechaVencimiento = new Date(pago.fecha_vencimiento);
-          const hoy = new Date();
-          hoy.setHours(0, 0, 0, 0);
-          fechaVencimiento.setHours(0, 0, 0, 0);
-          diasMora = Math.max(0, Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24)));
-        }
-        
-        let estadoFinal = (pago.estado || 'pagado').toLowerCase();
-        if (estadoFinal === 'pendiente' && diasMora > 0) {
-          estadoFinal = 'vencido';
-        }
-        
-        return {
-          ...pago,
-          monto: parseFloat(pago.monto || 0),
-          inscripcion: inscripcion || {
-            id: pago.inscripcion_id,
-            estado: 'desconocido',
-            monto_mensual: 0
-          },
-          dias_mora: diasMora,
-          estado: estadoFinal
-        };
-      } catch (error) {
-        console.error(`Error procesando pago ${pago.id}:`, error);
-        return null;
-      }
-    }).filter(pago => pago !== null);
-    
+    // Calcular estadísticas de estudiantes
     const hoy = new Date();
     const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
     
-    let totalRecaudado = 0;
-    let pagosMes = 0;
-    let totalPagos = pagosProcesados.length;
-    let pagosPendientes = 0;
-    let pagosVencidos = 0;
-    let montoPendiente = 0;
-    let montoVencido = 0;
-    let montoEnMora = 0;
-    let inscripcionesEnMora = 0;
-    let totalDeudaMora = 0;
-    
-    pagosProcesados.forEach(pago => {
-      const monto = parseFloat(pago.monto || 0);
-      
-      if (pago.estado === 'pagado') {
-        totalRecaudado += monto;
-        
-        if (pago.fecha_pago) {
-          const fechaPago = new Date(pago.fecha_pago);
-          if (fechaPago >= primerDiaMes && fechaPago <= ultimoDiaMes) {
-            pagosMes += monto;
-          }
-        }
-      }
-      
-      if (pago.estado === 'pendiente') {
-        pagosPendientes++;
-        montoPendiente += monto;
-      }
-      
-      if (pago.estado === 'vencido') {
-        pagosVencidos++;
-        montoVencido += monto;
-        montoEnMora += monto;
-      }
-    });
-    
-    const deudaPorInscripcion = {};
-    
-    pagosProcesados.forEach(pago => {
-      if (!deudaPorInscripcion[pago.inscripcion_id]) {
-        deudaPorInscripcion[pago.inscripcion_id] = {
-          monto_total: parseFloat(pago.inscripcion?.monto_mensual || 0),
-          pagado: 0,
-          pendiente: 0,
-          vencido: 0
-        };
-      }
-      
-      const monto = parseFloat(pago.monto || 0);
-      
-      if (pago.estado === 'pagado') {
-        deudaPorInscripcion[pago.inscripcion_id].pagado += monto;
-      } else if (pago.estado === 'pendiente') {
-        deudaPorInscripcion[pago.inscripcion_id].pendiente += monto;
-      } else if (pago.estado === 'vencido') {
-        deudaPorInscripcion[pago.inscripcion_id].vencido += monto;
-      }
-    });
-    
-    Object.entries(deudaPorInscripcion).forEach(([inscId, deuda]) => {
-      const deudaReal = deuda.monto_total - deuda.pagado;
-      if (deudaReal > 0) {
-        totalDeudaMora += deudaReal;
-        inscripcionesEnMora++;
-      }
-    });
-    
+    // Estadísticas de estudiantes
     const inscripcionesActivas = datosInscripciones.filter(i => 
       (i.estado || '').toLowerCase() === 'activo'
     );
@@ -819,193 +874,478 @@ async function cargarEstadisticasGenerales() {
       return diasRestantes <= 7 && diasRestantes > 0;
     });
     
+    // Estadísticas de pagos
+    const pagosPagados = datosPagos.filter(p => 
+      (p.estado || '').toLowerCase() === 'pagado'
+    );
+    
+    const recaudacionTotal = pagosPagados.reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
+    const recaudacionMes = pagosPagados.filter(p => {
+      if (!p.fecha_pago) return false;
+      const fechaPago = new Date(p.fecha_pago);
+      return fechaPago >= primerDiaMes && fechaPago <= hoy;
+    }).reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
+    
+    // Estadísticas de reembolsos
+    const reembolsosPendientes = datosReembolsos.filter(r => 
+      (r.estado || '').toLowerCase() === 'pendiente'
+    ).length;
+    
+    const reembolsosAprobados = datosReembolsos.filter(r => 
+      (r.estado || '').toLowerCase() === 'aprobado'
+    ).length;
+    
+    const totalReembolsos = datosReembolsos.reduce((sum, r) => 
+      sum + (parseFloat(r.monto_reembolsado) || 0), 0
+    );
+    
+    const reembolsosMes = datosReembolsos.filter(r => {
+      if (!r.fecha_solicitud) return false;
+      const fecha = new Date(r.fecha_solicitud);
+      return fecha >= primerDiaMes && fecha <= hoy;
+    }).reduce((sum, r) => sum + (parseFloat(r.monto_reembolsado) || 0), 0);
+    
+    // Calcular ganancias netas
+    const gananciasNetas = recaudacionTotal - totalReembolsos;
+    
+    // Datos de hoy
+    const hoyInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const hoyFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
+    
+    const pagosHoy = datosPagos.filter(p => {
+      if (!p.fecha_pago || p.estado !== 'pagado') return false;
+      const fecha = new Date(p.fecha_pago);
+      return fecha >= hoyInicio && fecha <= hoyFin;
+    }).length;
+    
+    const ingresosHoy = datosPagos.filter(p => {
+      if (!p.fecha_pago || p.estado !== 'pagado') return false;
+      const fecha = new Date(p.fecha_pago);
+      return fecha >= hoyInicio && fecha <= hoyFin;
+    }).reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
+    
+    const reembolsosHoy = datosReembolsos.filter(r => {
+      if (!r.fecha_solicitud) return false;
+      const fecha = new Date(r.fecha_solicitud);
+      return fecha >= hoyInicio && fecha <= hoyFin;
+    }).reduce((sum, r) => sum + (parseFloat(r.monto_reembolsado) || 0), 0);
+    
+    // Actualizar estadísticas
     estadisticas.value = {
       totalInscripciones: datosInscripciones.length,
       inscripcionesActivas: inscripcionesActivas.length,
-      inscripcionesEnMora: inscripcionesEnMora,
+      inscripcionesEnMora: datosInscripciones.filter(i => (i.estado || '').toLowerCase() === 'en_mora').length,
       inscripcionesPorVencer: inscripcionesPorVencer.length,
+      tasaRenovacion: Math.round((inscripcionesActivas.length / Math.max(datosInscripciones.length, 1)) * 100),
       
-      montoEnMora: totalDeudaMora,
-      pagosVencidos: pagosVencidos,
-      pagosVencidosMonto: montoVencido,
+      recaudacionTotal,
+      recaudacionMes,
+      promedioPago: pagosPagados.length > 0 ? recaudacionTotal / pagosPagados.length : 0,
+      montoEnMora: datosInscripciones.reduce((sum, i) => {
+        if ((i.estado || '').toLowerCase() === 'en_mora') {
+          return sum + (parseFloat(i.modalidad?.precio_mensual) || 0);
+        }
+        return sum;
+      }, 0),
+      gananciasNetas,
       
-      recaudacionTotal: totalRecaudado,
-      recaudacionMes: pagosMes,
-      promedioPago: totalPagos > 0 ? totalRecaudado / totalPagos : 0,
+      pagosPendientes: datosPagos.filter(p => (p.estado || '').toLowerCase() === 'pendiente').length,
+      pagosVencidos: datosPagos.filter(p => (p.estado || '').toLowerCase() === 'vencido').length,
+      totalPagos: datosPagos.length,
+      pagosPagados: pagosPagados.length,
       
-      totalPagos: totalPagos,
-      pagosPagados: pagosProcesados.filter(p => p.estado === 'pagado').length,
-      pagosPendientes: pagosPendientes,
+      reembolsosPendientes,
+      reembolsosAprobados,
+      totalReembolsos,
+      reembolsosMes,
+      reembolsosProceso: datosReembolsos.filter(r => 
+        ['aprobado', 'en_proceso'].includes((r.estado || '').toLowerCase())
+      ).length,
       
       clasesHoy: calcularClasesHoy(inscripcionesActivas),
-      tasaRenovacion: Math.round((inscripcionesActivas.length / 
-        Math.max(datosInscripciones.length, 1)) * 100)
+      pagosHoy,
+      nuevosEstudiantesHoy: datosInscripciones.filter(i => {
+        if (!i.created_at) return false;
+        const fecha = new Date(i.created_at);
+        return fecha >= hoyInicio && fecha <= hoyFin;
+      }).length,
+      ingresosHoy,
+      reembolsosHoy,
+      balanceDiario: ingresosHoy - reembolsosHoy
     };
     
-    console.log('✅ ESTADÍSTICAS FINALES DEL DASHBOARD:', estadisticas.value);
+    console.log('✅ Estadísticas completas cargadas:', estadisticas.value);
     
   } catch (error) {
-    console.error('❌ ERROR cargando estadísticas:', error);
+    console.error('❌ Error cargando estadísticas completas:', error);
   }
 }
 
-async function cargarDatosGrafico() {
+// 5. CARGAR DATOS DE GRÁFICOS (CORREGIDO)
+async function cargarDatosGraficos() {
   cargandoGrafico.value = true;
-  chartKey.value++; // Incrementar key para forzar re-render
   
   try {
-    // 1. Obtener todos los pagos
-    const response = await pagoService.index(1, 1000);
-    let todosPagos = [];
+    console.log('📊 Cargando datos para gráficos...');
     
-    if (response.data) {
-      if (Array.isArray(response.data)) {
-        todosPagos = response.data;
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        todosPagos = response.data.data;
-      } else if (response.data.success && Array.isArray(response.data.data)) {
-        todosPagos = response.data.data;
-      }
+    // Cargar datos para gráfico comparativo - cada uno con su formato correcto
+    const [pagosPromise, reembolsosPromise] = await Promise.allSettled([
+      pagoService.index(1, 1000, {}),
+      reembolsoService.index(1, 1000, {})
+    ]);
+    
+    let pagos = [];
+    let reembolsos = [];
+    
+    if (pagosPromise.status === 'fulfilled') {
+      pagos = extraerDatos(pagosPromise.value);
     }
     
-    console.log(`📊 ${todosPagos.length} pagos cargados para gráfico`);
+    if (reembolsosPromise.status === 'fulfilled') {
+      reembolsos = extraerDatos(reembolsosPromise.value);
+    }
     
-    // 2. Filtrar solo pagos pagados
-    const pagosPagados = todosPagos.filter(p => 
-      (p.estado || '').toLowerCase() === 'pagado' && p.fecha_pago
-    );
+    console.log(`📈 Gráficos: ${pagos.length} pagos, ${reembolsos.length} reembolsos`);
     
-    // 3. Determinar el rango de fechas según el periodo seleccionado
+    // Preparar datos para los últimos 6 meses
     const hoy = new Date();
-    let fechaInicio = new Date();
+    const meses = [];
+    const datosPagos = [];
+    const datosReembolsos = [];
     
-    switch (periodoGrafico.value) {
-      case '3m':
-        fechaInicio.setMonth(hoy.getMonth() - 3);
-        break;
-      case '1y':
-        fechaInicio.setFullYear(hoy.getFullYear() - 1);
-        break;
-      case 'all':
-        if (pagosPagados.length > 0) {
-          const fechas = pagosPagados.map(p => new Date(p.fecha_pago));
-          fechaInicio = new Date(Math.min(...fechas));
-        } else {
-          fechaInicio.setMonth(hoy.getMonth() - 6);
-        }
-        break;
-      default: // '6m'
-        fechaInicio.setMonth(hoy.getMonth() - 6);
+    for (let i = 5; i >= 0; i--) {
+      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
+      meses.push(mes.charAt(0).toUpperCase() + mes.slice(1));
+      
+      // Calcular pagos del mes
+      const primerDiaMes = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+      const ultimoDiaMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+      
+      const totalPagosMes = pagos
+        .filter(p => {
+          if (!p.fecha_pago || p.estado !== 'pagado') return false;
+          const fechaPago = new Date(p.fecha_pago);
+          return fechaPago >= primerDiaMes && fechaPago <= ultimoDiaMes;
+        })
+        .reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0);
+      
+      const totalReembolsosMes = reembolsos
+        .filter(r => {
+          if (!r.fecha_solicitud) return false;
+          const fechaReembolso = new Date(r.fecha_solicitud);
+          return fechaReembolso >= primerDiaMes && fechaReembolso <= ultimoDiaMes;
+        })
+        .reduce((sum, r) => sum + (parseFloat(r.monto_reembolsado) || 0), 0);
+      
+      datosPagos.push(totalPagosMes);
+      datosReembolsos.push(totalReembolsosMes);
     }
     
-    // 4. Agrupar pagos por mes
-    const datosPorMes = {};
-    
-    pagosPagados.forEach(pago => {
-      const fechaPago = new Date(pago.fecha_pago);
-      
-      if (fechaPago >= fechaInicio && fechaPago <= hoy) {
-        const año = fechaPago.getFullYear();
-        const mes = fechaPago.getMonth();
-        
-        const clave = `${año}-${mes}`;
-        
-        if (!datosPorMes[clave]) {
-          datosPorMes[clave] = {
-            año: año,
-            mes: mes,
-            total: 0
-          };
-        }
-        
-        datosPorMes[clave].total += parseFloat(pago.monto || 0);
-      }
-    });
-    
-    // 5. Ordenar por fecha
-    const mesesOrdenados = Object.values(datosPorMes)
-      .sort((a, b) => {
-        if (a.año !== b.año) return a.año - b.año;
-        return a.mes - b.mes;
-      });
-    
-    // 6. Preparar datos para el gráfico
-    const labels = [];
-    const datos = [];
-    
-    mesesOrdenados.forEach(item => {
-      const fecha = new Date(item.año, item.mes, 1);
-      const nombreMes = fecha.toLocaleDateString('es-ES', { month: 'short' });
-      const nombreMesCapitalizado = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-      
-      labels.push(`${nombreMesCapitalizado} ${item.año}`);
-      datos.push(item.total);
-    });
-    
-    // 7. Actualizar datos reactivamente
-    if (labels.length === 0) {
-      chartDataRecaudacion.value = {
-        labels: ['Sin datos'],
-        datasets: [{
-          label: 'Recaudación (Bs.)',
-          data: [0],
+    // Gráfico comparativo
+    chartDataComparativo.value = {
+      labels: meses,
+      datasets: [
+        {
+          label: 'Recaudación',
+          data: datosPagos,
           fill: true,
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          tension: 0.4,
-          borderWidth: 2
-        }]
-      };
-    } else {
-      chartDataRecaudacion.value = {
-        labels: [...labels],
-        datasets: [{
-          label: 'Recaudación (Bs.)',
-          data: [...datos],
+          tension: 0.4
+        },
+        {
+          label: 'Reembolsos',
+          data: datosReembolsos,
           fill: true,
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          tension: 0.4,
-          borderWidth: 2
-        }]
-      };
-    }
-    
-    // 8. IMPORTANTE: Esperar a que Vue actualice el DOM
-    await nextTick();
-    
-    console.log(`✅ Gráfico con ${labels.length} meses de datos`);
-    
-  } catch (error) {
-    console.error('❌ Error cargando datos del gráfico:', error);
-    
-    // Datos de fallback
-    chartDataRecaudacion.value = {
-      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-      datasets: [{
-        label: 'Recaudación (Bs.)',
-        data: [1500, 1800, 1200, 2100, 1900, 2200],
-        fill: true,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.4,
-        borderWidth: 2
-      }]
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.4
+        }
+      ]
     };
     
-    await nextTick();
+    chartOptionsComparativo.value = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return `Bs. ${value.toLocaleString('es-ES')}`;
+            }
+          }
+        }
+      }
+    };
     
+    // Gráfico de distribución de reembolsos
+    const estadosReembolsos = reembolsos.reduce((acc, r) => {
+      const estado = r.estado || 'desconocido';
+      acc[estado] = (acc[estado] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const estados = Object.keys(estadosReembolsos);
+    const cantidades = Object.values(estadosReembolsos);
+    const colores = estados.map(e => {
+      switch(e) {
+        case 'pendiente': return '#f59e0b';
+        case 'aprobado': return '#10b981';
+        case 'rechazado': return '#ef4444';
+        case 'completado': return '#3b82f6';
+        default: return '#6b7280';
+      }
+    });
+    
+    chartDataReembolsos.value = {
+      labels: estados.map(e => e.charAt(0).toUpperCase() + e.slice(1)),
+      datasets: [
+        {
+          data: cantidades,
+          backgroundColor: colores,
+          hoverBackgroundColor: colores.map(c => c + 'CC')
+        }
+      ]
+    };
+    
+    chartOptionsPie.value = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    };
+    
+    console.log('✅ Gráficos cargados correctamente');
+    
+  } catch (error) {
+    console.error('❌ Error cargando datos de gráficos:', error);
   } finally {
     cargandoGrafico.value = false;
   }
 }
 
-// ========== WATCHERS ==========
-watch(periodoGrafico, async () => {
-  await cargarDatosGrafico();
-});
+async function debugReembolsosProfundamente() {
+  console.group('🔍 DEBUG PROFUNDO REEMBOLSOS');
+  
+  try {
+    // 1. Probamos la API directamente
+    console.log('1️⃣ Probando API de reembolsos...');
+    const response = await reembolsoService.index(1, 10, {});
+    
+    console.log('📊 Respuesta completa:', response);
+    console.log('📋 Data:', response.data);
+    
+    // 2. Verificamos la estructura
+    if (response.data) {
+      console.log('🔍 Estructura data:');
+      console.log('- Tipo:', typeof response.data);
+      console.log('- Es array:', Array.isArray(response.data));
+      console.log('- Keys:', Object.keys(response.data));
+      
+      // Si tiene propiedad data
+      if (response.data.data) {
+        console.log('📦 Data.data encontrado:', response.data.data);
+        console.log('- Tipo data.data:', typeof response.data.data);
+        console.log('- Es array data.data:', Array.isArray(response.data.data));
+        
+        if (Array.isArray(response.data.data)) {
+          console.log('🔢 Número de reembolsos:', response.data.data.length);
+          if (response.data.data.length > 0) {
+            console.log('📄 Primer reembolso:', response.data.data[0]);
+          }
+        }
+      }
+      
+      // Si tiene propiedad success
+      if (response.data.success !== undefined) {
+        console.log('✅ Success:', response.data.success);
+        console.log('📝 Message:', response.data.message);
+      }
+    }
+    
+    // 3. Probamos con diferentes parámetros
+    console.log('\n2️⃣ Probando con diferentes parámetros...');
+    
+    // Sin filtros
+    const sinFiltros = await reembolsoService.index(1, 10, {});
+    console.log('Sin filtros:', sinFiltros.data);
+    
+    // Con estado pendiente
+    const pendientes = await reembolsoService.index(1, 10, { estado: 'pendiente' });
+    console.log('Pendientes:', pendientes.data);
+    
+    // Con estado aprobado
+    const aprobados = await reembolsoService.index(1, 10, { estado: 'aprobado' });
+    console.log('Aprobados:', aprobados.data);
+    
+    // Todos los estados
+    const todos = await reembolsoService.index(1, 1000, {});
+    console.log('Todos (limit 1000):', todos.data);
+    
+  } catch (error) {
+    console.error('❌ Error en debug:', error);
+    console.error('❌ Detalles error:', error.response?.data || error.message);
+  }
+  
+  console.groupEnd();
+}
 
-// Función simplificada para calcular clases hoy
+// En onMounted, hazla disponible globalmente
+window.debugReembolsos = debugReembolsosProfundamente;
+
+
+function extraerDatos(response) {
+  console.log('🔄 Procesando respuesta...');
+  
+  if (!response || !response.data) {
+    console.warn('⚠️ Respuesta vacía o sin data');
+    return [];
+  }
+  
+  const data = response.data;
+  
+  // DEBUG ESPECÍFICO PARA REEMBOLSOS
+  if (response.config && response.config.url && response.config.url.includes('reembolsos')) {
+    console.log('🎯 DEBUG REEMBOLSOS - Estructura completa:');
+    console.log('- URL:', response.config.url);
+    console.log('- Data:', data);
+    console.log('- Tipo data:', typeof data);
+    console.log('- Es array:', Array.isArray(data));
+    console.log('- Keys:', Object.keys(data));
+    
+    // Log detallado para estructura anidada
+    if (data.data) {
+      console.log('- Data.data:', data.data);
+      console.log('- Tipo data.data:', typeof data.data);
+      console.log('- Es array data.data:', Array.isArray(data.data));
+      
+      // Si data.data es un objeto con propiedad data
+      if (data.data.data && Array.isArray(data.data.data)) {
+        console.log('- Data.data.data (¡ESTÁN AQUÍ!):', data.data.data);
+        console.log('- Cantidad reembolsos:', data.data.data.length);
+        if (data.data.data.length > 0) {
+          console.log('- Primer reembolso:', data.data.data[0]);
+        }
+      }
+    }
+  }
+  
+  // CASO ESPECIAL PARA REEMBOLSOS: {success: true, data: {data: [...], meta: {...}}}
+  if (data.success && data.data) {
+    // Si data.data tiene propiedad data (estructura doble anidada)
+    if (data.data.data && Array.isArray(data.data.data)) {
+      console.log('🎯 Caso especial reembolsos: data.data.data encontrado');
+      console.log('✅ Extrayendo', data.data.data.length, 'reembolsos');
+      return data.data.data;
+    }
+    
+    // Si data.data es un array directamente
+    if (Array.isArray(data.data)) {
+      console.log('✅ Caso 2: data.data es array, tamaño:', data.data.length);
+      return data.data;
+    }
+    
+    // Si data.data es un objeto individual
+    const datos = data.data;
+    const esArray = Array.isArray(datos);
+    console.log('✅ Caso 3: Success response, data es array?:', esArray);
+    
+    if (esArray) {
+      return datos;
+    } else {
+      // Si data es un objeto individual, lo convertimos a array
+      console.log('🔄 Convirtiendo objeto individual a array');
+      return [datos];
+    }
+  }
+  
+  // Resto de casos (mantener igual)...
+  // Caso 1: Array directo
+  if (Array.isArray(data)) {
+    console.log('✅ Caso 1: Array directo, tamaño:', data.length);
+    return data;
+  }
+  
+  // Caso 4: { reembolsos: [] } o estructura personalizada
+  for (const key in data) {
+    if (Array.isArray(data[key])) {
+      console.log(`✅ Caso 4: Array en propiedad "${key}", tamaño:`, data[key].length);
+      return data[key];
+    }
+  }
+  
+  // Caso 5: Objeto individual directamente
+  if (typeof data === 'object' && data !== null && !Array.isArray(data) && data.id) {
+    console.log('✅ Caso 5: Objeto individual con id, convirtiendo a array');
+    return [data];
+  }
+  
+  console.warn('⚠️ Formato no reconocido, retornando array vacío');
+  return [];
+}
+
+
+
+
+
+async function cargarAlertasUrgentes() {
+  try {
+    alertasUrgentes.value = [];
+    
+    // Alertas de pagos vencidos
+    const responsePagos = await pagoService.index(1, 50, '', {
+      estado: 'vencido'
+    });
+    
+    const pagosVencidos = extraerDatos(responsePagos);
+    if (pagosVencidos.length > 0) {
+      alertasUrgentes.value.push({
+        tipo: 'pago_vencido',
+        titulo: `${pagosVencidos.length} Pago(s) Vencido(s)`,
+        descripcion: 'Pagos que requieren atención inmediata',
+        accion: '/admin/pagos'
+      });
+    }
+    
+    // Alertas de reembolsos pendientes
+    if (estadisticas.value.reembolsosPendientes > 5) {
+      alertasUrgentes.value.push({
+        tipo: 'reembolso_pendiente',
+        titulo: `${estadisticas.value.reembolsosPendientes} Reembolso(s) Pendiente(s)`,
+        descripcion: 'Reembolsos esperando revisión',
+        accion: '/admin/reembolsos'
+      });
+    }
+    
+    // Alertas de inscripciones por vencer
+    if (estadisticas.value.inscripcionesPorVencer > 0) {
+      alertasUrgentes.value.push({
+        tipo: 'inscripcion_vencer',
+        titulo: `${estadisticas.value.inscripcionesPorVencer} Inscripción(es) por Vencer`,
+        descripcion: 'Inscripciones que vencen en 7 días',
+        accion: '/admin/inscripciones'
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error cargando alertas:', error);
+    alertasUrgentes.value = [];
+  }
+}
+
+
+
+// ========== FUNCIONES AUXILIARES ==========
 function calcularClasesHoy(inscripciones) {
   try {
     const hoy = new Date();
@@ -1014,7 +1354,6 @@ function calcularClasesHoy(inscripciones) {
     const diaHoy = diasSemana[diaSemana];
 
     let clasesHoy = 0;
-
     const inscripcionesActivas = inscripciones.filter(i => {
       const estado = (i.estado || '').toLowerCase().trim();
       return estado === 'activo';
@@ -1037,67 +1376,6 @@ function calcularClasesHoy(inscripciones) {
   } catch (error) {
     console.error('Error calculando clases hoy:', error);
     return 0;
-  }
-}
-
-async function cargarUltimasInscripciones() {
-  cargandoInscripciones.value = true;
-  try {
-    const response = await inscripcionService.index(1, 5, '', {
-      sort: 'created_at',
-      order: 'desc',
-      include: 'estudiante,modalidad'
-    });
-
-    let datos = [];
-
-    if (response.data) {
-      if (Array.isArray(response.data)) {
-        datos = response.data;
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        datos = response.data.data;
-      } else if (response.data.success && Array.isArray(response.data.data)) {
-        datos = response.data.data;
-      }
-    }
-
-    ultimasInscripciones.value = datos.slice(0, 5);
-
-  } catch (error) {
-    console.error('Error cargando últimas inscripciones:', error);
-    ultimasInscripciones.value = [];
-  } finally {
-    cargandoInscripciones.value = false;
-  }
-}
-
-async function cargarUltimosPagos() {
-  cargandoPagos.value = true;
-  try {
-    const response = await pagoService.index(1, 5, '', {
-      sort: 'fecha_pago',
-      order: 'desc'
-    });
-
-    let datos = [];
-
-    if (response.data) {
-      if (Array.isArray(response.data)) {
-        datos = response.data;
-      } else if (response.data.data && Array.isArray(response.data.data)) {
-        datos = response.data.data;
-      } else if (response.data.success && Array.isArray(response.data.data)) {
-        datos = response.data.data;
-      }
-    }
-
-    ultimosPagos.value = datos.slice(0, 5);
-
-  } catch (error) {
-    console.error('Error cargando últimos pagos:', error);
-    ultimosPagos.value = [];
-  } finally {
-    cargandoPagos.value = false;
   }
 }
 
@@ -1152,167 +1430,42 @@ async function cargarResumenModalidades() {
   }
 }
 
-async function cargarAlertasImportantes() {
-  try {
-    const hoy = new Date();
-
-    const responsePagos = await pagoService.index(1, 50, '', {
-      estado: 'pendiente'
-    });
-
-    let pagosPendientes = [];
-    if (responsePagos.data) {
-      if (Array.isArray(responsePagos.data)) {
-        pagosPendientes = responsePagos.data;
-      } else if (responsePagos.data.data && Array.isArray(responsePagos.data.data)) {
-        pagosPendientes = responsePagos.data.data;
-      }
-    }
-
-    const pagosVencidos = pagosPendientes.filter(pago => {
-      if (!pago.fecha_vencimiento) return false;
-      const fechaVencimiento = new Date(pago.fecha_vencimiento);
-      return fechaVencimiento < hoy;
-    });
-
-    const responseInscripciones = await inscripcionService.index(1, 50, '', {
-      estado: 'activo'
-    });
-
-    let inscripcionesActivas = [];
-    if (responseInscripciones.data) {
-      if (Array.isArray(responseInscripciones.data)) {
-        inscripcionesActivas = responseInscripciones.data;
-      } else if (responseInscripciones.data.data && Array.isArray(responseInscripciones.data.data)) {
-        inscripcionesActivas = responseInscripciones.data.data;
-      }
-    }
-
-    const inscripcionesPorVencer = inscripcionesActivas.filter(insc => {
-      if (!insc.fecha_fin) return false;
-      const fechaFin = new Date(insc.fecha_fin);
-      const diffDias = Math.ceil((fechaFin - hoy) / (1000 * 60 * 60 * 24));
-      return diffDias <= 3 && diffDias >= 0;
-    });
-
-    alertasImportantes.value = [];
-
-    if (pagosVencidos.length > 0) {
-      alertasImportantes.value.push({
-        tipo: 'pago_vencido',
-        titulo: `${pagosVencidos.length} Pago(s) Vencido(s)`,
-        descripcion: `Hay ${pagosVencidos.length} pagos que han vencido y necesitan atención`,
-        fecha: 'Urgente',
-        accion: {
-          texto: 'Ver pagos',
-          icono: 'pi pi-credit-card',
-          ruta: '/admin/historialpagos'
-        }
-      });
-    }
-
-    if (inscripcionesPorVencer.length > 0) {
-      alertasImportantes.value.push({
-        tipo: 'inscripcion_por_vencer',
-        titulo: `${inscripcionesPorVencer.length} Inscripción(es) por Vencer`,
-        descripcion: `${inscripcionesPorVencer.length} inscripciones vencen en los próximos 3 días`,
-        fecha: 'Próximamente',
-        accion: {
-          texto: 'Renovar',
-          icono: 'pi pi-refresh',
-          ruta: '/admin/inscripciones'
-        }
-      });
-    }
-
-    if (estadisticas.value.inscripcionesEnMora > 5) {
-      alertasImportantes.value.push({
-        tipo: 'mora_alta',
-        titulo: 'Alta Morosidad',
-        descripcion: `${estadisticas.value.inscripcionesEnMora} inscripciones están en mora`,
-        fecha: 'Requiere acción',
-        accion: {
-          texto: 'Gestionar',
-          icono: 'pi pi-exclamation-triangle',
-          ruta: '/admin/inscripciones?estado=en_mora'
-        }
-      });
-    }
-
-  } catch (error) {
-    console.error('Error cargando alertas:', error);
-    alertasImportantes.value = [];
-  }
+function actualizarHora() {
+  const ahora = new Date();
+  horaActual.value = ahora.toLocaleTimeString('es-ES', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    second: '2-digit' 
+  });
 }
 
-// ========== FUNCIONES AUXILIARES ==========
-function calcularProgresoPromedio() {
-  const max = 500;
-  return Math.min(100, (estadisticas.value.promedioPago / max) * 100);
-}
-
-function calcularProgresoClases() {
-  const max = 50;
-  return Math.min(100, (estadisticas.value.clasesHoy / max) * 100);
-}
-
-function calcularProgresoVencimientos() {
-  const max = 20;
-  return Math.min(100, (estadisticas.value.inscripcionesPorVencer / max) * 100);
-}
-
-function getColorTasaRenovacion() {
-  if (estadisticas.value.tasaRenovacion >= 80) return 'text-green-600';
-  if (estadisticas.value.tasaRenovacion >= 60) return 'text-yellow-600';
+function getColorTasa(tasa) {
+  if (tasa >= 80) return 'text-green-600';
+  if (tasa >= 60) return 'text-yellow-600';
   return 'text-red-600';
 }
 
-function getClaseProgressBarRenovacion() {
-  if (estadisticas.value.tasaRenovacion >= 80) return 'bg-green-100';
-  if (estadisticas.value.tasaRenovacion >= 60) return 'bg-yellow-100';
-  return 'bg-red-100';
-}
-
-function getIniciales(estudiante) {
-  if (!estudiante) return '?';
-  const nombres = (estudiante.nombres || '').split(' ');
-  const apellidos = (estudiante.apellidos || '').split(' ');
-
-  const inicialNombre = nombres[0] ? nombres[0][0] : '';
-  const inicialApellido = apellidos[0] ? apellidos[0][0] : '';
-
-  if (!inicialNombre && !inicialApellido) {
-    if (estudiante.id) {
-      return String(estudiante.id).slice(-2);
-    }
-    return '??';
-  }
-
-  return (inicialNombre + inicialApellido).toUpperCase();
-}
-
-function getNombreCompleto(estudiante) {
-  if (!estudiante) return 'Desconocido';
-  return `${estudiante.nombres || ''} ${estudiante.apellidos || ''}`.trim() || 'Desconocido';
-}
-
-function getNombreEstudiante(pago) {
-  return `Estudiante #${pago.estudiante_id || pago.inscripcion_id}`;
+function getColorBalance(balance) {
+  if (balance > 0) return 'text-green-600';
+  if (balance < 0) return 'text-red-600';
+  return 'text-500';
 }
 
 function getSeveridadEstado(estado) {
-  switch (estado?.toLowerCase()) {
+  switch ((estado || '').toLowerCase()) {
     case 'activo': return 'success';
-    case 'en_mora': return 'danger';
+    case 'en_mora': 
+    case 'vencido': 
+    case 'rechazado': return 'danger';
     case 'pendiente': return 'warning';
-    case 'vencido': return 'danger';
-    case 'suspendido': return 'secondary';
+    case 'aprobado': return 'info';
+    case 'completado': return 'success';
     default: return 'info';
   }
 }
 
 function getSeveridadEstadoPago(estado) {
-  switch (estado?.toLowerCase()) {
+  switch ((estado || '').toLowerCase()) {
     case 'pagado': return 'success';
     case 'pendiente': return 'warning';
     case 'vencido': return 'danger';
@@ -1320,28 +1473,43 @@ function getSeveridadEstadoPago(estado) {
   }
 }
 
-function getClaseAlerta(tipo) {
-  switch (tipo) {
-    case 'pago_vencido': return 'alerta-pago-vencido';
-    case 'inscripcion_por_vencer': return 'alerta-inscripcion-vencer';
-    case 'mora_alta': return 'alerta-mora-alta';
-    default: return 'alerta-info';
+function getIniciales(estudiante) {
+  if (!estudiante) return '??';
+  
+  // Si es un objeto con propiedades
+  if (typeof estudiante === 'object') {
+    const nombres = estudiante.nombres || '';
+    const apellidos = estudiante.apellidos || '';
+    
+    if (nombres && apellidos) {
+      return (nombres[0] + apellidos[0]).toUpperCase();
+    } else if (nombres) {
+      return nombres.slice(0, 2).toUpperCase();
+    }
   }
+  
+  // Si es solo un ID
+  return '??';
 }
 
-function getIconoAlerta(tipo) {
-  switch (tipo) {
-    case 'pago_vencido': return 'pi pi-exclamation-triangle text-red-500';
-    case 'inscripcion_por_vencer': return 'pi pi-calendar-times text-orange-500';
-    case 'mora_alta': return 'pi pi-money-bill text-red-500';
-    default: return 'pi pi-info-circle text-blue-500';
+function getNombreCompleto(estudiante) {
+  if (!estudiante) return 'Desconocido';
+  
+  // Si es un objeto con propiedades
+  if (typeof estudiante === 'object') {
+    const nombre = `${estudiante.nombres || ''} ${estudiante.apellidos || ''}`.trim();
+    return nombre || 'Desconocido';
   }
+  
+  // Si es solo un ID
+  return `Estudiante #${estudiante}`;
 }
 
-function ejecutarAccionAlerta(alerta) {
-  if (alerta.accion && alerta.accion.ruta) {
-    router.push(alerta.accion.ruta);
+function getNombreEstudiante(pago) {
+  if (pago.inscripcion?.estudiante) {
+    return getNombreCompleto(pago.inscripcion.estudiante);
   }
+  return `Estudiante #${pago.estudiante_id || pago.inscripcion_id}`;
 }
 
 function formatMonto(monto) {
@@ -1361,27 +1529,120 @@ function formatFechaCorta(fecha) {
   });
 }
 
+function calcularMargen() {
+  const ingresos = estadisticas.value.recaudacionTotal;
+  const reembolsos = estadisticas.value.totalReembolsos;
+  if (ingresos === 0) return 0;
+  return Math.round(((ingresos - reembolsos) / ingresos) * 100);
+}
+
+function getClaseAlerta(tipo) {
+  switch (tipo) {
+    case 'pago_vencido': return 'alerta-urgente-pago';
+    case 'reembolso_pendiente': return 'alerta-urgente-reembolso';
+    case 'inscripcion_vencer': return 'alerta-urgente-inscripcion';
+    default: return 'alerta-urgente-info';
+  }
+}
+
+function getIconoAlerta(tipo) {
+  switch (tipo) {
+    case 'pago_vencido': return 'pi pi-exclamation-triangle text-red-500';
+    case 'reembolso_pendiente': return 'pi pi-money-bill-wave text-orange-500';
+    case 'inscripcion_vencer': return 'pi pi-calendar-times text-yellow-500';
+    default: return 'pi pi-info-circle text-blue-500';
+  }
+}
+
+function ejecutarAccionAlerta(alerta) {
+  if (alerta.accion) {
+    router.push(alerta.accion);
+  }
+}
+
+function verDetalleReembolso(reembolso) {
+  router.push(`/admin/reembolsos/${reembolso.id}`);
+}
+
+// ========== NAVEGACIÓN ==========
+function irAEstudiantes() {
+  router.push('/admin/estudiantes');
+}
+
 function irAInscripciones() {
   router.push('/admin/inscripciones');
 }
 
 function irAPagos() {
-  router.push('/admin/historialpagos');
+  router.push('/admin/pagos');
+}
+
+function irAReembolsos() {
+  router.push('/admin/reembolsos');
+}
+
+// ========== ACCIONES RÁPIDAS ==========
+function nuevoPago() {
+  router.push('/admin/pagos/nuevo');
+}
+
+function nuevoReembolso() {
+  router.push('/admin/reembolsos/nuevo');
+}
+
+function nuevaInscripcion() {
+  router.push('/admin/inscripciones/nueva');
+}
+
+function generarReporte() {
+  toast.add({
+    severity: 'info',
+    summary: 'Reporte',
+    detail: 'Generando reporte diario...',
+    life: 3000
+  });
+  // Aquí iría la lógica para generar el reporte
+}
+
+function aplicarFiltros() {
+  toast.add({
+    severity: 'success',
+    summary: 'Filtros aplicados',
+    detail: 'Filtros aplicados correctamente',
+    life: 3000
+  });
+}
+
+function limpiarFiltros() {
+  filtroFechaDesde.value = null;
+  filtroFechaHasta.value = null;
+  filtroEstados.value = [];
+  busquedaGlobal.value = '';
+  
+  toast.add({
+    severity: 'info',
+    summary: 'Filtros limpiados',
+    detail: 'Todos los filtros han sido limpiados',
+    life: 3000
+  });
+}
+
+function filtrarDatosGlobales() {
+  // Lógica de filtrado global
+  console.log('Buscando:', busquedaGlobal.value);
 }
 
 // ========== INICIALIZACIÓN ==========
 onMounted(() => {
-  // Inicializar datos del gráfico primero
-  inicializarDatosGrafico();
+  cargarTodosDatos();
   
-  // Pequeño delay para asegurar que Chart.js esté listo
-  setTimeout(() => {
-    cargarDatos();
-  }, 100);
+  // Actualizar hora cada segundo
+  setInterval(actualizarHora, 1000);
   
+  // Actualizar datos automáticamente cada 5 minutos
   setInterval(() => {
-    if (!cargando.value) {
-      cargarDatos();
+    if (!cargandoTodo.value) {
+      cargarTodosDatos();
     }
   }, 5 * 60 * 1000);
 });
@@ -1390,12 +1651,13 @@ onMounted(() => {
 <style scoped>
 .dashboard-container {
   padding: 1.5rem;
-  max-width: 1800px;
+  max-width: 1920px;
   margin: 0 auto;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
 }
 
+/* Header */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -1422,13 +1684,16 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-/* Tarjetas mejoradas */
+/* Tarjetas */
+.dashboard-cards {
+  margin-bottom: 2rem;
+}
+
 .stat-card {
   border-radius: 12px;
   border: none;
   transition: all 0.3s ease;
   height: 100%;
-  background: white;
   position: relative;
   overflow: hidden;
 }
@@ -1438,20 +1703,16 @@ onMounted(() => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
-.stat-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--card-gradient));
+.highlight-card {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px var(--highlight-color) !important;
+  z-index: 10;
 }
 
-.stat-card:nth-child(1) { --card-gradient: #3b82f6, #60a5fa; }
-.stat-card:nth-child(2) { --card-gradient: #10b981, #34d399; }
-.stat-card:nth-child(3) { --card-gradient: #f59e0b, #fbbf24; }
-.stat-card:nth-child(4) { --card-gradient: #8b5cf6, #a78bfa; }
+.student-card { --highlight-color: #3b82f6; }
+.finance-card { --highlight-color: #10b981; }
+.payment-card { --highlight-color: #f59e0b; }
+.refund-card { --highlight-color: #ef4444; }
 
 .card-icon {
   width: 40px;
@@ -1461,46 +1722,135 @@ onMounted(() => {
   justify-content: center;
 }
 
-/* Paneles de estado */
-.panel-estado {
+/* Filtros */
+.filtros-rapidos {
+  margin-bottom: 2rem;
+}
+
+.view-btn {
+  border-radius: 20px !important;
+  padding: 0.5rem 1.25rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.view-btn-active {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+  color: white !important;
+  border-color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.search-input {
+  border-radius: 20px !important;
+  padding-left: 2.5rem !important;
+}
+
+/* Tiempo Real */
+.real-time-card {
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  overflow: hidden;
-}
-
-.panel-header {
   padding: 1rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 1.1rem;
+  height: 100%;
+  transition: all 0.3s ease;
 }
 
-.panel-content {
-  padding: 1rem;
+.real-time-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.estado-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.estado-item:last-child {
-  border-bottom: none;
-}
-
-.estado-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+.real-time-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: white;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 1rem;
 }
 
-.estado-icon i {
-  font-size: 1.2rem;
+.real-time-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.real-time-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.alert-card {
+  border: 1px solid #fecaca !important;
+  background: linear-gradient(to right, #fef2f2, white);
+}
+
+.alerta-urgente {
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.alerta-urgente:hover {
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alerta-urgente-pago {
+  border-left: 4px solid #ef4444;
+}
+
+.alerta-urgente-reembolso {
+  border-left: 4px solid #f59e0b;
+}
+
+.alerta-urgente-inscripcion {
+  border-left: 4px solid #3b82f6;
+}
+
+/* Resumen Financiero */
+.financial-summary-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.financial-summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.financial-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.financial-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.financial-detail {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Acciones Rápidas */
+.quick-action-btn {
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-3px);
 }
 
 /* Responsive */
@@ -1517,6 +1867,11 @@ onMounted(() => {
   
   .stat-card {
     margin-bottom: 1rem;
+  }
+  
+  .view-btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem;
   }
 }
 </style>

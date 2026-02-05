@@ -7438,6 +7438,8 @@ function calcularEstadisticas() {
     i.estado === 'activo' || i.estado === 'activo'
   ).length;
 
+  
+
   const porVencer = inscripciones.value.filter(i => {
     const estadoActivo = i.estado === 'activo' || i.estado === 'activo';
     const diasRestantes = i.dias_restantes || 0;

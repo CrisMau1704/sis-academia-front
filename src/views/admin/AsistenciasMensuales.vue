@@ -171,22 +171,12 @@
                 <ProgressSpinner />
                 <p class="text-500 mt-2">Cargando datos de evolución...</p>
               </div>
-              <div v-else-if="chartDataEvolucion.labels && chartDataEvolucion.labels.length > 0" class="chart-container">
-                <Chart type="line" :data="chartDataEvolucion" :options="chartOptionsLine" height="300" />
-                <div class="chart-legend">
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #10B981"></span>
-                    <span>Asistencias</span>
-                  </div>
-                  <div class="legend-item">
-                    <span class="legend-color" style="background: #EF4444"></span>
-                    <span>Ausencias</span>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="chart-empty">
+              <div v-else-if="!tieneDatosGrafico" class="chart-empty">
                 <i class="pi pi-chart-line text-400" style="font-size: 3rem"></i>
                 <p class="text-500 mt-2">No hay datos disponibles para mostrar</p>
+              </div>
+              <div v-else class="chart-container">
+                <Chart type="line" :data="datosGraficoEvolucion" :options="opcionesGraficoLinea" height="300" />
               </div>
             </template>
           </Card>
@@ -204,8 +194,8 @@
                   </div>
                 </template>
                 <template #content>
-                  <div v-if="chartDataModalidad.labels && chartDataModalidad.labels.length > 0" class="small-chart-container">
-                    <Chart type="doughnut" :data="chartDataModalidad" :options="chartOptionsDoughnut" height="200" />
+                  <div v-if="tieneDatosModalidad" class="small-chart-container">
+                    <Chart type="doughnut" :data="datosGraficoModalidad" :options="opcionesGraficoDona" height="200" />
                   </div>
                   <div v-else class="text-center py-4">
                     <small class="text-500">Sin datos</small>
@@ -223,8 +213,8 @@
                   </div>
                 </template>
                 <template #content>
-                  <div v-if="chartDataDias.labels && chartDataDias.labels.length > 0" class="small-chart-container">
-                    <Chart type="bar" :data="chartDataDias" :options="chartOptionsBar" height="200" />
+                  <div v-if="tieneDatosDias" class="small-chart-container">
+                    <Chart type="bar" :data="datosGraficoDias" :options="opcionesGraficoBarras" height="200" />
                   </div>
                   <div v-else class="text-center py-4">
                     <small class="text-500">Sin datos</small>
@@ -236,8 +226,6 @@
         </div>
       </div>
     </div>
-
-   
 
     <!-- TABLA DETALLADA MEJORADA -->
     <div class="detailed-section">
@@ -328,17 +316,6 @@
               </template>
             </Column>
             
-            <Column header="Acciones" style="width: 100px">
-              <template #body="slotProps">
-                <div class="action-cell">
-                  <Button icon="pi pi-eye" class="p-button-rounded p-button-text p-button-sm" 
-                    @click="verDetalleEstudiante(slotProps.data)" tooltip="Ver detalle" />
-                  <Button icon="pi pi-download" class="p-button-rounded p-button-text p-button-sm ml-1" 
-                    @click="exportarEstudiante(slotProps.data)" tooltip="Exportar reporte" />
-                </div>
-              </template>
-            </Column>
-            
             <template #empty>
               <div class="empty-table">
                 <i class="pi pi-inbox text-400" style="font-size: 3rem"></i>
@@ -351,30 +328,6 @@
       </Card>
     </div>
 
-    <!-- FOOTER DEL REPORTE -->
-    <div class="report-footer">
-      <Card class="footer-card">
-        <template #content>
-          <div class="footer-content">
-            <div class="footer-info">
-              <i class="pi pi-info-circle text-primary"></i>
-              <small class="text-500 ml-2">
-                Reporte generado el {{ fechaGeneracion }} • 
-                {{ asistenciasDetalladas.length }} estudiantes analizados •
-                Período: {{ mesActualLabel }}
-              </small>
-            </div>
-            <div class="footer-actions">
-              <Button label="Imprimir Reporte" icon="pi pi-print" severity="secondary" 
-                @click="imprimirReporte" outlined />
-              <Button label="Descargar PDF" icon="pi pi-file-pdf" severity="danger" 
-                @click="exportarPDF" class="ml-2" />
-            </div>
-          </div>
-        </template>
-      </Card>
-    </div>
-
     <Toast />
   </div>
 </template>
@@ -382,7 +335,6 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import { useRouter } from 'vue-router';
 
 // Componentes PrimeVue
 import Card from 'primevue/card';
@@ -399,13 +351,12 @@ import Chart from 'primevue/chart';
 import Badge from 'primevue/badge';
 import Toast from 'primevue/toast';
 
-// Servicios (ajusta según tus servicios)
+// Servicios
 import asistenciaService from '@/services/asistencia.service';
 import modalidadService from '@/services/modalidad.service';
 import sucursalService from '@/services/sucursal.service';
 
 const toast = useToast();
-const router = useRouter();
 
 // Estados
 const cargando = ref(false);
@@ -420,7 +371,7 @@ const filtros = ref({
   sucursal_id: null
 });
 
-// Estadísticas INICIALIZADAS CON VALORES POR DEFECTO
+// Estadísticas
 const estadisticas = ref({
   totalAsistencias: 0,
   totalAusencias: 0,
@@ -428,56 +379,7 @@ const estadisticas = ref({
   estudiantesActivos: 0
 });
 
-// Datos para gráficos INICIALIZADOS
-const chartDataEvolucion = ref({
-  labels: [],
-  datasets: []
-});
-
-const chartDataModalidad = ref({
-  labels: [],
-  datasets: []
-});
-
-const chartDataDias = ref({
-  labels: [],
-  datasets: []
-});
-
-// Opciones de gráficos
-const chartOptionsLine = ref({
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'top'
-    }
-  }
-});
-
-const chartOptionsDoughnut = ref({
-  responsive: true,
-  plugins: {
-    legend: {
-      position: 'bottom'
-    }
-  }
-});
-
-const chartOptionsBar = ref({
-  responsive: true,
-  scales: {
-    y: {
-      beginAtZero: true
-    }
-  },
-  plugins: {
-    legend: {
-      display: false
-    }
-  }
-});
-
-// Computed properties
+// Computed properties optimizadas
 const fechaGeneracion = computed(() => {
   return new Date().toLocaleDateString('es-ES', {
     day: '2-digit',
@@ -499,44 +401,31 @@ const mesActualLabel = computed(() => {
 const promedioAsistenciasPorEstudiante = computed(() => {
   if (estadisticas.value.estudiantesActivos === 0) return 0;
   const promedio = estadisticas.value.totalAsistencias / estadisticas.value.estudiantesActivos;
-  return Math.round(promedio * 10) / 10; // Un decimal
+  return Math.round(promedio * 10) / 10;
 });
 
 const asistenciasFiltradas = computed(() => {
-  let filtradas = asistencias.value;
-
-  // Filtrar por mes seleccionado
   const mes = mesSeleccionado.value.getMonth() + 1;
   const año = mesSeleccionado.value.getFullYear();
-  
-  filtradas = filtradas.filter(a => {
+
+  return asistencias.value.filter(a => {
     if (!a.fecha) return false;
     const fecha = new Date(a.fecha);
-    return fecha.getMonth() + 1 === mes && fecha.getFullYear() === año;
+    
+    const coincideMes = fecha.getMonth() + 1 === mes && fecha.getFullYear() === año;
+    const coincideModalidad = !filtros.value.modalidad_id || a.modalidad_id === filtros.value.modalidad_id;
+    const coincideSucursal = !filtros.value.sucursal_id || a.sucursal_id === filtros.value.sucursal_id;
+    
+    return coincideMes && coincideModalidad && coincideSucursal;
   });
-
-  // Filtrar por modalidad
-  if (filtros.value.modalidad_id) {
-    filtradas = filtradas.filter(a => a.modalidad_id === filtros.value.modalidad_id);
-  }
-
-  // Filtrar por sucursal
-  if (filtros.value.sucursal_id) {
-    filtradas = filtradas.filter(a => a.sucursal_id === filtros.value.sucursal_id);
-  }
-
-  return filtradas;
 });
 
 const asistenciasDetalladas = computed(() => {
-  // Agrupar asistencias por estudiante para el mes actual
-  const agrupadas = {};
-  
-  asistenciasFiltradas.value.forEach(asistencia => {
+  const agrupadas = asistenciasFiltradas.value.reduce((acc, asistencia) => {
     const key = asistencia.estudiante_id;
     
-    if (!agrupadas[key]) {
-      agrupadas[key] = {
+    if (!acc[key]) {
+      acc[key] = {
         estudiante_id: asistencia.estudiante_id,
         estudiante_nombre: asistencia.estudiante_nombre || 'Sin nombre',
         modalidad_nombre: asistencia.modalidad_nombre || 'Sin modalidad',
@@ -546,43 +435,186 @@ const asistenciasDetalladas = computed(() => {
       };
     }
     
-    if (asistencia.estado === 'asistio') {
-      agrupadas[key].asistencias_mes++;
-    } else if (asistencia.estado === 'ausente') {
-      agrupadas[key].ausencias_mes++;
-    }
+    if (asistencia.estado === 'asistio') acc[key].asistencias_mes++;
+    else if (asistencia.estado === 'ausente') acc[key].ausencias_mes++;
     
-    agrupadas[key].total_clases = agrupadas[key].asistencias_mes + agrupadas[key].ausencias_mes;
-  });
+    acc[key].total_clases = acc[key].asistencias_mes + acc[key].ausencias_mes;
+    
+    return acc;
+  }, {});
 
-  // Calcular porcentajes y promedios
   return Object.values(agrupadas).map(estudiante => {
     const porcentaje = estudiante.total_clases > 0 
       ? Math.round((estudiante.asistencias_mes / estudiante.total_clases) * 100)
       : 0;
     
-    const promedioSemanal = Math.round(estudiante.asistencias_mes / 4); // Aprox 4 semanas
-    
     return {
       ...estudiante,
       porcentaje_asistencia: porcentaje,
-      promedio_semanal: promedioSemanal
+      promedio_semanal: Math.round(estudiante.asistencias_mes / 4)
     };
   }).sort((a, b) => b.porcentaje_asistencia - a.porcentaje_asistencia);
 });
 
-const topEstudiantes = computed(() => {
-  return asistenciasDetalladas.value
-    .slice(0, 10) // Top 10
-    .map((est, index) => ({
-      ...est,
-      posicion: index + 1
-    }));
+// Computed properties para gráficos optimizados
+const tieneDatosGrafico = computed(() => {
+  return datosGraficoEvolucion.value?.labels?.length > 0;
 });
 
-const maxAsistencias = computed(() => {
-  if (topEstudiantes.value.length === 0) return 1;
-  return Math.max(...topEstudiantes.value.map(e => e.asistencias_mes));
+const tieneDatosModalidad = computed(() => {
+  return datosGraficoModalidad.value?.labels?.length > 0;
+});
+
+const tieneDatosDias = computed(() => {
+  return datosGraficoDias.value?.labels?.length > 0;
+});
+
+const datosGraficoEvolucion = computed(() => {
+  const ultimos6Meses = getUltimos6Meses();
+  const mesesLabels = ultimos6Meses.map(m => m.label);
+  
+  const datosMensuales = ultimos6Meses.map(fechaMes => {
+    const asistenciasMes = asistencias.value.filter(a => 
+      a.fecha && esMismoMesYAnio(new Date(a.fecha), fechaMes.fecha)
+    );
+    
+    return {
+      asistencias: asistenciasMes.filter(a => a.estado === 'asistio').length,
+      ausencias: asistenciasMes.filter(a => a.estado === 'falto').length
+    };
+  });
+  
+  return {
+    labels: mesesLabels,
+    datasets: [
+      {
+        label: 'Asistencias',
+        data: datosMensuales.map(d => d.asistencias),
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Ausencias',
+        data: datosMensuales.map(d => d.ausencias),
+        borderColor: '#EF4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        fill: true,
+        tension: 0.4
+      }
+    ]
+  };
+});
+
+const datosGraficoModalidad = computed(() => {
+  const modalidadesMap = asistenciasFiltradas.value.reduce((acc, a) => {
+    if (a.estado === 'asistio') {
+      const modalidad = a.modalidad_nombre || 'Sin modalidad';
+      acc[modalidad] = (acc[modalidad] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  return {
+    labels: Object.keys(modalidadesMap),
+    datasets: [{
+      data: Object.values(modalidadesMap),
+      backgroundColor: [
+        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
+        '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
+      ],
+      borderWidth: 1
+    }]
+  };
+});
+
+const datosGraficoDias = computed(() => {
+  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const asistenciasPorDia = new Array(7).fill(0);
+  
+  asistenciasFiltradas.value.forEach(a => {
+    if (a.estado === 'asistio' && a.fecha) {
+      const fecha = new Date(a.fecha);
+      const dia = fecha.getDay();
+      const index = dia === 0 ? 6 : dia - 1;
+      asistenciasPorDia[index]++;
+    }
+  });
+  
+  return {
+    labels: diasSemana,
+    datasets: [{
+      label: 'Asistencias',
+      data: asistenciasPorDia,
+      backgroundColor: '#3B82F6',
+      borderRadius: 4
+    }]
+  };
+});
+
+// Opciones de gráficos optimizadas
+const opcionesGraficoLinea = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        usePointStyle: true,
+        padding: 20
+      }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0
+      }
+    }
+  },
+  interaction: {
+    intersect: false,
+    mode: 'nearest'
+  }
+});
+
+const opcionesGraficoDona = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom'
+    }
+  }
+});
+
+const opcionesGraficoBarras = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: false
+    }
+  }
 });
 
 // Funciones de utilidad
@@ -596,34 +628,6 @@ function getNivelAsistencia(porcentaje) {
   if (porcentaje >= 80) return 'Bueno';
   if (porcentaje >= 70) return 'Regular';
   return 'Necesita mejorar';
-}
-
-function getTopCardClass(index) {
-  if (index === 0) return 'top-1';
-  if (index === 1) return 'top-2';
-  if (index === 2) return 'top-3';
-  return '';
-}
-
-function getRankClass(index) {
-  if (index === 0) return 'rank-1';
-  if (index === 1) return 'rank-2';
-  if (index === 2) return 'rank-3';
-  return 'rank-other';
-}
-
-function getRankIcon(index) {
-  if (index === 0) return '🥇';
-  if (index === 1) return '🥈';
-  if (index === 2) return '🥉';
-  return `#${index + 1}`;
-}
-
-function getAvatarClassByRank(index) {
-  if (index === 0) return 'avatar-gold';
-  if (index === 1) return 'avatar-silver';
-  if (index === 2) return 'avatar-bronze';
-  return '';
 }
 
 function getPerformanceLabel(porcentaje) {
@@ -657,72 +661,41 @@ function getIniciales(nombre) {
   return partes[0][0].toUpperCase();
 }
 
-function formatFecha(fecha) {
-  if (!fecha) return '--';
-  const date = new Date(fecha);
-  return date.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit'
-  });
+// Funciones auxiliares para gráficos
+function getUltimos6Meses() {
+  const meses = [];
+  const hoy = new Date();
+  
+  for (let i = 5; i >= 0; i--) {
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    meses.push({
+      fecha: fecha,
+      label: fecha.toLocaleDateString('es-ES', { 
+        month: 'short' 
+      }).toUpperCase()
+    });
+  }
+  
+  return meses;
+}
+
+function esMismoMesYAnio(fecha1, fecha2) {
+  return fecha1.getMonth() === fecha2.getMonth() && 
+         fecha1.getFullYear() === fecha2.getFullYear();
 }
 
 // Funciones principales
 async function cargarDatos() {
   cargando.value = true;
   try {
-    // Cargar modalidades
-    await cargarModalidades();
-    
-    // Cargar sucursales
-    await cargarSucursales();
-    
-    // Cargar asistencias
-    const seisMesesAtras = new Date();
-    seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
-    
-    console.log('📅 Cargando asistencias desde:', seisMesesAtras.toISOString().split('T')[0]);
-    
-    const response = await asistenciaService.index(1, 1000, '', {
-      fecha_desde: seisMesesAtras.toISOString().split('T')[0],
-      include: 'estudiante,modalidad,sucursal'
-    });
+    await Promise.all([
+      cargarModalidades(),
+      cargarSucursales(),
+      cargarAsistencias()
+    ]);
 
-    let datos = [];
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      datos = response.data.data;
-    } else if (Array.isArray(response.data)) {
-      datos = response.data;
-    } else if (response.data?.items) {
-      datos = response.data.items;
-    }
-
-    // Procesar asistencias
-    asistencias.value = datos.map(a => {
-      return {
-        id: a.id,
-        estudiante_id: a.estudiante_id,
-        estudiante_nombre: a.estudiante_nombre || 
-          `${a.estudiante?.nombres || ''} ${a.estudiante?.apellidos || ''}`.trim() || 
-          'Sin nombre',
-        modalidad_id: a.modalidad_id,
-        modalidad_nombre: a.modalidad_nombre || a.modalidad?.nombre || 'Sin modalidad',
-        sucursal_id: a.sucursal_id,
-        sucursal_nombre: a.sucursal_nombre || a.sucursal?.nombre || 'Sin sucursal',
-        fecha: a.fecha,
-        estado: a.estado || 'sin estado',
-        hora_entrada: a.hora_entrada,
-        hora_salida: a.hora_salida
-      };
-    });
-
-    console.log('📊 Asistencias cargadas:', asistencias.value.length);
-
-    // Calcular estadísticas
     calcularEstadisticas();
     
-    // Actualizar gráficos
-    actualizarGraficos();
-
     toast.add({
       severity: 'success',
       summary: 'Datos cargados',
@@ -773,202 +746,99 @@ async function cargarModalidades() {
 
 async function cargarSucursales() {
   try {
-    console.log('📡 Cargando sucursales...');
     const response = await sucursalService.index(1, 100);
-    
-    console.log('📦 Respuesta completa:', response);
-    console.log('📊 Estructura de datos:', response.data);
     
     let datos = [];
     
-    // TU ESTRUCTURA ESPECÍFICA: { data: { data: [...], total: X } }
     if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      console.log('✅ Estructura identificada: response.data.data');
       datos = response.data.data;
-    }
-    // Fallback por si acaso
-    else if (Array.isArray(response.data)) {
-      console.log('⚠️ Estructura alternativa: response.data (array directo)');
+    } else if (Array.isArray(response.data)) {
       datos = response.data;
-    }
-    else if (response.data?.items && Array.isArray(response.data.items)) {
-      console.log('⚠️ Estructura alternativa: response.data.items');
+    } else if (response.data?.items && Array.isArray(response.data.items)) {
       datos = response.data.items;
     }
     
-    console.log('✅ Sucursales obtenidas:', datos.length, 'registros');
-    
-    if (datos.length > 0) {
-      console.log('📝 Primer registro:', datos[0]);
-      console.log('📝 Campos disponibles:', Object.keys(datos[0]));
-    }
-    
-    // Transformar los datos asegurando que tengan los campos correctos
     sucursales.value = [
       { id: null, nombre: 'Todas las sucursales' },
-      ...datos.map(s => {
-        // Busca el campo de nombre (puede variar según tu API)
-        const nombre = s.nombre || s.nombre_sucursal || s.descripcion || s.titulo || 'Sin nombre';
-        
-        return {
-          id: s.id || s.sucursal_id || s.codigo,
-          nombre: nombre
-        };
-      }).filter(s => s.id !== undefined && s.id !== null) // Filtrar registros sin ID
+      ...datos.map(s => ({
+        id: s.id || s.sucursal_id || s.codigo,
+        nombre: s.nombre || s.nombre_sucursal || s.descripcion || s.titulo || 'Sin nombre'
+      })).filter(s => s.id !== undefined && s.id !== null)
     ];
-    
-    console.log('🏪 Lista final de sucursales para dropdown:', sucursales.value);
-    
-    if (sucursales.value.length === 1) {
-      console.warn('⚠️ Solo se cargó la opción "Todas las sucursales"');
-    }
-    
+
   } catch (error) {
-    console.error('❌ Error cargando sucursales:', error);
-    console.error('❌ Detalles del error:', error.response?.data || error.message);
+    console.error('Error cargando sucursales:', error);
     
-    // Datos de ejemplo para desarrollo
-    if (process.env.NODE_ENV === 'development' || true) {
-      console.warn('⚠️ Usando datos de ejemplo para desarrollo');
+    if (process.env.NODE_ENV === 'development') {
       sucursales.value = [
         { id: null, nombre: 'Todas las sucursales' },
         { id: 1, nombre: 'Sucursal Principal' },
         { id: 2, nombre: 'Sucursal Norte' },
-        { id: 3, nombre: 'Sucursal Sur' },
-        { id: 4, nombre: 'Sucursal Este' },
-        { id: 5, nombre: 'Sucursal Oeste' }
+        { id: 3, nombre: 'Sucursal Sur' }
       ];
     } else {
       sucursales.value = [{ id: null, nombre: 'Todas las sucursales' }];
     }
-    
-    toast.add({
-      severity: 'warn',
-      summary: 'Atención',
-      detail: 'No se pudieron cargar las sucursales. Usando datos de ejemplo.',
-      life: 3000
-    });
   }
 }
 
+async function cargarAsistencias() {
+  const seisMesesAtras = new Date();
+  seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
 
+  const response = await asistenciaService.index(1, 1000, '', {
+    fecha_desde: seisMesesAtras.toISOString().split('T')[0],
+    include: 'estudiante,modalidad,sucursal'
+  });
 
+  let datos = [];
+  if (response.data?.success && Array.isArray(response.data.data)) {
+    datos = response.data.data;
+  } else if (Array.isArray(response.data)) {
+    datos = response.data;
+  } else if (response.data?.items) {
+    datos = response.data.items;
+  }
+
+  asistencias.value = datos.map(a => ({
+    id: a.id,
+    estudiante_id: a.estudiante_id,
+    estudiante_nombre: a.estudiante_nombre ||
+      `${a.estudiante?.nombres || ''} ${a.estudiante?.apellidos || ''}`.trim() ||
+      'Sin nombre',
+    modalidad_id: a.modalidad_id,
+    modalidad_nombre: a.modalidad_nombre || a.modalidad?.nombre || 'Sin modalidad',
+    sucursal_id: a.sucursal_id,
+    sucursal_nombre: a.sucursal_nombre || a.sucursal?.nombre || 'Sin sucursal',
+    fecha: a.fecha,
+    estado: a.estado || 'sin estado',
+    hora_entrada: a.hora_entrada,
+    hora_salida: a.hora_salida
+  }));
+}
 
 function calcularEstadisticas() {
-  const asistenciasMes = asistenciasFiltradas.value || [];
-  
-  console.log('📊 Calculando estadísticas con:', asistenciasMes.length, 'registros');
-  
+  const asistenciasMes = asistenciasFiltradas.value;
+
   const totalAsistencias = asistenciasMes.filter(a => a.estado === 'asistio').length;
-  const totalAusencias = asistenciasMes.filter(a => a.estado === 'ausente').length;
+  const totalAusencias = asistenciasMes.filter(a => a.estado === 'falto').length;
   const totalRegistros = totalAsistencias + totalAusencias;
   
-  // Calcular porcentaje de asistencia (con validación)
   const porcentajeAsistencia = totalRegistros > 0 
     ? Math.round((totalAsistencias / totalRegistros) * 100)
     : 0;
-  
-  // Contar estudiantes únicos con asistencia este mes
+
   const estudiantesUnicos = new Set(
     asistenciasMes
       .filter(a => a.estudiante_id)
       .map(a => a.estudiante_id)
   );
-  
-  // Actualizar estadísticas de forma reactiva
+
   estadisticas.value = {
     totalAsistencias,
     totalAusencias,
     porcentajeAsistencia,
     estudiantesActivos: estudiantesUnicos.size
-  };
-  
-  console.log('📈 Estadísticas calculadas:', estadisticas.value);
-}
-
-function actualizarGraficos() {
-  // Gráfico de evolución (últimos 6 meses)
-  const meses = [];
-  const asistenciasPorMes = [];
-  const ausenciasPorMes = [];
-  
-  for (let i = 5; i >= 0; i--) {
-    const fecha = new Date();
-    fecha.setMonth(fecha.getMonth() - i);
-    
-    const mes = fecha.toLocaleDateString('es-ES', { month: 'short' });
-    meses.push(mes.charAt(0).toUpperCase() + mes.slice(1));
-    
-    const asistenciasMes = asistencias.value.filter(a => {
-      if (!a.fecha) return false;
-      const fechaAsistencia = new Date(a.fecha);
-      return fechaAsistencia.getMonth() === fecha.getMonth() && 
-             fechaAsistencia.getFullYear() === fecha.getFullYear();
-    });
-    
-    asistenciasPorMes.push(asistenciasMes.filter(a => a.estado === 'asistio').length);
-    ausenciasPorMes.push(asistenciasMes.filter(a => a.estado === 'ausente').length);
-  }
-  
-  chartDataEvolucion.value = {
-    labels: meses,
-    datasets: [
-      {
-        label: 'Asistencias',
-        data: asistenciasPorMes,
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        fill: true
-      },
-      {
-        label: 'Ausencias',
-        data: ausenciasPorMes,
-        borderColor: '#EF4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        fill: true
-      }
-    ]
-  };
-
-  // Gráfico por modalidad (doughnut)
-  const modalidadesMap = {};
-  asistenciasFiltradas.value.forEach(a => {
-    const modalidad = a.modalidad_nombre;
-    if (!modalidadesMap[modalidad]) modalidadesMap[modalidad] = 0;
-    if (a.estado === 'asistio') modalidadesMap[modalidad]++;
-  });
-  
-  chartDataModalidad.value = {
-    labels: Object.keys(modalidadesMap),
-    datasets: [{
-      data: Object.values(modalidadesMap),
-      backgroundColor: [
-        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
-        '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
-      ]
-    }]
-  };
-
-  // Gráfico por día de la semana
-  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const asistenciasPorDia = [0, 0, 0, 0, 0, 0, 0];
-  
-  asistenciasFiltradas.value.forEach(a => {
-    if (a.estado === 'asistio' && a.fecha) {
-      const fecha = new Date(a.fecha);
-      const dia = fecha.getDay(); // 0=Dom, 1=Lun, ...
-      const index = dia === 0 ? 6 : dia - 1; // Ajustar para que Lun=0
-      asistenciasPorDia[index]++;
-    }
-  });
-  
-  chartDataDias.value = {
-    labels: diasSemana,
-    datasets: [{
-      label: 'Asistencias',
-      data: asistenciasPorDia,
-      backgroundColor: '#3B82F6'
-    }]
   };
 }
 
@@ -978,55 +848,20 @@ function cambiarMes(incremento) {
   mesSeleccionado.value = nuevaFecha;
   
   calcularEstadisticas();
-  actualizarGraficos();
 }
 
 function cambiarMesSeleccionado() {
   calcularEstadisticas();
-  actualizarGraficos();
 }
 
 function aplicarFiltros() {
   calcularEstadisticas();
-  actualizarGraficos();
 }
 
 function limpiarFiltros() {
   filtros.value.modalidad_id = null;
   filtros.value.sucursal_id = null;
-  aplicarFiltros();
-}
-
-function verDetalleEstudiante(estudiante) {
-  toast.add({
-    severity: 'info',
-    summary: 'Detalle de Estudiante',
-    detail: `Ver detalles de ${estudiante.estudiante_nombre}`,
-    life: 3000
-  });
-  // Aquí podrías navegar a una vista detallada
-}
-
-function exportarEstudiante(estudiante) {
-  toast.add({
-    severity: 'info',
-    summary: 'Exportar Reporte Individual',
-    detail: `Generando reporte para ${estudiante.estudiante_nombre}`,
-    life: 3000
-  });
-}
-
-function imprimirReporte() {
-  window.print();
-}
-
-function exportarPDF() {
-  toast.add({
-    severity: 'info',
-    summary: 'Exportar PDF',
-    detail: 'Funcionalidad de exportación PDF en desarrollo',
-    life: 3000
-  });
+  calcularEstadisticas();
 }
 
 function exportarExcel() {
@@ -1040,7 +875,7 @@ function exportarExcel() {
 
 // Watch para cambios en los filtros
 watch([() => filtros.value.modalidad_id, () => filtros.value.sucursal_id], () => {
-  aplicarFiltros();
+  calcularEstadisticas();
 }, { deep: true });
 
 // Cargar datos al montar el componente
@@ -1316,14 +1151,7 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.chart-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-
+.chart-loading,
 .chart-empty {
   display: flex;
   flex-direction: column;
@@ -1333,24 +1161,10 @@ onMounted(() => {
   color: #9ca3af;
 }
 
-.chart-legend {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+.chart-container {
+  position: relative;
+  height: 320px;
+  padding: 0.5rem;
 }
 
 .chart-card-small {
@@ -1373,182 +1187,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* TOP STUDENTS SECTION */
-.top-students-section {
-  margin-bottom: 2rem;
-}
-
-.top-card {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: white;
-}
-
-.top-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.trophy-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.trophy-icon i {
-  font-size: 1.5rem;
-  color: white;
-}
-
-.top-students-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1rem;
-}
-
-.top-student-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-}
-
-.top-student-card:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.top-student-card.top-1 {
-  background: linear-gradient(135deg, #fffbeb, white);
-  border-color: #fbbf24;
-}
-
-.top-student-card.top-2 {
-  background: linear-gradient(135deg, #f0f9ff, white);
-  border-color: #60a5fa;
-}
-
-.top-student-card.top-3 {
-  background: linear-gradient(135deg, #fef3c7, white);
-  border-color: #f59e0b;
-}
-
-.student-rank {
-  flex-shrink: 0;
-}
-
-.rank-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.rank-1 {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #d97706;
-}
-
-.rank-2 {
-  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-  color: #0369a1;
-}
-
-.rank-3 {
-  background: linear-gradient(135deg, #fce7f3, #fbcfe8);
-  color: #be185d;
-}
-
-.rank-other {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.student-avatar {
-  flex-shrink: 0;
-}
-
-.avatar-gold {
-  border: 3px solid #fbbf24;
-}
-
-.avatar-silver {
-  border: 3px solid #9ca3af;
-}
-
-.avatar-bronze {
-  border: 3px solid #d97706;
-}
-
-.student-info {
-  flex: 1;
-}
-
-.student-name {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #1f2937;
-}
-
-.student-detail {
-  color: #6b7280;
-  font-size: 0.75rem;
-  display: block;
-  margin: 0.25rem 0;
-}
-
-.student-stats {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.stat-item {
-  font-size: 0.75rem;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.student-percentage {
-  flex-shrink: 0;
-  min-width: 100px;
-}
-
-.percentage-display {
-  text-align: center;
-}
-
-.percentage-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #10b981;
-}
-
-.percentage-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-}
-
-.student-progress {
-  height: 4px !important;
 }
 
 /* DETAILED TABLE */
@@ -1655,53 +1293,16 @@ onMounted(() => {
   background: #ef4444 !important;
 }
 
-.action-cell {
-  display: flex;
-  gap: 0.25rem;
-}
-
 .empty-table {
   text-align: center;
   padding: 3rem;
   color: #9ca3af;
 }
 
-/* REPORT FOOTER */
-.report-footer {
-  margin-bottom: 1rem;
-}
-
-.footer-card {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: white;
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.footer-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
 /* RESPONSIVE */
 @media (max-width: 1200px) {
   .filters-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .top-students-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -1741,22 +1342,23 @@ onMounted(() => {
     gap: 1rem;
   }
   
-  .footer-content {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+  .chart-container {
+    height: 250px;
   }
 }
 
 @media (max-width: 576px) {
-  .top-student-card {
-    flex-direction: column;
-    text-align: center;
+  .kpi-value {
+    font-size: 2rem;
   }
   
-  .student-stats {
-    flex-direction: column;
-    gap: 0.5rem;
+  .kpi-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .kpi-icon i {
+    font-size: 1.5rem;
   }
 }
 </style>
