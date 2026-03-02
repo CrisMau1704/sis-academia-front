@@ -65,11 +65,18 @@ const fullMenu = [
                 permission: 'manage_students'
             },
             { 
+                label: 'PreInscripciones', 
+                icon: 'pi pi-fw pi-list', 
+                to: '/admin/preinscripciones',
+                permission: 'view_preinscripciones'
+            },
+            { 
                 label: 'Inscripciones', 
                 icon: 'pi pi-fw pi-list', 
                 to: '/admin/inscripciones',
                 permission: 'manage_enrollments'
-            }
+            },
+            
         ]
     },
     {

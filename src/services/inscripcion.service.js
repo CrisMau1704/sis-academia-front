@@ -54,7 +54,41 @@ export default {
     // Obtener inscripciones por estado
     obtenerPorEstado(estado) {
         return Api().get(`/inscripciones/estado/${estado}`);
-    }
+    },
+
+    obtenerPreinscripciones(page = 1, limit = 100, filtros = {}) {
+        let url = `/inscripciones/preinscripciones?page=${page}&limit=${limit}`;
+        
+        const params = new URLSearchParams();
+        if (filtros.buscar) params.append('buscar', filtros.buscar);
+        if (filtros.modalidad_id) params.append('modalidad_id', filtros.modalidad_id);
+        if (filtros.sucursal_id) params.append('sucursal_id', filtros.sucursal_id);
+        if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
+        if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
+        
+        const queryString = params.toString();
+        if (queryString) url += `&${queryString}`;
+        
+        return Api().get(url);
+    },
+
+    // Obtener una preinscripción específica
+    obtenerPreinscripcion(id) {
+        return Api().get(`/inscripciones/${id}`);
+    },
+
+    // Aprobar preinscripción (convertir en activa)
+    aprobarPreinscripcion(id, datos) {
+        return Api().post(`/inscripciones/${id}/aprobar`, datos);
+    },
+
+    // Rechazar preinscripción
+    rechazarPreinscripcion(id, motivo = '') {
+        return Api().post(`/inscripciones/${id}/rechazar`, { motivo });
+    },
+     aprobarPreinscripcion(id, datos) {
+        return Api().post(`/inscripciones/${id}/aprobar`, datos);
+    },
 
     
     

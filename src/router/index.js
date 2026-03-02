@@ -20,16 +20,15 @@ import AsistenciasMensuales from '../views/admin/AsistenciasMensuales.vue'
 import ClasesRestantes from '../views/admin/ClasesRestantes.vue'
 import RecuperarClases from '../views/admin/RecuperarClases.vue'
 import Reembolsos from '../views/admin/Reembolsos.vue'
-
-
+import Preinscripciones from '../views/admin/Preinscripciones.vue'
 
 const routes = [
+  // ===== RUTAS PÚBLICAS (NO REQUIEREN AUTENTICACIÓN) =====
   {
     path: '/',
-    // este codigo se activa si se quiere apuntar a una landing page 
-    //name: 'Home',
-    // component: HomeView
-    redirect: '/login'
+    name: 'Home',
+    component: HomeView,
+    meta: { requiereAuth: false } // ← IMPORTANTE: ESTÁ BIEN ESCRITO
   },
   {
     path: '/login',
@@ -37,10 +36,12 @@ const routes = [
     component: Login,
     meta: { requiereAuth: false }
   },
+
+  // ===== RUTAS PRIVADAS (REQUIEREN AUTENTICACIÓN) =====
   {
     path: '/admin',
     component: AppLayout,
-    meta: { requiereAuth: true },
+    meta: { requiereAuth: true }, // ← TODAS LAS RUTAS HIJO HEREDAN ESTO
     children: [
       {
         path: 'dashboard',
@@ -73,17 +74,21 @@ const routes = [
         component: Inscripciones
       },
       {
+        path: 'preinscripciones',
+        name: 'Preinscripciones',
+        component: Preinscripciones
+      },
+
+      {
         path: 'asistencias',
         name: 'Asistencias',
         component: Asistencias
       },
-
       {
         path: 'recuperarclases',
         name: 'RecuperarClases',
         component: RecuperarClases
       },
-
       {
         path: 'historialpagos',
         name: 'HistorialPago',
@@ -94,24 +99,22 @@ const routes = [
         name: 'Reembolsos',
         component: Reembolsos
       },
-
-     
       {
         path: 'clasesrestantes',
         name: 'ClasesRestantes',
         component: ClasesRestantes
       },
-       {
+      {
         path: 'asistenciasmensuales',
         name: 'AsistenciasMensuales',
         component: AsistenciasMensuales
       },
       {
-                path: 'usuario',
-                name: 'Usuario',
-                component: Usuario,
-                meta:{requiereAuth: true}
-        },
+        path: 'usuario',
+        name: 'Usuario',
+        component: Usuario
+        // NO NECESITA META, HEREDA DEL PADRE
+      },
       {
         path: 'roles',
         name: 'Roles',
@@ -126,11 +129,11 @@ const routes = [
         path: 'entrenadores',
         name: 'Entrenadores',
         component: Entrenadores
-      },
-       
-
+      }
     ]
   },
+
+  // ===== RUTA 404 =====
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -143,18 +146,33 @@ const router = createRouter({
   routes
 })
 
-// Guard para autenticación
+// ============================================
+// GUARD DE NAVEGACIÓN CORREGIDO
+// ============================================
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
+  
+  // 👇 LOGS PARA DEBUG (puedes eliminarlos después)
+  console.log('=== NAVEGACIÓN ===')
+  console.log('📍 Ruta destino:', to.path)
+  console.log('📋 Meta:', to.meta)
+  console.log('🔑 Token existe?', !!token)
+  console.log('❌ requiereAuth?', to.meta.requiereAuth)
 
+  // REGLA 1: Si la ruta requiere auth y NO hay token → Login
   if (to.meta.requiereAuth && !token) {
+    console.log('⏭️ Redirigiendo a Login (requiere autenticación)')
     return next({ name: 'Login' })
   }
 
+  // REGLA 2: Si va al login y YA tiene token → Dashboard
   if (to.name === 'Login' && token) {
+    console.log('⏭️ Redirigiendo a Dashboard (ya está logueado)')
     return next({ name: 'Dashboard' })
   }
 
+  // REGLA 3: Para TODO lo demás (incluyendo Home), permitir acceso
+  console.log('✅ Acceso permitido a:', to.path)
   next()
 })
 

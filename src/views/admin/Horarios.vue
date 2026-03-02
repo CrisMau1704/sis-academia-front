@@ -334,9 +334,7 @@ const modalidades = ref([]);
 const cargando = ref(false);
 const buscar = ref('');
 
-// ... resto de tu código ...
 
-// Filtros
 const diasSemanaOpciones = ref(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']);
 const filtroSucursal = ref(null);
 const filtroDisciplina = ref(null);
@@ -351,13 +349,13 @@ const diasSemana = ref([
   { label: 'Domingo', value: 'Domingo' }
 ]);
 
-// Diálogos
+
 const dialogoHorario = ref(false);
 const tituloDialogo = ref('Nuevo Horario');
 const horarioForm = ref(crearHorarioVacio());
 const guardando = ref(false);
 
-// Computed
+
 const horariosFiltrados = computed(() => {
   let filtrados = horarios.value;
   

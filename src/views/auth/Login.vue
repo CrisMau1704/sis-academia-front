@@ -306,6 +306,10 @@ async function funIngresar() {
                 console.log('→ Redirigiendo a inscripciones (tiene manage_enrollments)');
                 router.push('/admin/inscripciones');
             }
+            else if (permisosGuardados.includes('view_preinscripciones')) {
+                console.log('→ Redirigiendo a preinscripciones (tiene manage_enrollments)');
+                router.push('/admin/preinscripciones');
+            }
             
             // 3. CONTROL DE ASISTENCIAS
             else if (permisosGuardados.includes('manage_attendance')) {
