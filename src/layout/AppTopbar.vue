@@ -5,7 +5,7 @@
             <div class="logo-container">
                 <img src="/demo/images/logo1.jpeg" alt="Logo" class="logo-image">
                 <div class="logo-text">
-                    <span class="logo-title">Sistema de Control</span>
+                    <span class="logo-title">Sistema de Gimnasio</span>
                 </div>
             </div>
         </router-link>

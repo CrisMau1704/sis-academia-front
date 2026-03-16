@@ -15,20 +15,20 @@
             </div>
             <h3>¡Preinscripción enviada con éxito!</h3>
             <p class="success-text">Para completar tu inscripción, realiza el pago y envía el comprobante.</p>
-            
+
             <!-- SECCIÓN DE PAGO QR CON MONTO REAL -->
             <div v-if="datosGuardados" class="pago-section">
               <h4 class="pago-title">
                 <i class="pi pi-credit-card"></i>
                 Realiza tu pago
               </h4>
-              
+
               <div class="qr-container">
                 <!-- Código QR Oficial -->
                 <div class="qr-code">
                   <img src="/public/layout/images/imagenqr.png" alt="Código QR para pago" class="qr-image" />
                 </div>
-                
+
                 <!-- Información del pago con MONTO REAL -->
                 <div class="qr-info">
                   <div class="info-item highlight-item">
@@ -90,13 +90,8 @@
 
               <!-- Botón de WhatsApp -->
               <div class="whatsapp-section">
-                <Button 
-                  :label="`Enviar comprobante por WhatsApp`"
-                  icon="pi pi-whatsapp"
-                  class="whatsapp-button"
-                  @click="enviarWhatsApp"
-                  severity="success"
-                />
+                <Button :label="`Enviar comprobante por WhatsApp`" icon="pi pi-whatsapp" class="whatsapp-button"
+                  @click="enviarWhatsApp" severity="success" />
                 <p class="whatsapp-helper">
                   <i class="pi pi-clock"></i>
                   Te atenderemos en horario de atención: 9:00 AM - 8:00 PM
@@ -117,17 +112,13 @@
               </div>
             </div>
 
-            <Button 
-              label="Enviar otra preinscripción" 
-              icon="pi pi-plus"
-              @click="resetFormulario"
-              class="p-button-outlined mt-4"
-            />
+            <Button label="Enviar otra preinscripción" icon="pi pi-plus" @click="resetFormulario"
+              class="p-button-outlined mt-4" />
           </div>
 
           <!-- Formulario con Stepper -->
           <div v-else class="form-content">
-            
+
             <!-- Stepper de progreso -->
             <div class="stepper-header">
               <div class="step-item" :class="{ active: pasoActual === 1, completed: pasoActual > 1 }">
@@ -149,7 +140,7 @@
             <!-- PASO 1: Datos Personales -->
             <div v-if="pasoActual === 1" class="step-content">
               <h3 class="step-title">📋 Datos Personales</h3>
-              
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="nombres">Nombres *</label>
@@ -168,8 +159,8 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="ci">Carnet de identidad *</label>
-                  <InputText id="ci" v-model="formData.ci" placeholder="Ej: 1234567"
-                    :class="{ 'p-invalid': errors.ci }" :disabled="enviando" />
+                  <InputText id="ci" v-model="formData.ci" placeholder="Ej: 1234567" :class="{ 'p-invalid': errors.ci }"
+                    :disabled="enviando" />
                   <small v-if="errors.ci" class="p-error">{{ errors.ci }}</small>
                 </div>
                 <div class="form-group">
@@ -188,22 +179,21 @@
               </div>
 
               <div class="form-navigation">
-                <Button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" 
-                  @click="irAlPaso2" :disabled="!validarPaso1()" severity="danger" />
+                <Button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" @click="irAlPaso2"
+                  :disabled="!validarPaso1()" severity="danger" />
               </div>
             </div>
 
             <!-- PASO 2: Sucursal y Modalidad -->
             <div v-else-if="pasoActual === 2" class="step-content">
               <h3 class="step-title">🏢 Sucursal y Modalidad</h3>
-              
+
               <div class="form-row">
                 <div class="form-group">
                   <label for="sucursal_id">Sucursal de preferencia *</label>
-                  <Dropdown id="sucursal_id" v-model="formData.sucursal_id" :options="sucursales" 
-                    optionLabel="nombre" optionValue="id" placeholder="Selecciona una sucursal"
-                    :class="{ 'p-invalid': errors.sucursal_id }" :disabled="enviando || cargandoSucursales"
-                    :loading="cargandoSucursales" />
+                  <Dropdown id="sucursal_id" v-model="formData.sucursal_id" :options="sucursales" optionLabel="nombre"
+                    optionValue="id" placeholder="Selecciona una sucursal" :class="{ 'p-invalid': errors.sucursal_id }"
+                    :disabled="enviando || cargandoSucursales" :loading="cargandoSucursales" />
                   <small v-if="errors.sucursal_id" class="p-error">{{ errors.sucursal_id }}</small>
                   <small v-if="formData.sucursal_id && sucursalSeleccionada" class="text-500 block mt-1">
                     <i class="pi pi-map-marker mr-1"></i>
@@ -213,7 +203,7 @@
 
                 <div class="form-group">
                   <label for="modalidad_id">Modalidad de interés *</label>
-                  <Dropdown id="modalidad_id" v-model="formData.modalidad_id" :options="modalidades" 
+                  <Dropdown id="modalidad_id" v-model="formData.modalidad_id" :options="modalidades"
                     optionLabel="nombre" optionValue="id" placeholder="Selecciona una modalidad"
                     :class="{ 'p-invalid': errors.modalidad_id }" :disabled="enviando || cargandoModalidades"
                     :loading="cargandoModalidades" @change="onModalidadChange" />
@@ -237,54 +227,44 @@
               </div>
 
               <div class="form-navigation">
-                <Button label="Anterior" icon="pi pi-arrow-left" @click="pasoActual = 1" class="p-button-outlined mr-2" />
-                <Button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" 
-                  @click="irAlPaso3" :disabled="!validarPaso2()" severity="danger" />
+                <Button label="Anterior" icon="pi pi-arrow-left" @click="pasoActual = 1"
+                  class="p-button-outlined mr-2" />
+                <Button label="Siguiente" icon="pi pi-arrow-right" iconPos="right" @click="irAlPaso3"
+                  :disabled="!validarPaso2()" severity="danger" />
               </div>
             </div>
 
             <!-- PASO 3: Horarios y Fechas -->
             <div v-else-if="pasoActual === 3" class="step-content">
               <h3 class="step-title">⏰ Selecciona tus Horarios y Fechas</h3>
-              
+
               <!-- SELECTOR DE FECHAS -->
               <div class="fechas-container mb-4 p-3 border-round bg-blue-50">
                 <h4 class="mt-0 mb-3">📅 Período de Inscripción</h4>
-                
+
                 <div class="grid">
                   <div class="col-12 md:col-6">
                     <div class="field mb-3">
                       <label class="font-medium block mb-2">Fecha de inicio *</label>
-                      <Calendar 
-                        v-model="formData.fecha_inicio" 
-                        dateFormat="dd/mm/yy" 
-                        class="w-full" 
-                        :minDate="new Date()"
-                        showIcon
-                        :class="{ 'p-invalid': !formData.fecha_inicio }"
-                        :disabled="enviando"
-                      />
+                      <Calendar v-model="formData.fecha_inicio" dateFormat="dd/mm/yy" class="w-full"
+                        :minDate="new Date()" showIcon :class="{ 'p-invalid': !formData.fecha_inicio }"
+                        :disabled="enviando" />
                       <small class="text-500">La inscripción comenzará esta fecha</small>
                     </div>
                   </div>
-                  
+
                   <div class="col-12 md:col-6">
                     <div class="field mb-3">
                       <label class="font-medium block mb-2">Fecha de fin *</label>
-                      <Calendar 
-                        v-model="formData.fecha_fin" 
-                        dateFormat="dd/mm/yy" 
-                        class="w-full" 
-                        :minDate="formData.fecha_inicio || new Date()"
-                        showIcon
-                        :class="{ 'p-invalid': !formData.fecha_fin }"
-                        :disabled="enviando"
-                      />
-                      <small class="text-500">La inscripción terminará esta fecha</small>
+                      <Calendar v-model="formData.fecha_fin" dateFormat="dd/mm/yy" class="w-full" showIcon
+                        :disabled="true" 
+                        readonly 
+                        />
+                        <small class="text-500">La inscripción terminará esta fecha (calculada automáticamente)</small>
                     </div>
                   </div>
                 </div>
-                
+
                 <!-- Mostrar duración calculada -->
                 <div v-if="formData.fecha_inicio && formData.fecha_fin" class="p-2 bg-green-100 border-round mt-2">
                   <div class="flex align-items-center">
@@ -320,15 +300,15 @@
               </div>
 
               <div v-else class="horarios-grid">
-                <div v-for="horario in horariosParaInscripcion" :key="horario.id" 
-                  class="horario-card" :class="{ 'selected': estaSeleccionado(horario.id) }"
-                  @click="toggleHorarioSeleccionado(horario)">
-                  
+                <div v-for="horario in horariosParaInscripcion" :key="horario.id" class="horario-card"
+                  :class="{ 'selected': estaSeleccionado(horario.id) }" @click="toggleHorarioSeleccionado(horario)">
+
                   <div class="horario-header">
                     <div class="horario-dia">{{ horario.dia_semana }}</div>
-                    <div class="horario-hora">{{ horario.hora_inicio?.substring(0,5) }} - {{ horario.hora_fin?.substring(0,5) }}</div>
+                    <div class="horario-hora">{{ horario.hora_inicio?.substring(0, 5) }} - {{
+                      horario.hora_fin?.substring(0,5) }}</div>
                   </div>
-                  
+
                   <div class="horario-body">
                     <div class="horario-info">
                       <i class="pi pi-user"></i>
@@ -358,20 +338,20 @@
               <div v-if="horariosSeleccionados.length > 0" class="mt-4 p-3 border-round bg-blue-50">
                 <h5 class="mt-0 mb-2">✅ Horarios seleccionados ({{ horariosSeleccionados.length }})</h5>
                 <div class="flex flex-wrap gap-2">
-                  <Chip v-for="horario in horariosSeleccionadosDetalles" :key="horario.id" 
-                    :label="`${horario.dia_semana} ${horario.hora_inicio?.substring(0,5)}`" 
-                    removable @remove="quitarHorario(horario.id)" />
+                  <Chip v-for="horario in horariosSeleccionadosDetalles" :key="horario.id"
+                    :label="`${horario.dia_semana} ${horario.hora_inicio?.substring(0, 5)}`" removable
+                    @remove="quitarHorario(horario.id)" />
                 </div>
               </div>
 
               <div class="form-group mt-4">
                 <label for="observaciones">Observaciones (opcional)</label>
-                <Textarea id="observaciones" v-model="formData.observaciones" rows="2" 
+                <Textarea id="observaciones" v-model="formData.observaciones" rows="2"
                   placeholder="Alguna preferencia especial, lesiones, etc." :disabled="enviando" />
               </div>
 
               <div class="form-checkbox">
-                <Checkbox v-model="formData.acepta_terminos" id="terminos" binary 
+                <Checkbox v-model="formData.acepta_terminos" id="terminos" binary
                   :class="{ 'p-invalid': errors.acepta_terminos }" :disabled="enviando" />
                 <label for="terminos" class="checkbox-label">
                   Acepto los términos y condiciones y autorizo el tratamiento de mis datos personales
@@ -380,10 +360,11 @@
               </div>
 
               <div class="form-navigation">
-                <Button label="Anterior" icon="pi pi-arrow-left" @click="pasoActual = 2" class="p-button-outlined mr-2" />
-                <Button :label="enviando ? 'Enviando...' : 'Enviar Preinscripción'" 
-                  :icon="enviando ? 'pi pi-spin pi-spinner' : 'pi pi-send'"
-                  :loading="enviando" @click="enviarFormulario" severity="danger" 
+                <Button label="Anterior" icon="pi pi-arrow-left" @click="pasoActual = 2"
+                  class="p-button-outlined mr-2" />
+                <Button :label="enviando ? 'Enviando...' : 'Enviar Preinscripción'"
+                  :icon="enviando ? 'pi pi-spin pi-spinner' : 'pi pi-send'" :loading="enviando"
+                  @click="enviarFormulario" severity="danger"
                   :disabled="enviando || horariosSeleccionados.length === 0 || !formData.acepta_terminos" />
               </div>
             </div>
@@ -397,7 +378,7 @@
         <!-- Sección de beneficios -->
         <div class="preinscripcion-benefits">
           <h3>¿Por qué elegirnos?</h3>
-          
+
           <div class="benefits-list">
             <div class="benefit-item">
               <div class="benefit-icon-wrapper">
@@ -408,7 +389,7 @@
                 <p>Ven a conocer nuestras instalaciones y metodología sin compromiso</p>
               </div>
             </div>
-            
+
             <div class="benefit-item">
               <div class="benefit-icon-wrapper">
                 <i class="pi pi-star benefit-icon"></i>
@@ -418,7 +399,7 @@
                 <p>Profesionales con amplia experiencia en artes marciales</p>
               </div>
             </div>
-            
+
             <div class="benefit-item">
               <div class="benefit-icon-wrapper">
                 <i class="pi pi-shield benefit-icon"></i>
@@ -428,7 +409,7 @@
                 <p>No necesitas comprar equipo para empezar a entrenar</p>
               </div>
             </div>
-            
+
             <div class="benefit-item">
               <div class="benefit-icon-wrapper">
                 <i class="pi pi-calendar benefit-icon"></i>
@@ -442,7 +423,8 @@
 
           <div class="testimonial-card">
             <i class="pi pi-quote-left" style="font-size: 2rem; color: #f59e0b; opacity: 0.5;"></i>
-            <p class="testimonial-text">"Desde que me uní a Alianza Bolivia MMA, mi vida cambió por completo. Los instructores son excelentes y el ambiente es increíble."</p>
+            <p class="testimonial-text">"Desde que me uní a Alianza Bolivia MMA, mi vida cambió por completo. Los
+              instructores son excelentes y el ambiente es increíble."</p>
             <div class="testimonial-author">
               <Avatar label="CG" shape="circle" class="mr-2" style="background-color: #f59e0b" />
               <div>
@@ -474,7 +456,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue'; // 👈 IMPORTANTE: AÑADIDO 'watch'
 import { useToast } from 'primevue/usetoast';
 import publicService from '@/services/public.service';
 import preinscripcionService from '@/services/preinscripcion.service';
@@ -554,12 +536,12 @@ const modalidadSeleccionada = computed(() => {
 
 const horariosParaInscripcion = computed(() => {
   if (!formData.value.modalidad_id) return [];
-  
+
   return horarios.value
     .filter(h => h.modalidad_id === formData.value.modalidad_id)
     .map(h => ({
       ...h,
-      nombre_horario: `${h.dia_semana} ${h.hora_inicio?.substring(0,5)} - ${h.hora_fin?.substring(0,5)}`
+      nombre_horario: `${h.dia_semana} ${h.hora_inicio?.substring(0, 5)} - ${h.hora_fin?.substring(0, 5)}`
     }));
 });
 
@@ -568,35 +550,144 @@ const horariosParaInscripcion = computed(() => {
 // ============================================
 const mesesDuracion = computed(() => {
   if (!formData.value.fecha_inicio || !formData.value.fecha_fin) return 1;
-  
+
   const inicio = new Date(formData.value.fecha_inicio);
   const fin = new Date(formData.value.fecha_fin);
-  
-  const meses = (fin.getFullYear() - inicio.getFullYear()) * 12 + 
-                (fin.getMonth() - inicio.getMonth());
-  
+
+  const meses = (fin.getFullYear() - inicio.getFullYear()) * 12 +
+    (fin.getMonth() - inicio.getMonth());
+
   return Math.max(1, meses);
 });
 
 const montoRealCalculado = computed(() => {
   if (!modalidadSeleccionada.value) return 0;
-  
+
   const precioMensual = modalidadSeleccionada.value.precio_mensual || 0;
   const meses = mesesDuracion.value;
-  
+
   return precioMensual * meses;
 });
+
+// ============================================
+// FUNCIONES DE VALIDACIÓN ESPECÍFICAS
+// ============================================
+function validarSoloLetras(valor) {
+  return /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]+$/.test(valor);
+}
+
+function validarCI(valor) {
+  return /^[0-9]+(-[0-9]+)?$/.test(valor);
+}
+
+function validarTelefono(valor) {
+  return /^[0-9]{7,15}$/.test(valor);
+}
+
+function validarCorreo(valor) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+}
+
+// ============================================
+// VALIDACIÓN COMPLETA DEL PASO 1 CON ALERTAS
+// ============================================
+function validarPaso1ConAlertas() {
+  // Limpiar errores previos
+  errors.value = {};
+
+  const campos = [
+    {
+      campo: 'nombres',
+      valor: formData.value.nombres?.trim(),
+      nombre: 'Nombres',
+      validacion: validarSoloLetras,
+      mensajeError: 'solo puede contener letras, espacios y apóstrofes'
+    },
+    {
+      campo: 'apellidos',
+      valor: formData.value.apellidos?.trim(),
+      nombre: 'Apellidos',
+      validacion: validarSoloLetras,
+      mensajeError: 'solo puede contener letras, espacios y apóstrofes'
+    },
+    {
+      campo: 'ci',
+      valor: formData.value.ci?.trim(),
+      nombre: 'Carnet de identidad',
+      validacion: validarCI,
+      mensajeError: 'solo puede contener números y un guión opcional (ej: 1234567 o 1234567-8)',
+      minLength: 5
+    },
+    {
+      campo: 'telefono',
+      valor: formData.value.telefono?.trim(),
+      nombre: 'Teléfono',
+      validacion: validarTelefono,
+      mensajeError: 'solo puede contener números (ej: 71234567)',
+      minLength: 7
+    },
+    {
+      campo: 'correo',
+      valor: formData.value.correo?.trim(),
+      nombre: 'Correo Electrónico',
+      validacion: validarCorreo,
+      mensajeError: 'debe ser un correo válido (ej: nombre@dominio.com)'
+    }
+  ];
+
+  let hayErrores = false;
+  const mensajesError = [];
+
+  // Validar cada campo
+  for (const item of campos) {
+    // Validar campo vacío
+    if (!item.valor) {
+      errors.value[item.campo] = `${item.nombre} es obligatorio`;
+      mensajesError.push(`❌ ${item.nombre}: Campo obligatorio`);
+      hayErrores = true;
+      continue;
+    }
+
+    // Validar formato
+    if (!item.validacion(item.valor)) {
+      errors.value[item.campo] = `${item.nombre} ${item.mensajeError}`;
+      mensajesError.push(`❌ ${item.nombre}: ${item.mensajeError}`);
+      hayErrores = true;
+      continue;
+    }
+
+    // Validar longitud mínima para CI y teléfono
+    if (item.minLength && item.valor.replace(/[^0-9]/g, '').length < item.minLength) {
+      errors.value[item.campo] = `${item.nombre} debe tener al menos ${item.minLength} dígitos`;
+      mensajesError.push(`❌ ${item.nombre}: Mínimo ${item.minLength} dígitos`);
+      hayErrores = true;
+    }
+  }
+
+  // Si hay errores, mostrar alerta con todos los mensajes
+  if (hayErrores) {
+    toast.add({
+      severity: 'error',
+      summary: '❌ Errores de validación',
+      detail: mensajesError.join(' • '),
+      life: 6000
+    });
+    return false;
+  }
+
+  return true;
+}
 
 // ============================================
 // FUNCIONES DE VALIDACIÓN POR PASOS
 // ============================================
 function validarPaso1() {
-  return formData.value.nombres?.trim() && 
-         formData.value.apellidos?.trim() && 
-         formData.value.ci?.trim() && 
-         formData.value.telefono?.trim() && 
-         formData.value.correo?.trim() &&
-         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.correo);
+  return formData.value.nombres?.trim() &&
+    formData.value.apellidos?.trim() &&
+    formData.value.ci?.trim() &&
+    formData.value.telefono?.trim() &&
+    formData.value.correo?.trim() &&
+    validarCorreo(formData.value.correo);
 }
 
 function validarPaso2() {
@@ -608,19 +699,18 @@ function validarPaso3() {
 }
 
 // ============================================
-// NAVEGACIÓN ENTRE PASOS
+// NAVEGACIÓN ENTRE PASOS (CORREGIDA CON ALERTAS)
 // ============================================
 function irAlPaso2() {
-  if (!validarPaso1()) {
+  if (validarPaso1ConAlertas()) {
+    pasoActual.value = 2;
     toast.add({
-      severity: 'error',
-      summary: 'Error de validación',
-      detail: 'Completa todos los campos personales correctamente',
-      life: 3000
+      severity: 'success',
+      summary: '✅ Datos correctos',
+      detail: 'Continúa con la selección de sucursal y modalidad',
+      life: 2000
     });
-    return;
   }
-  pasoActual.value = 2;
 }
 
 function irAlPaso3() {
@@ -645,25 +735,25 @@ function estaSeleccionado(horarioId) {
 
 function toggleHorarioSeleccionado(horario) {
   const index = horariosSeleccionados.value.indexOf(horario.id);
-  
+
   if (index === -1) {
     horariosSeleccionados.value = [...horariosSeleccionados.value, horario.id];
     horariosSeleccionadosDetalles.value = [...horariosSeleccionadosDetalles.value, horario];
-    
+
     toast.add({
       severity: 'success',
       summary: 'Horario agregado',
-      detail: `${horario.dia_semana} ${horario.hora_inicio?.substring(0,5)} seleccionado`,
+      detail: `${horario.dia_semana} ${horario.hora_inicio?.substring(0, 5)} seleccionado`,
       life: 1500
     });
   } else {
     horariosSeleccionados.value = horariosSeleccionados.value.filter(id => id !== horario.id);
     horariosSeleccionadosDetalles.value = horariosSeleccionadosDetalles.value.filter(h => h.id !== horario.id);
-    
+
     toast.add({
       severity: 'info',
       summary: 'Horario removido',
-      detail: `${horario.dia_semana} ${horario.hora_inicio?.substring(0,5)} removido`,
+      detail: `${horario.dia_semana} ${horario.hora_inicio?.substring(0, 5)} removido`,
       life: 1500
     });
   }
@@ -747,19 +837,19 @@ function calcularMesesDuracionPreinscripcion() {
 
 function calcularDiasDuracion() {
   if (!formData.value.fecha_inicio || !formData.value.fecha_fin) return 0;
-  
+
   const inicio = new Date(formData.value.fecha_inicio);
   const fin = new Date(formData.value.fecha_fin);
-  
+
   const diffTime = Math.abs(fin - inicio);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   return diffDays + 1;
 }
 
 function calcularClasesEstimadas() {
   if (!modalidadSeleccionada.value || horariosSeleccionados.value.length === 0) return 0;
-  
+
   const clasesPorMes = modalidadSeleccionada.value.clases_mensuales || 12;
   return clasesPorMes * mesesDuracion.value;
 }
@@ -785,7 +875,7 @@ async function enviarFormulario() {
     });
     return;
   }
-  
+
   if (!formData.value.fecha_inicio || !formData.value.fecha_fin) {
     toast.add({
       severity: 'error',
@@ -795,7 +885,7 @@ async function enviarFormulario() {
     });
     return;
   }
-  
+
   if (new Date(formData.value.fecha_fin) <= new Date(formData.value.fecha_inicio)) {
     toast.add({
       severity: 'error',
@@ -805,9 +895,9 @@ async function enviarFormulario() {
     });
     return;
   }
-  
+
   enviando.value = true;
-  
+
   try {
     const datosEnvio = {
       nombres: formData.value.nombres?.trim() || '',
@@ -825,7 +915,7 @@ async function enviarFormulario() {
     };
 
     const response = await preinscripcionService.enviarPreinscripcion(datosEnvio);
-    
+
     if (response.data?.success) {
       // ✅ GUARDAR TODOS LOS DATOS ANTES DE RESETEAR
       datosGuardados.value = {
@@ -845,10 +935,10 @@ async function enviarFormulario() {
           hora_fin: h.hora_fin
         }))
       };
-      
+
       resetFormulario();
       enviadoExitosamente.value = true;
-      
+
       toast.add({
         severity: 'success',
         summary: '✅ ¡Preinscripción exitosa!',
@@ -856,12 +946,12 @@ async function enviarFormulario() {
         life: 5000
       });
     }
-    
+
   } catch (error) {
     console.error('❌ Error:', error);
-    
+
     let mensajeError = 'Error al enviar la preinscripción';
-    
+
     if (error.response?.data?.errors) {
       mensajeError = Object.entries(error.response.data.errors)
         .map(([campo, msgs]) => `${campo}: ${msgs.join(', ')}`)
@@ -869,14 +959,14 @@ async function enviarFormulario() {
     } else if (error.response?.data?.message) {
       mensajeError = error.response.data.message;
     }
-    
+
     toast.add({
       severity: 'error',
       summary: 'Error',
       detail: mensajeError,
       life: 5000
     });
-    
+
   } finally {
     enviando.value = false;
   }
@@ -895,14 +985,14 @@ function enviarWhatsApp() {
     });
     return;
   }
-  
+
   const numero = telefonoWhatsApp.replace(/\D/g, '');
   const mensaje = crearMensajeWhatsApp();
   const mensajeCodificado = encodeURIComponent(mensaje);
   const urlWhatsApp = `https://wa.me/${numero}?text=${mensajeCodificado}`;
-  
+
   window.open(urlWhatsApp, '_blank');
-  
+
   toast.add({
     severity: 'success',
     summary: 'WhatsApp abierto',
@@ -916,7 +1006,7 @@ function enviarWhatsApp() {
 // ============================================
 function crearMensajeWhatsApp() {
   if (!datosGuardados.value) return '';
-  
+
   const fecha = new Date().toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
@@ -924,13 +1014,13 @@ function crearMensajeWhatsApp() {
     hour: '2-digit',
     minute: '2-digit'
   });
-  
-  const horariosTexto = datosGuardados.value.horarios.length > 0 
-    ? datosGuardados.value.horarios.map(h => 
-        `• ${h.dia} ${h.hora_inicio?.substring(0,5)} - ${h.hora_fin?.substring(0,5)}`
-      ).join('\n')
+
+  const horariosTexto = datosGuardados.value.horarios.length > 0
+    ? datosGuardados.value.horarios.map(h =>
+      `• ${h.dia} ${h.hora_inicio?.substring(0, 5)} - ${h.hora_fin?.substring(0, 5)}`
+    ).join('\n')
     : 'No especificados';
-  
+
   return `🔴 *NUEVA PREINSCRIPCIÓN - ALIANZA BOLIVIA MMA*
   
 📋 *DATOS DEL ESTUDIANTE*
@@ -986,7 +1076,6 @@ function resetFormulario() {
   errors.value = {};
   pasoActual.value = 1;
   enviadoExitosamente.value = false;
-  // NOTA: NO reseteamos datosGuardados aquí porque se usa en el mensaje de éxito
 }
 
 // ============================================
@@ -996,6 +1085,24 @@ function resetCompleto() {
   resetFormulario();
   datosGuardados.value = null;
 }
+
+// ============================================
+// WATCH PARA FECHA DE FIN AUTOMÁTICA (CORREGIDO)
+// ============================================
+watch(
+  () => formData.value?.fecha_inicio,
+  (nuevaFechaInicio) => {
+    if (!nuevaFechaInicio) return;
+
+    const fechaInicio = new Date(nuevaFechaInicio);
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setMonth(fechaFin.getMonth() + 1);
+    fechaFin.setDate(fechaFin.getDate() - 1);
+
+    formData.value.fecha_fin = fechaFin;
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -1721,6 +1828,7 @@ function resetCompleto() {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1732,7 +1840,7 @@ function resetCompleto() {
   .preinscripcion-container {
     grid-template-columns: 1fr;
   }
-  
+
   .preinscripcion-benefits {
     position: static;
   }
@@ -1742,43 +1850,43 @@ function resetCompleto() {
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .stepper-header {
     flex-direction: column;
     gap: 1rem;
     background: transparent;
   }
-  
+
   .step-line {
     display: none;
   }
-  
+
   .horarios-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .preinscripcion-form,
   .preinscripcion-benefits {
     padding: 1.5rem;
   }
-  
+
   .section-title {
     font-size: 2rem;
   }
-  
+
   .qr-container {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .qr-code {
     order: 2;
   }
-  
+
   .qr-info {
     order: 1;
   }
-  
+
   .contacto-items {
     flex-direction: column;
   }
@@ -1788,17 +1896,17 @@ function resetCompleto() {
   .preinscripcion {
     padding: 2rem 0;
   }
-  
+
   .step-item {
     width: 100%;
   }
-  
+
   .step-number {
     width: 35px;
     height: 35px;
     font-size: 0.9rem;
   }
-  
+
   .step-label {
     font-size: 0.8rem;
   }

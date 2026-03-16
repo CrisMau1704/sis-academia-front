@@ -53,8 +53,11 @@
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; 2024 Alianza Bolivia MMA. Todos los derechos reservados.</p>
-      <p>Sistema de Gestión Deportiva v1.0</p>
+      <p>&copy; 2026 Alianza Bolivia MMA. Todos los derechos reservados.</p>
+       <p class="developer-credit">
+        <i class="pi pi-crown"></i> 
+        Desarrollado por <span class="developer-name">Cristian Illanes Zambrano - 60108969</span>
+      </p>
     </div>
   </footer>
 </template>

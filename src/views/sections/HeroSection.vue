@@ -1,7 +1,8 @@
 <template>
-  <section class="hero">
+  <section id="inicio" class="hero">
     <div class="hero-overlay"></div>
     
+    <!-- Carrusel de fondo -->
     <div class="hero-carousel">
       <div 
         v-for="(image, index) in images" 
@@ -12,6 +13,7 @@
       ></div>
     </div>
 
+    <!-- Indicadores del carrusel -->
     <div class="carousel-indicators">
       <button 
         v-for="(image, index) in images" 
@@ -22,6 +24,7 @@
       ></button>
     </div>
 
+    <!-- Controles del carrusel -->
     <button class="carousel-control prev" @click="prevSlide">
       <i class="pi pi-chevron-left"></i>
     </button>
@@ -29,6 +32,7 @@
       <i class="pi pi-chevron-right"></i>
     </button>
 
+    <!-- Contenido principal - CON TUS PALABRAS ORIGINALES -->
     <div class="hero-content">
       <div class="hero-text">
         <h3 class="hero-subtitle">ACADEMIA DE ARTES MARCIALES</h3>
@@ -58,6 +62,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Scroll indicator -->
+    <div class="scroll-indicator" @click="$emit('scroll-to-presentacion')">
+      <span class="scroll-text">Descubre más</span>
+      <i class="pi pi-chevron-down"></i>
+    </div>
   </section>
 </template>
 
@@ -65,7 +75,9 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import Button from 'primevue/button';
 
-// ✅ DATOS DE IMÁGENES DENTRO DEL COMPONENTE
+defineEmits(['scroll-to-horarios', 'scroll-to-inscripcion', 'scroll-to-presentacion']);
+
+// Imágenes de alta calidad
 const images = ref([
   'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
   'https://images.unsplash.com/photo-1583473848882-f9a5bc7fd2ee?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
@@ -78,7 +90,6 @@ const currentSlide = ref(0);
 const autoPlayInterval = ref(null);
 const autoPlayDelay = 5000;
 
-// ✅ AHORA USA images.value.length
 const nextSlide = () => {
   currentSlide.value = (currentSlide.value + 1) % images.value.length;
   resetAutoPlay();
@@ -122,25 +133,30 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Copia aquí los estilos de .hero, .hero-carousel, .carousel-slide, etc. 
-   Desde tu HomeView.vue, todo lo relacionado con la sección Hero */
 .hero {
   position: relative;
-  height: 90vh;
-  min-height: 600px;
+  height: 100vh;
+  width: 100%;
   overflow: hidden;
 }
 
+/* Overlay con gradiente mejorado */
 .hero-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.85) 0%,
+    rgba(30, 41, 59, 0.8) 50%,
+    rgba(15, 23, 42, 0.85) 100%
+  );
   z-index: 1;
 }
 
+/* Carrusel */
 .hero-carousel {
   position: absolute;
   top: 0;
@@ -158,30 +174,30 @@ onUnmounted(() => {
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transition: opacity 1s ease-in-out;
-  transform: scale(1.05);
-  animation: zoomEffect 20s infinite;
+  transition: opacity 1.5s ease-in-out;
 }
 
 .carousel-slide.active {
   opacity: 1;
+  animation: zoomEffect 20s infinite;
 }
 
 @keyframes zoomEffect {
   0% {
-    transform: scale(1.05);
+    transform: scale(1);
   }
   50% {
     transform: scale(1.1);
   }
   100% {
-    transform: scale(1.05);
+    transform: scale(1);
   }
 }
 
+/* Indicadores */
 .carousel-indicators {
   position: absolute;
-  bottom: 30px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -207,9 +223,10 @@ onUnmounted(() => {
 .indicator.active {
   background: #dc2626;
   transform: scale(1.2);
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
 }
 
+/* Controles */
 .carousel-control {
   position: absolute;
   top: 50%;
@@ -217,8 +234,8 @@ onUnmounted(() => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: white;
   display: flex;
   align-items: center;
@@ -233,16 +250,18 @@ onUnmounted(() => {
 .carousel-control:hover {
   background: #dc2626;
   border-color: #dc2626;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .carousel-control.prev {
-  left: 20px;
+  left: 30px;
 }
 
 .carousel-control.next {
-  right: 20px;
+  right: 30px;
 }
 
+/* Contenido principal - CON TUS ESTILOS ORIGINALES */
 .hero-content {
   position: relative;
   max-width: 1200px;
@@ -273,6 +292,7 @@ onUnmounted(() => {
   }
 }
 
+/* TUS ESTILOS ORIGINALES */
 .hero-subtitle {
   color: #94a3b8;
   font-size: 1.2rem;
@@ -283,6 +303,7 @@ onUnmounted(() => {
 }
 
 .hero-title {
+  color: #e2e8f0;
   font-size: 4rem;
   font-weight: 800;
   line-height: 1.1;
@@ -351,6 +372,51 @@ onUnmounted(() => {
   transform: translateY(-2px);
 }
 
+/* Scroll indicator - NUEVO */
+.scroll-indicator {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  z-index: 3;
+  cursor: pointer;
+  animation: bounce 2s infinite;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.scroll-indicator:hover {
+  opacity: 1;
+}
+
+.scroll-text {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.scroll-indicator i {
+  font-size: 1.2rem;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+  60% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
   .hero-title {
     font-size: 3rem;
@@ -359,8 +425,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .hero {
-    height: 80vh;
-    min-height: 500px;
+    height: 100vh;
   }
 
   .hero-title {
@@ -400,6 +465,10 @@ onUnmounted(() => {
     width: 8px;
     height: 8px;
   }
+
+  .carousel-indicators {
+    bottom: 80px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -413,6 +482,10 @@ onUnmounted(() => {
 
   .hero-content {
     padding: 0 1rem;
+  }
+
+  .scroll-text {
+    font-size: 0.8rem;
   }
 }
 </style>

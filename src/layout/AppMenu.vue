@@ -12,9 +12,9 @@ const fullMenu = [
     {
         label: 'Inicio',
         items: [
-            { 
-                label: 'Dashboard', 
-                icon: 'pi pi-fw pi-home', 
+            {
+                label: 'Dashboard',
+                icon: 'pi pi-fw pi-home',
                 to: '/admin/dashboard',
                 permission: 'view_dashboard'  // <-- Permiso requerido
             }
@@ -23,33 +23,33 @@ const fullMenu = [
     {
         label: 'Configuración General',
         items: [
-            { 
-                label: 'Sucursales', 
-                icon: 'pi pi-fw pi-map-marker', 
+            {
+                label: 'Sucursales',
+                icon: 'pi pi-fw pi-map-marker',
                 to: '/admin/sucursales',
                 permission: 'manage_branches'
             },
-            { 
-                label: 'Disciplinas', 
-                icon: 'pi pi-fw pi-star', 
+            {
+                label: 'Disciplinas',
+                icon: 'pi pi-fw pi-star',
                 to: '/admin/disciplinas',
                 permission: 'manage_disciplines'
             },
-            { 
-                label: 'Modalidades', 
-                icon: 'pi pi-fw pi-briefcase', 
+            {
+                label: 'Modalidades',
+                icon: 'pi pi-fw pi-briefcase',
                 to: '/admin/modalidades',
                 permission: 'manage_modalities'
             },
-            { 
-                label: 'Horarios', 
-                icon: 'pi pi-fw pi-clock', 
+            {
+                label: 'Horarios',
+                icon: 'pi pi-fw pi-clock',
                 to: '/admin/horarios',
                 permission: 'manage_schedules'
             },
-            { 
-                label: 'Entrenadores', 
-                icon: 'pi pi-fw pi-id-card', 
+            {
+                label: 'Entrenadores',
+                icon: 'pi pi-fw pi-id-card',
                 to: '/admin/entrenadores',
                 permission: 'manage_trainers'
             }
@@ -58,39 +58,39 @@ const fullMenu = [
     {
         label: 'Gestión de Estudiantes',
         items: [
-            { 
-                label: 'Estudiantes', 
-                icon: 'pi pi-fw pi-users', 
+            {
+                label: 'Estudiantes',
+                icon: 'pi pi-fw pi-users',
                 to: '/admin/estudiantes',
                 permission: 'manage_students'
             },
-            { 
-                label: 'PreInscripciones', 
-                icon: 'pi pi-fw pi-list', 
+            {
+                label: 'PreInscripciones',
+                icon: 'pi pi-fw pi-list',
                 to: '/admin/preinscripciones',
                 permission: 'view_preinscripciones'
             },
-            { 
-                label: 'Inscripciones', 
-                icon: 'pi pi-fw pi-list', 
+            {
+                label: 'Inscripciones',
+                icon: 'pi pi-fw pi-list',
                 to: '/admin/inscripciones',
                 permission: 'manage_enrollments'
             },
-            
+
         ]
     },
     {
         label: 'Control de Asistencia',
         items: [
-            { 
-                label: 'Registro Diario', 
-                icon: 'pi pi-fw pi-check-square', 
+            {
+                label: 'Registro Diario',
+                icon: 'pi pi-fw pi-check-square',
                 to: '/admin/asistencias',
                 permission: 'manage_attendance'
             },
-            { 
-                label: 'Recuperar Clases', 
-                icon: 'pi pi-fw pi-refresh', 
+            {
+                label: 'Recuperar Clases',
+                icon: 'pi pi-fw pi-refresh',
                 to: '/admin/recuperarclases',
                 permission: 'manage_class_recovery'
             }
@@ -99,32 +99,44 @@ const fullMenu = [
     {
         label: 'Pagos y Mensualidades',
         items: [
-            { 
-                label: 'Historial de Pagos', 
-                icon: 'pi pi-fw pi-history', 
+            {
+                label: 'Historial de Pagos',
+                icon: 'pi pi-fw pi-history',
                 to: '/admin/historialpagos',
                 permission: 'view_payment_history'
             },
-            { 
-                label: 'Reembolso de Pagos', 
-                icon: 'pi pi-fw pi-chart-bar', 
+
+            {
+                label: 'Reembolso de Pagos',
+                icon: 'pi pi-fw pi-chart-bar',
                 to: '/admin/reembolsos',
                 permission: 'view_reembolsos'
             }
         ]
     },
     {
+        label: 'Gestión de Gastos',  
+        items: [
+            {
+                label: 'Gastos',
+                icon: 'pi pi-fw pi-money-bill',
+                to: '/admin/gastos',
+                permission: 'view_gastos'
+            }
+        ]
+    },
+    {
         label: 'Reportes',
         items: [
-            { 
-                label: 'Clases Restantes', 
-                icon: 'pi pi-fw pi-chart-line', 
+            {
+                label: 'Clases Restantes',
+                icon: 'pi pi-fw pi-chart-line',
                 to: '/admin/clasesrestantes',
                 permission: 'view_remaining_classes'
             },
-            { 
-                label: 'Asistencia Mensual', 
-                icon: 'pi pi-fw pi-chart-bar', 
+            {
+                label: 'Asistencia Mensual',
+                icon: 'pi pi-fw pi-chart-bar',
                 to: '/admin/asistenciasmensuales',
                 permission: 'view_monthly_attendance'
             }
@@ -133,15 +145,15 @@ const fullMenu = [
     {
         label: 'Administración',
         items: [
-            { 
-                label: 'Usuarios', 
-                icon: 'pi pi-fw pi-user', 
+            {
+                label: 'Usuarios',
+                icon: 'pi pi-fw pi-user',
                 to: '/admin/usuario',
                 permission: 'manage_users'
             },
-            { 
-                label: 'Roles y Permisos', 
-                icon: 'pi pi-fw pi-shield', 
+            {
+                label: 'Roles y Permisos',
+                icon: 'pi pi-fw pi-shield',
                 to: '/admin/roles',
                 permission: 'manage_roles'
             }
@@ -154,7 +166,7 @@ onMounted(async () => {
     try {
         // 1. Obtener permisos del usuario
         const response = await rolesService.getMenuPermissions();
-        
+
         // Manejar diferentes estructuras de respuesta
         if (response && response.permisos) {
             userPermissions.value = response.permisos;
@@ -165,12 +177,12 @@ onMounted(async () => {
         } else {
             userPermissions.value = [];
         }
-        
+
         console.log('Permisos del usuario:', userPermissions.value);
-        
+
         // 2. Filtrar menú basado en permisos
         model.value = filterMenuByPermissions(fullMenu);
-        
+
     } catch (error) {
         console.error('Error al cargar permisos:', error);
         // Fallback a lógica antigua por roles
@@ -187,7 +199,7 @@ const filterMenuByPermissions = (menu) => {
                 if (!item.permission) return true; // Si no requiere permiso, mostrarlo
                 return rolesService.hasPermission(userPermissions.value, item.permission);
             });
-            
+
             // Solo mostrar sección si tiene al menos un item visible
             if (filteredItems.length > 0) {
                 return {
@@ -233,115 +245,115 @@ const setMenuByRole = (rol) => {
 /* ESTILOS QUE GARANTIZAN LETRAS BLANCAS EN TODO EL MENÚ */
 
 .layout-menu {
-  background-color: #1f2d3d !important;
-  margin: 0;
-  padding: 1rem 0;
-  
-  /* FORZAR TEXTO BLANCO EN TODOS LOS ELEMENTOS */
-  * {
-    color: #ffffff !important;
-  }
+    background-color: #1f2d3d !important;
+    margin: 0;
+    padding: 1rem 0;
 
-  /* Estilos específicos para garantizar visibilidad */
-  .p-menuitem-text,
-  .p-menu-label,
-  .menu-label,
-  span,
-  a,
-  .p-menuitem-content,
-  .p-submenu-header,
-  .p-menuitem-link {
-    color: #ffffff !important;
-    font-weight: 500;
-  }
-
-  /* Íconos blancos */
-  .pi,
-  .p-menuitem-icon,
-  i {
-    color: #ffffff !important;
-  }
-
-  /* Estados hover */
-  a:hover,
-  .p-menuitem-link:hover {
+    /* FORZAR TEXTO BLANCO EN TODOS LOS ELEMENTOS */
     * {
-      color: #00d8ff !important;
+        color: #ffffff !important;
     }
-    
+
+    /* Estilos específicos para garantizar visibilidad */
+    .p-menuitem-text,
+    .p-menu-label,
+    .menu-label,
+    span,
+    a,
+    .p-menuitem-content,
+    .p-submenu-header,
+    .p-menuitem-link {
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+
+    /* Íconos blancos */
     .pi,
     .p-menuitem-icon,
     i {
-      color: #00d8ff !important;
+        color: #ffffff !important;
     }
-  }
 
-  /* Estados activos */
-  .active-menuitem,
-  .router-link-active,
-  .p-highlight {
-    * {
-      color: #00d8ff !important;
+    /* Estados hover */
+    a:hover,
+    .p-menuitem-link:hover {
+        * {
+            color: #00d8ff !important;
+        }
+
+        .pi,
+        .p-menuitem-icon,
+        i {
+            color: #00d8ff !important;
+        }
     }
-    
-    .pi,
-    .p-menuitem-icon,
-    i {
-      color: #00d8ff !important;
+
+    /* Estados activos */
+    .active-menuitem,
+    .router-link-active,
+    .p-highlight {
+        * {
+            color: #00d8ff !important;
+        }
+
+        .pi,
+        .p-menuitem-icon,
+        i {
+            color: #00d8ff !important;
+        }
     }
-  }
 
-  /* Badges blancos con fondo */
-  .p-badge,
-  .badge {
-    color: #ffffff !important;
-    background-color: #3b82f6 !important;
-  }
-
-  /* Separadores */
-  .menu-separator {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    margin: 0.75rem 1rem;
-  }
-
-  /* Submenús */
-  .p-submenu-list {
-    background-color: #2d3f50 !important;
-    
-    * {
-      color: #ffffff !important;
+    /* Badges blancos con fondo */
+    .p-badge,
+    .badge {
+        color: #ffffff !important;
+        background-color: #3b82f6 !important;
     }
-  }
+
+    /* Separadores */
+    .menu-separator {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        margin: 0.75rem 1rem;
+    }
+
+    /* Submenús */
+    .p-submenu-list {
+        background-color: #2d3f50 !important;
+
+        * {
+            color: #ffffff !important;
+        }
+    }
 }
 
 /* Si usas PrimeVue, estas reglas adicionales son CRÍTICAS */
 .p-menu,
 .p-tieredmenu,
 .p-panelmenu {
-  background: #1f2d3d !important;
-  
-  * {
-    color: #ffffff !important;
-  }
-  
-  .p-menuitem-text {
-    color: #ffffff !important;
-  }
-  
-  .p-menuitem-icon {
-    color: #ffffff !important;
-  }
+    background: #1f2d3d !important;
+
+    * {
+        color: #ffffff !important;
+    }
+
+    .p-menuitem-text {
+        color: #ffffff !important;
+    }
+
+    .p-menuitem-icon {
+        color: #ffffff !important;
+    }
 }
 
 /* Regla NUCLEAR - Garantiza que TODO en el sidebar sea blanco */
 .layout-sidebar * {
-  color: #ffffff !important;
+    color: #ffffff !important;
 }
 
 /* Excepción solo para inputs, pero mantiene el menú blanco */
 .layout-sidebar input,
 .layout-sidebar textarea,
 .layout-sidebar select {
-  color: #1f2d3d !important;
+    color: #1f2d3d !important;
 }
 </style>

@@ -156,21 +156,8 @@ const clasesParticulares = ref([
     disponibilidad: 'Lunes a Viernes, 7:00 - 21:00',
     descripcion: 'Técnica de boxeo profesional, mejora tu golpeo, juego de pies y condición física.',
     imagen: 'https://images.unsplash.com/photo-1552072092-7f9b8d63efcb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 4,
-    nombre: 'Muay Thai Intensivo',
-    instructor_id: 4,
-    instructor_nombre: 'Roberto "Thai" Silva',
-    disciplina: 'Muay Thai',
-    nivel: 'Todos los niveles',
-    severityNivel: 'danger',
-    duracion: 75,
-    precio: 230,
-    disponibilidad: 'Miércoles, Viernes y Sábados',
-    descripcion: 'Aprende el arte de las 8 extremidades con un instructor entrenado en Tailandia.',
-    imagen: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
   }
+
 ]);
 
 // ============================================

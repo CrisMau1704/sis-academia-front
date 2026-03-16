@@ -1,89 +1,71 @@
 <template>
-  <header class="header" :class="{ 'menu-open': mobileMenuOpen }">
+  <header class="header" :class="{ 'scrolled': isScrolled }">
     <div class="header-container">
       <!-- Logo y título -->
       <div class="logo-section">
         <img src="/demo/images/logo1.jpeg" alt="Alianza Bolivia MMA" class="logo" />
         <div class="title-container">
-          <h1 class="title-main">ALIANZA BOLIVIA</h1>
-          <h2 class="title-sub">MMA</h2>
+          <span class="title-main">ALIANZA BOLIVIA</span>
+          <span class="title-sub">MMA</span>
         </div>
       </div>
 
-      <!-- Botón menú hamburguesa -->
+      <!-- Botón menú hamburguesa simple -->
       <button 
-        class="mobile-menu-btn" 
-        @click="toggleMobileMenu"
-        :aria-label="mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'"
+        class="menu-toggle" 
+        @click="toggleMenu"
+        :class="{ 'active': menuOpen }"
       >
-        <span class="hamburger-line" :class="{ 'open': mobileMenuOpen }"></span>
-        <span class="hamburger-line" :class="{ 'open': mobileMenuOpen }"></span>
-        <span class="hamburger-line" :class="{ 'open': mobileMenuOpen }"></span>
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
 
-      <!-- Navegación escritorio -->
-      <nav class="nav-menu desktop-menu">
-        <a href="#presentacion" class="nav-link" @click="closeMobileMenu">Gym</a>
-        <a href="#premios" class="nav-link" @click="closeMobileMenu">Logros</a>
-        <a href="#peleadores" class="nav-link" @click="closeMobileMenu">Peleadores</a>
-        <a href="#instructores" class="nav-link" @click="closeMobileMenu">Instructores</a>
-        <a href="#clases-particulares" class="nav-link" @click="closeMobileMenu">Clases Particulares</a>
-        <a href="#modalidades" class="nav-link" @click="closeMobileMenu">Modalidades</a>
-        <a href="#horarios" class="nav-link" @click="closeMobileMenu">Horarios</a>
-        <a href="#sucursales" class="nav-link" @click="closeMobileMenu">Sucursales</a>
-        <a href="#tienda" class="nav-link" @click="closeMobileMenu">Tienda</a>
-        <a href="#inscripcion" class="nav-link" @click="closeMobileMenu">Inscríbete</a>
-        <Button 
-          label="Acceso Sistema" 
-          icon="pi pi-sign-in" 
-          class="login-btn"
-          @click="$emit('open-login')"
-          severity="danger"
-        />
+      <!-- Menú desktop -->
+      <nav class="desktop-menu">
+        <a 
+          v-for="item in menuItems" 
+          :key="item.id"
+          :href="item.href" 
+          class="nav-link"
+          :class="{ 'active': activeSection === item.id }"
+        >
+          {{ item.label }}
+        </a>
+        <button class="login-btn" @click="$emit('open-login')">
+          <i class="pi pi-sign-in"></i>
+          Acceso
+        </button>
       </nav>
 
       <!-- Menú móvil -->
-      <transition name="slide-fade">
-        <div v-if="mobileMenuOpen" class="mobile-menu">
+      <transition name="fade">
+        <div v-if="menuOpen" class="mobile-menu-overlay" @click="closeMenu"></div>
+      </transition>
+      
+      <transition name="slide-right">
+        <div v-if="menuOpen" class="mobile-menu">
+          <div class="mobile-menu-header">
+            <img src="/demo/images/logo1.jpeg" alt="Alianza Bolivia MMA" class="mobile-logo" />
+            <button class="mobile-close" @click="closeMenu">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
           <nav class="mobile-nav">
-            <a href="#presentacion" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-building"></i> Gym
+            <a 
+              v-for="item in menuItems" 
+              :key="item.id"
+              :href="item.href" 
+              class="mobile-link"
+              @click="closeMenu"
+            >
+              <i :class="item.icon"></i>
+              <span>{{ item.label }}</span>
             </a>
-            <a href="#premios" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-trophy"></i> Logros
-            </a>
-            <a href="#peleadores" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-users"></i> Peleadores
-            </a>
-            <a href="#instructores" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-star"></i> Instructores
-            </a>
-            <a href="#clases-particulares" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-clock"></i> Clases Particulares
-            </a>
-            <a href="#modalidades" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-shield"></i> Modalidades
-            </a>
-            <a href="#horarios" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-calendar"></i> Horarios
-            </a>
-            <a href="#sucursales" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-map-marker"></i> Sucursales
-            </a>
-            <a href="#tienda" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-shopping-bag"></i> Tienda
-            </a>
-            <a href="#inscripcion" class="mobile-nav-link" @click="closeMobileMenu">
-              <i class="pi pi-user-plus"></i> Inscríbete
-            </a>
-            <Button 
-              label="Acceso Sistema" 
-              icon="pi pi-sign-in" 
-              class="mobile-login-btn"
-              @click="$emit('open-login')"
-              severity="danger"
-              fluid
-            />
+            <button class="mobile-login-btn" @click="$emit('open-login')">
+              <i class="pi pi-sign-in"></i>
+              Acceso al Sistema
+            </button>
           </nav>
         </div>
       </transition>
@@ -93,72 +75,115 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import Button from 'primevue/button';
 
 defineEmits(['open-login']);
 
-const mobileMenuOpen = ref(false);
+const menuOpen = ref(false);
+const isScrolled = ref(false);
+const activeSection = ref('presentacion');
 
-const toggleMobileMenu = () => {
-  mobileMenuOpen.value = !mobileMenuOpen.value;
-  if (mobileMenuOpen.value) {
+const menuItems = [
+  { id: 'presentacion', href: '#presentacion', label: 'Gym', icon: 'pi pi-building' },
+  { id: 'premios', href: '#premios', label: 'Logros', icon: 'pi pi-trophy' },
+  { id: 'peleadores', href: '#peleadores', label: 'Peleadores', icon: 'pi pi-users' },
+  { id: 'instructores', href: '#instructores', label: 'Instructores', icon: 'pi pi-star' },
+  { id: 'clases-particulares', href: '#clases-particulares', label: 'Clases', icon: 'pi pi-clock' },
+  { id: 'modalidades', href: '#modalidades', label: 'Modalidades', icon: 'pi pi-shield' },
+  { id: 'sucursales', href: '#sucursales', label: 'Sucursales', icon: 'pi pi-map-marker' },
+  { id: 'tienda', href: '#tienda', label: 'Tienda', icon: 'pi pi-shopping-bag' },
+  { id: 'galeria', href: '#galeria', label: 'Galeria', icon: 'pi pi-shopping-bag' },
+  { id: 'inscripcion', href: '#inscripcion', label: 'Inscríbete', icon: 'pi pi-user-plus' }
+];
+
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value;
+  if (menuOpen.value) {
     document.body.style.overflow = 'hidden';
   } else {
     document.body.style.overflow = '';
   }
 };
 
-const closeMobileMenu = () => {
-  mobileMenuOpen.value = false;
+const closeMenu = () => {
+  menuOpen.value = false;
   document.body.style.overflow = '';
 };
 
-onMounted(() => {
-  document.addEventListener('click', (e) => {
-    if (mobileMenuOpen.value && !e.target.closest('.header-container')) {
-      closeMobileMenu();
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 50;
+  
+  // Detectar sección activa
+  for (const item of menuItems) {
+    const element = document.getElementById(item.id);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      if (rect.top <= 100 && rect.bottom >= 100) {
+        activeSection.value = item.id;
+        break;
+      }
     }
-  });
+  }
+};
+
+// Cerrar con ESC
+const handleKeyDown = (e) => {
+  if (e.key === 'Escape' && menuOpen.value) {
+    closeMenu();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('keydown', handleKeyDown);
 });
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('keydown', handleKeyDown);
   document.body.style.overflow = '';
 });
 </script>
 
 <style scoped>
 .header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  padding: 1rem 0;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  transition: all 0.3s ease;
+  padding: 1.2rem 0;
+}
+
+.header.scrolled {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 0.8rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .header-container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 2rem;
-  position: relative;
 }
 
+/* Logo */
 .logo-section {
   display: flex;
   align-items: center;
   gap: 1rem;
-  z-index: 1002;
 }
 
 .logo {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #dc2626;
+  border: 2px solid #ffffff;
 }
 
 .title-container {
@@ -167,170 +192,303 @@ onUnmounted(() => {
 }
 
 .title-main {
-  font-size: 1.8rem;
+  font-size: 1.3rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #ffffff;
   letter-spacing: 1px;
-  margin: 0;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .title-sub {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #dc2626;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #94a3b8;
   letter-spacing: 2px;
-  margin: 0;
   line-height: 1;
-  text-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
 }
 
-.mobile-menu-btn {
+/* Botón menú hamburguesa simple */
+.menu-toggle {
   display: none;
   flex-direction: column;
   justify-content: space-between;
   width: 30px;
-  height: 24px;
+  height: 21px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 1002;
+  z-index: 1001;
 }
 
-.hamburger-line {
+.menu-toggle span {
   width: 100%;
   height: 3px;
-  background-color: #e2e8f0;
+  background-color: #ffffff;
   border-radius: 3px;
   transition: all 0.3s ease;
 }
 
-.hamburger-line.open:nth-child(1) {
-  transform: translateY(10px) rotate(45deg);
+.menu-toggle.active span:nth-child(1) {
+  transform: translateY(9px) rotate(45deg);
 }
 
-.hamburger-line.open:nth-child(2) {
+.menu-toggle.active span:nth-child(2) {
   opacity: 0;
 }
 
-.hamburger-line.open:nth-child(3) {
-  transform: translateY(-10px) rotate(-45deg);
+.menu-toggle.active span:nth-child(3) {
+  transform: translateY(-9px) rotate(-45deg);
 }
 
+/* Menú desktop */
 .desktop-menu {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.8rem;
 }
 
 .nav-link {
-  color: #cbd5e1;
+  color: #e2e8f0;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s;
   font-size: 0.95rem;
+  transition: color 0.3s;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #dc2626;
+  transition: width 0.3s ease;
 }
 
 .nav-link:hover {
-  color: #dc2626;
+  color: #ffffff;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+
+.nav-link.active {
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .login-btn {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-  border: none !important;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
 }
 
-.mobile-menu {
+.login-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.login-btn i {
+  font-size: 1rem;
+}
+
+/* Menú móvil */
+.mobile-menu-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: rgba(0, 0, 0, 0.7);
   z-index: 1001;
-  padding: 100px 2rem 2rem;
-  overflow-y: auto;
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  z-index: 1002;
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #334155;
+}
+
+.mobile-logo {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #dc2626;
+}
+
+.mobile-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: none;
+  color: #ffffff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.mobile-close:hover {
+  background: #334155;
 }
 
 .mobile-nav {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  max-width: 300px;
-  margin: 0 auto;
+  gap: 0.5rem;
 }
 
-.mobile-nav-link {
+.mobile-link {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 1rem;
   color: #e2e8f0;
   text-decoration: none;
-  font-size: 1.3rem;
-  font-weight: 500;
-  padding: 1rem;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: all 0.3s;
-  background: rgba(255, 255, 255, 0.05);
+  font-weight: 500;
 }
 
-.mobile-nav-link i {
+.mobile-link i {
+  width: 24px;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+}
+
+.mobile-link:hover {
+  background: #1e293b;
+  padding-left: 1.5rem;
+  color: #ffffff;
+}
+
+.mobile-link:hover i {
   color: #dc2626;
-  font-size: 1.5rem;
-  width: 30px;
-}
-
-.mobile-nav-link:hover {
-  background: rgba(220, 38, 38, 0.1);
-  transform: translateX(10px);
 }
 
 .mobile-login-btn {
   margin-top: 1rem;
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
-  border: none !important;
+  padding: 1rem;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  transition: all 0.3s;
 }
 
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease;
+.mobile-login-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateX(100%);
+.mobile-login-btn i {
+  font-size: 1.1rem;
+}
+
+/* Animaciones */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-right-enter-from {
+  transform: translateX(100%);
+}
+
+.slide-right-leave-to {
+  transform: translateX(100%);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .desktop-menu {
+    gap: 1.2rem;
+  }
+  
+  .nav-link {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .header-container {
-    padding: 0 1rem;
+  .menu-toggle {
+    display: flex;
   }
   
   .desktop-menu {
     display: none;
   }
   
-  .mobile-menu-btn {
-    display: flex;
-  }
-  
   .logo {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
   }
   
   .title-main {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
   }
   
   .title-sub {
-    font-size: 1.6rem;
+    font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
+  .header-container {
+    padding: 0 1rem;
+  }
+  
   .logo-section {
     gap: 0.5rem;
   }
@@ -341,11 +499,15 @@ onUnmounted(() => {
   }
   
   .title-main {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
   
   .title-sub {
-    font-size: 1.4rem;
+    font-size: 0.9rem;
+  }
+  
+  .mobile-menu {
+    width: 100%;
   }
 }
 </style>

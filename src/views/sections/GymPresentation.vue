@@ -1,68 +1,90 @@
 <template>
   <section id="presentacion" class="presentacion">
     <div class="section-container">
+      <!-- Header estilo premios -->
       <div class="section-header">
-        <h2 class="section-title">NUESTRO <span class="highlight">GYM</span></h2>
-        <p class="section-subtitle">Conoce nuestra historia, misión y valores</p>
+        <h2 class="section-title">NUESTRA <span class="highlight">HISTORIA</span></h2>
+        <p class="section-subtitle">Más de 8 años formando campeones dentro y fuera del ring</p>
       </div>
 
-      <div class="presentacion-content">
-        <div class="presentacion-imagenes">
-          <div class="imagen-principal">
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Alianza Bolivia MMA">
+      <!-- Stats estilo premios -->
+      <div class="presentacion-stats">
+        <div class="stat-item">
+          <i class="pi pi-calendar"></i>
+          <h3>2015</h3>
+          <p>Año de Fundación</p>
+        </div>
+        <div class="stat-item">
+          <i class="pi pi-users"></i>
+          <h3>500+</h3>
+          <p>Atletas Formados</p>
+        </div>
+        <div class="stat-item">
+          <i class="pi pi-trophy"></i>
+          <h3>15</h3>
+          <p>Títulos Nacionales</p>
+        </div>
+        <div class="stat-item">
+          <i class="pi pi-star"></i>
+          <h3>8</h3>
+          <p>Años de Trayectoria</p>
+        </div>
+      </div>
+
+      <!-- Grid de historia estilo premios-card -->
+      <div class="presentacion-grid">
+        <!-- Tarjeta de Fundador -->
+       
+
+        <!-- Tarjeta de Misión -->
+        <div class="presentacion-card">
+          <div class="card-icon">
+            <i class="pi pi-bullseye"></i>
           </div>
-          <div class="imagenes-secundarias">
-            <img src="https://images.unsplash.com/photo-1583473848882-f9a5bc7fd2ee?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Entrenamiento MMA">
-            <img src="https://images.unsplash.com/photo-1626338176640-91b14b3e54c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="Jiu-Jitsu">
+          <div class="card-content">
+            <h4>Misión</h4>
+            <p class="card-descripcion">Transformar vidas a través de la disciplina marcial, formando atletas íntegros dentro y fuera del ring.</p>
+            <Tag value="MISIÓN" severity="danger" />
           </div>
         </div>
 
-        <div class="presentacion-texto">
-          <div class="historia">
-            <h3>Nuestra Historia</h3>
-            <p>Alianza Bolivia MMA nació en 2015 con la visión de crear un espacio donde los apasionados de las artes marciales pudieran entrenar al más alto nivel. Fundada por el Maestro Carlos Mendoza, ex peleador profesional, la academia ha crecido hasta convertirse en un referente nacional en la formación de atletas de alto rendimiento.</p>
+        <!-- Tarjeta de Visión -->
+        <div class="presentacion-card">
+          <div class="card-icon">
+            <i class="pi pi-eye"></i>
           </div>
-
-          <div class="mision-vision">
-            <div class="mision">
-              <i class="pi pi-bullseye"></i>
-              <h4>Misión</h4>
-              <p>Formar atletas íntegros a través de la práctica de artes marciales, fomentando valores como la disciplina, el respeto y la perseverancia.</p>
-            </div>
-            <div class="vision">
-              <i class="pi pi-eye"></i>
-              <h4>Visión</h4>
-              <p>Ser la academia líder en Latinoamérica en la formación de peleadores profesionales y en la promoción de un estilo de vida saludable.</p>
-            </div>
+          <div class="card-content">
+            <h4>Visión</h4>
+            <p class="card-descripcion">Ser el gimnasio referente en Latinoamérica en formación de peleadores profesionales y desarrollo personal.</p>
+            <Tag value="VISIÓN" severity="danger" />
           </div>
+        </div>
 
-          <div class="valores">
-            <h4>Valores</h4>
-            <div class="valores-grid">
-              <div class="valor-item">
-                <i class="pi pi-shield"></i>
-                <span>Disciplina</span>
-              </div>
-              <div class="valor-item">
-                <i class="pi pi-heart"></i>
-                <span>Respeto</span>
-              </div>
-              <div class="valor-item">
-                <i class="pi pi-star"></i>
-                <span>Excelencia</span>
-              </div>
-              <div class="valor-item">
-                <i class="pi pi-users"></i>
-                <span>Compañerismo</span>
-              </div>
-              <div class="valor-item">
-                <i class="pi pi-chart-line"></i>
-                <span>Superación</span>
-              </div>
-              <div class="valor-item">
-                <i class="pi pi-lock"></i>
-                <span>Humildad</span>
-              </div>
+        <!-- Tarjeta de Historia -->
+        <div class="presentacion-card presentacion-card-large">
+          <div class="card-icon">
+            <i class="pi pi-book-open"></i>
+          </div>
+          <div class="card-content">
+            <h4>Nacidos para Inspirar</h4>
+            <p class="card-fecha">Desde 2015</p>
+            <p class="card-descripcion">Alianza Bolivia MMA abrió sus puertas con un sueño claro: crear un espacio donde la pasión por las artes marciales se encuentre con la excelencia profesional. Lo que comenzó como un pequeño gimnasio de 50m², hoy es el epicentro de las artes marciales mixtas en Bolivia.</p>
+            <Tag value="HISTORIA" severity="danger" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Valores en grid estilo premios -->
+      <div class="valores-section">
+        <h3 class="valores-title">Nuestros <span class="highlight">Valores</span></h3>
+        <div class="valores-grid">
+          <div v-for="valor in valores" :key="valor.nombre" class="valor-card">
+            <div class="valor-icon">
+              <i :class="valor.icono"></i>
+            </div>
+            <div class="valor-content">
+              <h4>{{ valor.nombre }}</h4>
+              <p>{{ valor.descripcion }}</p>
             </div>
           </div>
         </div>
@@ -72,12 +94,45 @@
 </template>
 
 <script setup>
-// Sin lógica por ahora
+import Tag from 'primevue/tag';
+
+const valores = [
+  {
+    nombre: 'Disciplina',
+    descripcion: 'La base de todo logro',
+    icono: 'pi pi-shield'
+  },
+  {
+    nombre: 'Respeto',
+    descripcion: 'Por uno y por todos',
+    icono: 'pi pi-heart'
+  },
+  {
+    nombre: 'Excelencia',
+    descripcion: 'Mejoramos cada día',
+    icono: 'pi pi-star'
+  },
+  {
+    nombre: 'Comunidad',
+    descripcion: 'Juntos somos más fuertes',
+    icono: 'pi pi-users'
+  },
+  {
+    nombre: 'Superación',
+    descripcion: 'Sin límites ni excusas',
+    icono: 'pi pi-chart-line'
+  },
+  {
+    nombre: 'Humildad',
+    descripcion: 'Siempre aprendiendo',
+    icono: 'pi pi-lock-open'
+  }
+];
 </script>
 
 <style scoped>
 .presentacion {
-  background: white;
+  background: #f8fafc;
   padding: 4rem 0;
 }
 
@@ -87,6 +142,7 @@
   padding: 0 2rem;
 }
 
+/* Header estilo premios */
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
@@ -108,152 +164,267 @@
   font-size: 1.2rem;
 }
 
-.presentacion-content {
+/* Stats estilo premios */
+.presentacion-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: start;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin-bottom: 4rem;
 }
 
-.presentacion-imagenes {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.imagen-principal {
-  width: 100%;
-  height: 300px;
-  overflow: hidden;
+.stat-item {
+  text-align: center;
+  padding: 2rem;
+  background: white;
   border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.imagen-principal img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s;
-}
-
-.imagen-principal:hover img {
-  transform: scale(1.05);
-}
-
-.imagenes-secundarias {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.imagenes-secundarias img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s;
 }
 
-.imagenes-secundarias img:hover {
-  transform: scale(1.03);
+.stat-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.presentacion-texto {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.historia h3,
-.valores h4 {
-  color: #1e293b;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-}
-
-.historia p {
-  color: #475569;
-  line-height: 1.8;
-  font-size: 1.1rem;
-}
-
-.mision-vision {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  background: #f8fafc;
-  padding: 2rem;
-  border-radius: 15px;
-}
-
-.mision,
-.vision {
-  text-align: center;
-}
-
-.mision i,
-.vision i {
+.stat-item i {
   font-size: 2.5rem;
   color: #dc2626;
   margin-bottom: 1rem;
 }
 
-.mision h4,
-.vision h4 {
+.stat-item h3 {
+  font-size: 2rem;
+  color: #1e293b;
+  margin: 0.5rem 0;
+  font-weight: 700;
+}
+
+.stat-item p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Grid de tarjetas */
+.presentacion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.presentacion-card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  transition: all 0.3s;
+  border: 1px solid #e2e8f0;
+}
+
+.presentacion-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
+}
+
+.presentacion-card-large {
+  grid-column: span 2;
+}
+
+.card-icon {
+  background: #dc2626;
+  color: white;
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon i {
+  font-size: 2rem;
+}
+
+.card-content {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.card-content h4 {
   color: #1e293b;
   font-size: 1.3rem;
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.card-subtitle {
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 1rem;
   margin-bottom: 0.5rem;
 }
 
-.mision p,
-.vision p {
+.card-fecha {
   color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.card-descripcion {
+  color: #475569;
   line-height: 1.6;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+/* Sección de valores */
+.valores-section {
+  margin-top: 3rem;
+}
+
+.valores-title {
+  text-align: center;
+  font-size: 2rem;
+  color: #1e293b;
+  margin-bottom: 2rem;
+  font-weight: 700;
 }
 
 .valores-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
 }
 
-.valor-item {
+.valor-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 10px;
-  transition: transform 0.3s;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  border: 1px solid #e2e8f0;
 }
 
-.valor-item:hover {
+.valor-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(220, 38, 38, 0.1);
+  box-shadow: 0 15px 30px rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
 }
 
-.valor-item i {
-  font-size: 1.8rem;
+.valor-icon {
+  background: #fee2e2;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.valor-card:hover .valor-icon {
+  background: #dc2626;
+}
+
+.valor-icon i {
+  font-size: 1.5rem;
   color: #dc2626;
+  transition: all 0.3s;
 }
 
-.valor-item span {
-  color: #475569;
-  font-weight: 500;
+.valor-card:hover .valor-icon i {
+  color: white;
 }
 
+.valor-content h4 {
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.valor-content p {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
-  .presentacion-content {
+  .presentacion-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .presentacion-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .presentacion-card-large {
+    grid-column: span 1;
+  }
+  
+  .valores-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .mision-vision {
+  .section-title {
+    font-size: 2rem;
+  }
+  
+  .presentacion-stats {
     grid-template-columns: 1fr;
+  }
+  
+  .presentacion-card {
+    flex-direction: column;
+  }
+  
+  .card-icon {
+    width: 100%;
+    height: 60px;
+  }
+  
+  .valores-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .valor-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-container {
+    padding: 0 1rem;
+  }
+  
+  .section-title {
+    font-size: 1.8rem;
+  }
+  
+  .stat-item {
+    padding: 1.5rem;
+  }
+  
+  .stat-item h3 {
+    font-size: 1.8rem;
+  }
+  
+  .card-content {
+    padding: 1rem;
+  }
+  
+  .card-content h4 {
+    font-size: 1.2rem;
   }
 }
 </style>

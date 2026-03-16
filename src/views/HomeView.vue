@@ -6,7 +6,7 @@
     <HeroSection />
     <StatsSection />
     <GymPresentation />
-    <AchievementsSection />
+   <AchievementsSection :premios="premiosData" />
     <FightersSection />
     <InstructorsSection />
     <PrivateClassesSection />
@@ -15,6 +15,7 @@
     <BranchesSection />
     <StoreSection />
     <PreRegistrationSection />
+    <EventsGallerySection />
     
     <FooterComponent 
       @open-login="goToLogin"
@@ -50,10 +51,12 @@ import FightersSection from '@/views/sections/FightersSection.vue';
 import InstructorsSection from '@/views/sections/InstructorsSection.vue';
 import PrivateClassesSection from '@/views/sections/PrivateClassesSection.vue';
 import ModalitiesSection from '@/views/sections/ModalitiesSection.vue';
-import ScheduleSection from '@/views/sections/ScheduleSection.vue';
 import BranchesSection from '@/views/sections/BranchesSection.vue';
 import StoreSection from '@/views/sections/StoreSection.vue';
 import PreRegistrationSection from '@/views/sections/PreRegistrationSection.vue';
+import EventsGallerySection from '@/views/sections/EventsGallerySection.vue';
+
+
 
 const router = useRouter();
 const toast = useToast();

@@ -280,7 +280,8 @@ const permissionCategories = ref([
         icon: 'pi pi-users',
         permissions: [
             { codigo: 'manage_students', descripcion: 'Gestionar Estudiantes' },
-            { codigo: 'manage_enrollments', descripcion: 'Gestionar Inscripciones' }
+            { codigo: 'manage_enrollments', descripcion: 'Gestionar Inscripciones' },
+            { codigo: 'view_preinscripciones', descripcion: 'Gestionar PreInscripciones' }
         ]
     },
     {
@@ -297,7 +298,17 @@ const permissionCategories = ref([
         label: 'Pagos y Mensualidades',
         icon: 'pi pi-money-bill',
         permissions: [
-            { codigo: 'view_payment_history', descripcion: 'Ver Historial de Pagos' }
+            { codigo: 'view_payment_history', descripcion: 'Ver Historial de Pagos' },
+            { codigo: 'view_reembolsos', descripcion: 'Ver Reembolsos de Pagos' }
+
+        ]
+    },
+    {
+        name: 'gastos',
+        label: 'Gastos',
+        icon: 'pi pi-money-bill',
+        permissions: [
+            { codigo: 'view_gastos', descripcion: 'Ver Gastos' }
         ]
     },
     {
@@ -684,8 +695,7 @@ const getRoleSeverity = (roleName) => {
     switch (roleName) {
         case 'super_admin': return 'danger';
         case 'admin': return 'warning';
-        case 'vendedor': return 'success';
-        case 'profesor': return 'info';
+       
         default: return 'secondary';
     }
 };

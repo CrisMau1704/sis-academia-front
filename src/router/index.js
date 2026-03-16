@@ -21,6 +21,7 @@ import ClasesRestantes from '../views/admin/ClasesRestantes.vue'
 import RecuperarClases from '../views/admin/RecuperarClases.vue'
 import Reembolsos from '../views/admin/Reembolsos.vue'
 import Preinscripciones from '../views/admin/Preinscripciones.vue'
+import Gastos from '../views/admin/Gastos.vue'
 
 const routes = [
   // ===== RUTAS PÚBLICAS (NO REQUIEREN AUTENTICACIÓN) =====
@@ -98,6 +99,11 @@ const routes = [
         path: 'reembolsos',
         name: 'Reembolsos',
         component: Reembolsos
+      },
+      {
+        path: 'gastos',
+        name: 'Gastos',
+        component: Gastos
       },
       {
         path: 'clasesrestantes',

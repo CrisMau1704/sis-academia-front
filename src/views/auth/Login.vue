@@ -330,6 +330,12 @@ async function funIngresar() {
                 console.log('→ Redirigiendo a pagos (tiene view_reembolsos)');
                 router.push('/admin/reembolsos');
             }
+
+            // 2. GESTIÓN DE PAGOS
+            else if (permisosGuardados.includes('view_gastos')) {
+                console.log('→ Redirigiendo a GASTOS (tiene view_gastos)');
+                router.push('/admin/gastos');
+            }
             
             // 5. CONFIGURACIÓN DEL SISTEMA
             else if (permisosGuardados.includes('manage_branches')) {
